@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras para o Ward Board MVP
+    // Permite leitura e escrita na coleção de unidades e seus leitos para desenvolvimento
+    match /units/{unitId}/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Bloqueio padrão para o restante do banco
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
