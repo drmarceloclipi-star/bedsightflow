@@ -23,7 +23,7 @@ const LoginScreen: React.FC = () => {
                 if (user.email) {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
                     if (isAuthorized) {
-                        navigate(ADMIN_EMAILS.includes(user.email.toLowerCase()) ? '/admin' : '/mobile');
+                        navigate(ADMIN_EMAILS.includes(user.email.toLowerCase()) ? '/admin' : '/editor');
                     } else {
                         await signOut(auth);
                         setError('Acesso não autorizado. Entre em contato com o administrador.');
@@ -58,7 +58,7 @@ const LoginScreen: React.FC = () => {
                     if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
                         navigate('/admin');
                     } else {
-                        navigate('/mobile');
+                        navigate('/editor');
                     }
                 } else {
                     await signOut(auth);

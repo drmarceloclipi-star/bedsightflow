@@ -12,7 +12,7 @@ import { db } from '../infra/firebase/config';
 import { ADMIN_EMAILS } from '../config/admins';
 
 export interface AuthorizedUser {
-    id?: string;
+    id: string;
     email: string;
     addedAt: Date;
 }

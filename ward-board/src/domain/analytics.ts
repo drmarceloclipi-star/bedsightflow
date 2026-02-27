@@ -56,3 +56,58 @@ export type TrendComparisonMetric = {
     previous: number
     diffPercent: number
 }
+
+// ---- Mission Control types ----
+
+export type KpiStatus = 'ok' | 'warning' | 'critical'
+
+export type TopBlockerNow = {
+    name: string
+    bedCount: number
+    share: number // 0-100
+}
+
+export type MissionControlSnapshot = {
+    generatedAt: string
+    source: string
+    definitionsVersion: string
+    totalBedsCount: number
+    activeBedsCount: number
+    // KPI 1
+    blockedBedsCount: number
+    blockedBedIds: string[]
+    blockedAgingHoursByBedId: Record<string, number>
+    maxBlockedAgingHours: number
+    // KPI 2
+    stale24hBedsCount: number
+    staleBedIdsByBucket: { h12: string[]; h24: string[]; h48: string[] }
+    // KPI 3
+    kamishibaiPendingBedsCount: number
+    kamishibaiPendingBedIds: string[]
+    kamishibaiImpedimentBedsCount: number
+    kamishibaiImpedimentBedIds: string[]
+    // KPI 4
+    dischargeNext24hCount: number
+    dischargeNext24hBedIds: string[]
+    // KPI 7 (now)
+    topBlockerNow: TopBlockerNow | null
+}
+
+export type DailyDischarge = {
+    date: string
+    count: number
+}
+
+export type MissionControlPeriod = {
+    generatedAt: string
+    source: string
+    definitionsVersion: string
+    range: 'today' | '7d' | '30d'
+    dischargesByDay: DailyDischarge[]
+    totalDischarges: number
+    avgDischargesPerDay: number
+    prevPeriodTotalDischarges: number
+    throughputDelta: number | null // percentage change vs previous period
+    topBlockersPeriod: Array<{ blocker: string; count: number }>
+}
+

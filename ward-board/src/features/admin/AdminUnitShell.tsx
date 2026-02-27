@@ -84,27 +84,19 @@ const AdminUnitShell: React.FC = () => {
         <div className="admin-shell">
             {/* Topbar */}
             <header className="admin-header">
-                <div className="admin-header-top">
-                    {/* Left: Back + Unit name */}
+                <div className="admin-header-top relative">
+                    {/* Left: Unit name */}
                     <div className="admin-header-left">
-                        <button
-                            onClick={() => navigate('/admin')}
-                            className="admin-back-btn"
-                            aria-label="Voltar para lista de unidades"
-                        >
-                            ← Voltar
-                        </button>
-                        <div className="admin-divider" aria-hidden="true" />
-                        <div className="admin-unit-name-group">
-                            <span className="admin-unit-name">
-                                {unit?.name ?? unitId}
-                            </span>
-                            <span className="admin-badge">Admin</span>
-                        </div>
+                        <span className="unit-badge text-sm px-3 py-1 bg-surface-2">
+                            {unit?.name || unitId}
+                        </span>
                     </div>
 
-                    {/* Right: quick-access links */}
-                    <div className="admin-header-right">
+                    {/* Center: Brand */}
+                    <span className="admin-unit-name text-2xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+
+                    {/* Right: quick-access links & Back */}
+                    <div className="admin-header-right flex items-center gap-4">
                         <button
                             onClick={() => window.open(`/tv?unit=${unitId}`, '_blank')}
                             title="Abrir exibição TV"
@@ -113,11 +105,18 @@ const AdminUnitShell: React.FC = () => {
                             <span aria-hidden="true">📺</span> TV
                         </button>
                         <button
-                            onClick={() => window.open(`/mobile?unit=${unitId}`, '_blank')}
+                            onClick={() => window.open(`/editor?unit=${unitId}`, '_blank')}
                             title="Abrir edição mobile"
                             className="btn btn-outline flex items-center gap-2 px-3 py-1.5 text-sm"
                         >
                             <span aria-hidden="true">📱</span> Mobile
+                        </button>
+                        <button
+                            onClick={() => navigate('/admin')}
+                            className="admin-back-btn m-0"
+                            aria-label="Voltar para lista de unidades"
+                        >
+                            Sair / Unidades
                         </button>
                     </div>
                 </div>

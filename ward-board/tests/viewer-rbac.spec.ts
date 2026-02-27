@@ -24,13 +24,13 @@ test.describe('Viewer Role RBAC Restrictions', () => {
         // Click "Sign In"
         await viewerPage.click('button:has-text("Sign In")');
 
-        // Wait for navigation to /mobile
-        await viewerPage.waitForURL(/\/mobile/);
+        // Wait for navigation to /editor
+        await viewerPage.waitForURL(/\/editor/);
 
         // 2. Try to access an Admin route
         await viewerPage.goto('/admin');
 
-        // Because of the RouteGuard, viewer gets redirected to login (and from login, likely to /mobile or stays in login)
+        // Because of the RouteGuard, viewer gets redirected to login (and from login, likely to /editor or stays in login)
         // Let's just wait for the network idle or URL change to confirm they are not on '/admin'
         await viewerPage.waitForURL((url) => {
             return !url.pathname.startsWith('/admin');
@@ -40,7 +40,7 @@ test.describe('Viewer Role RBAC Restrictions', () => {
         expect(currentUrl).not.toContain('/admin');
 
         // 3. Go to mobile dashboard and try to edit a bed
-        await viewerPage.goto('/mobile');
+        await viewerPage.goto('/editor');
         await viewerPage.waitForSelector('text="301.1"');
 
         // Open bed 301.1

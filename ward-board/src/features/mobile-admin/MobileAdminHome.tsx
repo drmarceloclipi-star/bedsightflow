@@ -50,7 +50,7 @@ const MobileAdminHome: React.FC = () => {
 
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
-        const id = userToDelete.id!;
+        const id = userToDelete.id;
         setUserToDelete(null);
         await authorizedUsersRepository.remove(id);
         const data = await authorizedUsersRepository.getAll();
@@ -72,11 +72,11 @@ const MobileAdminHome: React.FC = () => {
 
             {/* Sticky header */}
             <header className="madmin-header">
-                <div className="madmin-header-inner">
+                <div className="madmin-header-inner relative">
                     <div className="madmin-header-brand">
-                        <span className="madmin-unit-name">BedSight</span>
-                        <span className="madmin-badge">Admin</span>
+                        <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2">Admin</span>
                     </div>
+                    <span className="madmin-unit-name text-xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
                     <button onClick={handleLogout} className="madmin-logout-btn">
                         Sair
                     </button>

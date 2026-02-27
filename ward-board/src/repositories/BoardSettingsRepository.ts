@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db, functions } from '../infra/firebase/config';
 import { httpsCallable } from 'firebase/functions';
+import { CLOUD_FUNCTIONS } from '../constants/functionNames';
 import type { BoardSettings, BoardScreenConfig } from '../domain/types';
 
 const DEFAULT_SCREENS: BoardScreenConfig[] = [
@@ -39,7 +40,7 @@ export const BoardSettingsRepository = {
     },
 
     async updateSettings(unitId: string, settings: Partial<BoardSettings>, reason: string) {
-        const updateFn = httpsCallable(functions, 'updateBoardSettings');
+        const updateFn = httpsCallable(functions, CLOUD_FUNCTIONS.UPDATE_BOARD_SETTINGS);
         await updateFn({
             unitId,
             reason,

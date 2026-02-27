@@ -1,6 +1,8 @@
 // Centralized Configuration for Admin Emails
-// This file is the single source of truth for global admin emails.
-// It is imported by the frontend and used in security rules.
+// IMPORTANTE: Este arquivo agora serve apenas como uma lista "semente" (seed)
+// e fallback temporário para migração para Custom Claims (firebase auth JWT).
+// Para dar acesso de admin a um novo usuário, use a nova Cloud Function setGlobalAdminClaim
+// que gravará a claim real { admin: true } no token do usuário.
 
 export const ADMIN_EMAILS = [
     'drmarceloclipi@gmail.com',

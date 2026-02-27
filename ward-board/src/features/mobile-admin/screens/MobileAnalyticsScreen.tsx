@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+
 import type { AnalyticsPeriodKey } from '../../../domain/analytics';
 import AnalyticsFilters from '../../admin/components/analytics/AnalyticsFilters';
 import OverviewCards from '../../admin/components/analytics/OverviewCards';
@@ -9,46 +9,38 @@ import TopBlockersTable from '../../admin/components/analytics/TopBlockersTable'
 import FreshnessCards from '../../admin/components/analytics/FreshnessCards';
 import TrendComparisonPanel from '../../admin/components/analytics/TrendComparisonPanel';
 
+import MissionControlTab from '../../admin/components/analytics/MissionControlTab';
+
 interface Props {
     unitId: string;
 }
 
 const MobileAnalyticsScreen: React.FC<Props> = ({ unitId }) => {
-    const { unitId: paramUnitId } = useParams<{ unitId: string }>();
-    const safeUnitId = unitId || paramUnitId || 'A';
     const [period, setPeriod] = useState<AnalyticsPeriodKey>('7d');
 
     return (
-        <div className="madmin-screen-pad madmin-analytics-stack">
-            <AnalyticsFilters
-                unitId={safeUnitId}
-                period={period}
-                onPeriodChange={setPeriod}
-            />
+        <div className="analytics-dashboard-container madmin-screen-pad">
+            {/* OPERATIONAL ALERTS (Top priority) */}
+            <MissionControlTab unitId={unitId} />
 
-            <section>
-                <OverviewCards unitId={safeUnitId} period={period} />
-            </section>
+            {/* EXPLORATION (Context and Trends) */}
+            <div className="analytics-exploration-content">
+                <div className="analytics-section-title">
+                    <span>🔍 Exploração e Tendências</span>
+                    <AnalyticsFilters
+                        unitId={unitId}
+                        period={period}
+                        onPeriodChange={setPeriod}
+                    />
+                </div>
 
-            <section>
-                <FlowTrendChart unitId={safeUnitId} period={period} />
-            </section>
-
-            <section>
-                <KamishibaiStatusChart unitId={safeUnitId} period={period} />
-            </section>
-
-            <section>
-                <TopBlockersTable unitId={safeUnitId} period={period} />
-            </section>
-
-            <section>
-                <FreshnessCards unitId={safeUnitId} period={period} />
-            </section>
-
-            <section>
-                <TrendComparisonPanel unitId={safeUnitId} period={period} />
-            </section>
+                <OverviewCards unitId={unitId} period={period} />
+                <FreshnessCards unitId={unitId} period={period} />
+                <FlowTrendChart unitId={unitId} period={period} />
+                <KamishibaiStatusChart unitId={unitId} period={period} />
+                <TopBlockersTable unitId={unitId} period={period} />
+                <TrendComparisonPanel unitId={unitId} period={period} />
+            </div>
         </div>
     );
 };

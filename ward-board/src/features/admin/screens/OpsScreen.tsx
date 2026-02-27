@@ -3,6 +3,7 @@ import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
 
 interface Props {
@@ -59,7 +60,7 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
             ],
             confirmLabel: 'Executar Reset',
             action: async (reason) => {
-                const resetFn = httpsCallable(functions, 'softResetUnit');
+                const resetFn = httpsCallable(functions, CLOUD_FUNCTIONS.SOFT_RESET_UNIT);
                 await resetFn({ unitId, reason });
                 flash('✓ Reset concluído com sucesso.');
             },
@@ -78,7 +79,7 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
             ],
             confirmLabel: 'Reaplicar Leitos',
             action: async (reason) => {
-                const applyFn = httpsCallable(functions, 'applyCanonicalBeds');
+                const applyFn = httpsCallable(functions, CLOUD_FUNCTIONS.APPLY_CANONICAL_BEDS);
                 await applyFn({ unitId, reason });
                 flash('✓ 36 leitos canônicos reaplicados.');
             },

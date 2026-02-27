@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../../constants/functionNames';
 import type { AnalyticsPeriodKey, KamishibaiStatusBreakdown, KamishibaiDomainMetric } from '../../../../domain/analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { AnalyticsContract } from './AnalyticsContract';
 
 interface KamishibaiResult {
     distribution: KamishibaiStatusBreakdown;
@@ -23,7 +26,7 @@ const KamishibaiStatusChart: React.FC<KamishibaiStatsProps> = ({ unitId, period 
             setLoading(true);
             setError(null);
             try {
-                const getAdminKamishibaiStatsBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, KamishibaiResult>(functions, 'getAdminKamishibaiStatsBQ');
+                const getAdminKamishibaiStatsBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, KamishibaiResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_KAMISHIBAI_STATS_BQ);
                 const result = await getAdminKamishibaiStatsBQ({ unitId, periodKey: period });
                 setData(result.data);
             } catch (error) {
@@ -38,61 +41,71 @@ const KamishibaiStatusChart: React.FC<KamishibaiStatsProps> = ({ unitId, period 
     }, [unitId, period]);
 
     if (loading) {
-        return <div style={{ color: 'var(--text-muted)' }}>Carregando métricas Kamishibai...</div>;
+        return <div className="analytics-loading-text">Carregando métricas Kamishibai...</div>;
     }
 
-    if (error) return <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{error}</div>;
+    if (error) return <AnalyticsEmptyState type="error" />;
 
     if (!data) return null;
 
     const totalItems = data.distribution.ok + data.distribution.pending + data.distribution.blocked + data.distribution.na;
+    if (totalItems === 0) return <AnalyticsEmptyState type="empty" message="Nenhuma avaliação Kamishibai no período" />;
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {/* Distribution */}
-            <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '0.25rem', marginTop: 0, color: 'var(--text-primary)' }}>
-                    Status dos Itens Kamishibai (N={totalItems})
-                </h3>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', marginTop: 0 }}>
-                    N = total de itens avaliados no período
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>OK</span>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{data.distribution.ok}</span>
+        <div className="analytics-exploration-section">
+            <div className="analytics-grid-2">
+                {/* Distribution */}
+                <div className="analytics-chart-container">
+                    <h4 className="analytics-exploration-subtitle">
+                        Status dos Itens Kamishibai (N={totalItems})
+                    </h4>
+                    <p className="analytics-chart-subtitle">
+                        N = total de itens avaliados no período
+                    </p>
+                    <div className="analytics-stat-list">
+                        <div className="analytics-stat-item">
+                            <span className="analytics-stat-label color-success">OK</span>
+                            <span className="analytics-stat-value">{data.distribution.ok}</span>
+                        </div>
+                        <div className="analytics-stat-item">
+                            <span className="analytics-stat-label color-warning">Pendências</span>
+                            <span className="analytics-stat-value">{data.distribution.pending}</span>
+                        </div>
+                        <div className="analytics-stat-item">
+                            <span className="analytics-stat-label color-danger">Bloqueios</span>
+                            <span className="analytics-stat-value">{data.distribution.blocked}</span>
+                        </div>
+                        <div className="analytics-stat-item">
+                            <span className="analytics-stat-label color-muted">Não Aplicável</span>
+                            <span className="analytics-stat-value">{data.distribution.na}</span>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--warning)' }}>Pendências</span>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{data.distribution.pending}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--danger)' }}>Bloqueios</span>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{data.distribution.blocked}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Não Aplicável</span>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{data.distribution.na}</span>
+                </div>
+
+                {/* By Domain */}
+                <div className="analytics-chart-container">
+                    <h4 className="analytics-exploration-subtitle">Por Domínio</h4>
+                    <div className="analytics-stat-list">
+                        {data.byDomain.map((domain, idx) => (
+                            <div key={idx} className="analytics-stat-item">
+                                <div className="analytics-stat-label font-semibold">{domain.domain}</div>
+                                <div className="analytics-stat-sub">
+                                    {domain.pending > 0 && <span className="color-warning">{domain.pending} pend.</span>}
+                                    {domain.blocked > 0 && <span className="color-danger">{domain.blocked} bloq.</span>}
+                                    {domain.pending === 0 && domain.blocked === 0 && <span className="color-success">Tudo OK</span>}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* By Domain */}
-            <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', marginTop: 0, color: 'var(--text-primary)' }}>Por Domínio</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {data.byDomain.map((domain, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '120px', fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600 }}>{domain.domain}</div>
-                            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem' }}>
-                                {domain.pending > 0 && <span style={{ color: 'var(--warning)' }}>{domain.pending} pend.</span>}
-                                {domain.blocked > 0 && <span style={{ color: 'var(--danger)' }}>{domain.blocked} bloq.</span>}
-                                {domain.pending === 0 && domain.blocked === 0 && <span style={{ color: 'var(--success)' }}>Tudo OK</span>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <AnalyticsContract
+                metric="Avaliações do checklist de processos (Kamishibai)"
+                universe={`N = Total de itens checados no período selecionado (${totalItems})`}
+                window="periodo"
+                inclusionRule="Inclui todos os itens de Kamishibai preenchidos para a unidade (exceto NA na métrica, mas NA está no universo)."
+            />
         </div>
     );
 };

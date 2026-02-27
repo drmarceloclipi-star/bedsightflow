@@ -53,10 +53,17 @@ const MobileAdminUnitShell: React.FC = () => {
         fetchUnit();
     }, [unitId]);
 
-    if (!unitId) {
-        navigate('/mobile-admin');
-        return null;
-    }
+    useEffect(() => {
+        if (!unitId) {
+            navigate('/mobile-admin');
+        }
+    }, [unitId, navigate]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [activeTab]);
+
+    if (!unitId) return null;
 
     if (isLoading) {
         return (
@@ -86,19 +93,35 @@ const MobileAdminUnitShell: React.FC = () => {
         <div className="madmin-shell">
             {/* Sticky top header */}
             <header className="madmin-header">
-                <div className="madmin-header-inner">
+                <div className="madmin-header-inner relative">
                     <div className="madmin-header-left">
                         <button
                             onClick={() => navigate('/mobile-admin')}
-                            className="madmin-back-btn"
+                            className="madmin-back-btn mr-2"
                             aria-label="Voltar para lista de unidades"
                         >
                             ←
                         </button>
-                        <div className="madmin-unit-name-group">
-                            <span className="madmin-unit-name">{unit?.name ?? unitId}</span>
-                            <span className="madmin-badge">Admin</span>
-                        </div>
+                        <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2">
+                            {unit?.name || unitId}
+                        </span>
+                    </div>
+                    <span className="madmin-unit-name text-xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+                    <div className="madmin-header-right flex items-center gap-2">
+                        <button
+                            onClick={() => window.open(`/tv?unit=${unitId}`, '_blank')}
+                            title="Abrir exibição TV"
+                            className="flex items-center justify-center bg-surface-2 p-1.5 rounded shadow-sm text-sm"
+                        >
+                            📺
+                        </button>
+                        <button
+                            onClick={() => window.open(`/editor?unit=${unitId}`, '_blank')}
+                            title="Abrir edição mobile"
+                            className="flex items-center justify-center bg-surface-2 p-1.5 rounded shadow-sm text-sm"
+                        >
+                            📱
+                        </button>
                     </div>
                 </div>
             </header>

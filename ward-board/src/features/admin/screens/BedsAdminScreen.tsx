@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { functions } from '../../../infra/firebase/config';
 import { httpsCallable } from 'firebase/functions';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import type { Bed } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
@@ -42,7 +43,7 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
             confirmLabel: 'Aplicar Leitos',
             consequences: ['36 novos documentos de leitos serão criados ou atualizados', 'A numeração seguirá o padrão 301.1 a 313.2'],
             onConfirm: async (reason) => {
-                const applyFn = httpsCallable(functions, 'applyCanonicalBeds');
+                const applyFn = httpsCallable(functions, CLOUD_FUNCTIONS.APPLY_CANONICAL_BEDS);
                 await applyFn({ unitId, reason });
                 flash('✓ 36 leitos canônicos aplicados!');
             }
@@ -58,9 +59,9 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
 
         const config = labels[mode];
         const functionNames = {
-            kanban: 'resetBedKanban',
-            kamishibai: 'resetBedKamishibai',
-            all: 'resetBedAll'
+            kanban: CLOUD_FUNCTIONS.RESET_BED_KANBAN,
+            kamishibai: CLOUD_FUNCTIONS.RESET_BED_KAMISHIBAI,
+            all: CLOUD_FUNCTIONS.RESET_BED_ALL
         };
 
         setModalConfig({

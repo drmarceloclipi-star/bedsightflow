@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { functions } from '../../../infra/firebase/config';
 import { httpsCallable } from 'firebase/functions';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { UnitUsersRepository } from '../../../repositories/UnitUsersRepository';
 import type { UnitUserRole, UnitRole } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
@@ -56,7 +57,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             onConfirm: async (reason) => {
                 setSubmitting(true);
                 try {
-                    const setRoleFn = httpsCallable(functions, 'setUnitUserRole');
+                    const setRoleFn = httpsCallable(functions, CLOUD_FUNCTIONS.SET_UNIT_USER_ROLE);
                     await setRoleFn({
                         unitId,
                         email: newEmail.toLowerCase().trim(),
@@ -67,7 +68,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
                     flash(`✓ ${newEmail} adicionado com sucesso.`);
                 } catch (err: unknown) {
                     console.error(err);
-                    const errorMsg = (err as any)?.message || 'Erro ao adicionar usuário.';
+                    const errorMsg = (err as { message?: string })?.message || 'Erro ao adicionar usuário.';
                     flash(errorMsg, 'error');
                 } finally {
                     setSubmitting(false);
@@ -82,7 +83,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             description: `Mudar o acesso de ${email} para ${ROLE_LABELS[role]}?`,
             confirmLabel: 'Confirmar Alteração',
             onConfirm: async (reason) => {
-                const setRoleFn = httpsCallable(functions, 'setUnitUserRole');
+                const setRoleFn = httpsCallable(functions, CLOUD_FUNCTIONS.SET_UNIT_USER_ROLE);
                 await setRoleFn({ unitId, userUid: userId, email, role, reason });
                 flash('Role atualizado com sucesso.');
             }
@@ -95,7 +96,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             description: `Tem certeza que deseja remover o acesso de ${email} nesta unidade?`,
             confirmLabel: 'Remover Acesso',
             onConfirm: async (reason) => {
-                const removeFn = httpsCallable(functions, 'removeUnitUser');
+                const removeFn = httpsCallable(functions, CLOUD_FUNCTIONS.REMOVE_UNIT_USER);
                 await removeFn({ unitId, userUid: userId, reason });
                 flash(`${email} removido da unidade.`);
             }

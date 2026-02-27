@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../../constants/functionNames';
 import type { AnalyticsPeriodKey, BlockerMetric } from '../../../../domain/analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { AnalyticsContract } from './AnalyticsContract';
 
 interface TopBlockersProps {
     unitId: string;
@@ -18,7 +21,7 @@ const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period }) => {
             setLoading(true);
             setError(null);
             try {
-                const getAdminTopBlockersBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, BlockerMetric[]>(functions, 'getAdminTopBlockersBQ');
+                const getAdminTopBlockersBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, BlockerMetric[]>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TOP_BLOCKERS_BQ);
                 const result = await getAdminTopBlockersBQ({ unitId, periodKey: period });
                 setData(result.data);
             } catch (error) {
@@ -33,37 +36,37 @@ const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period }) => {
     }, [unitId, period]);
 
     if (loading) {
-        return <div style={{ color: 'var(--text-muted)' }}>Carregando bloqueadores...</div>;
+        return <div className="analytics-loading-text">Carregando bloqueadores...</div>;
     }
 
-    if (error) return <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{error}</div>;
+    if (error) return <AnalyticsEmptyState type="error" />;
 
-    if (!data || data.length === 0) return <div style={{ color: 'var(--text-muted)' }}>Nenhum bloqueador registrado no período.</div>;
+    if (!data || data.length === 0) return <AnalyticsEmptyState type="empty" message="Nenhum bloqueador registrado no período" />;
 
     const maxOccurrences = Math.max(...data.map(b => b.count));
 
     return (
-        <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', marginTop: 0, color: 'var(--text-primary)' }}>Top Bloqueadores</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+        <div className="analytics-chart-container">
+            <h4 className="analytics-exploration-subtitle">Top Bloqueadores</h4>
+            <table className="analytics-table">
                 <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)' }}>
-                        <th style={{ padding: '0.75rem 0', fontWeight: 600 }}>Motivo</th>
-                        <th style={{ padding: '0.75rem 0', fontWeight: 600 }}>Ocorrências</th>
-                        <th style={{ padding: '0.75rem 0', fontWeight: 600, width: '40%' }}>Impacto %</th>
+                    <tr>
+                        <th>Motivo</th>
+                        <th>Ocorrências</th>
+                        <th className="col-impact">Impacto %</th>
                     </tr>
                 </thead>
                 <tbody>
                     {data.slice(0, 10).map((b, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-soft)' }}>
-                            <td style={{ padding: '0.75rem 0', color: 'var(--text-primary)' }}>{b.blocker}</td>
-                            <td style={{ padding: '0.75rem 0', fontWeight: 600 }}>{b.count}</td>
-                            <td style={{ padding: '0.75rem 0' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <div style={{ flex: 1, backgroundColor: 'var(--bg-surface-2)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${(b.count / maxOccurrences) * 100}%`, backgroundColor: 'var(--accent)', height: '100%' }} />
+                        <tr key={idx}>
+                            <td>{b.blocker}</td>
+                            <td className="font-semibold">{b.count}</td>
+                            <td>
+                                <div className="analytics-impact-container">
+                                    <div className="analytics-impact-bar-rail">
+                                        <div className="analytics-impact-bar-fill" style={{ '--bar-width': `${(b.count / maxOccurrences) * 100}%` } as React.CSSProperties} />
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <span className="analytics-impact-value">
                                         {((b.count / data.reduce((acc, curr) => acc + curr.count, 0)) * 100).toFixed(1)}%
                                     </span>
                                 </div>
@@ -72,6 +75,13 @@ const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period }) => {
                     ))}
                 </tbody>
             </table>
+
+            <AnalyticsContract
+                metric="Acionamentos de bloqueio de fluxo"
+                universe="N = Total de ocorrências de bloqueios registradas no período"
+                window="periodo"
+                inclusionRule="Conta eventos onde o status mudou para 'blocked'. Não representa leitos únicos, mas sim acionamentos."
+            />
         </div>
     );
 };

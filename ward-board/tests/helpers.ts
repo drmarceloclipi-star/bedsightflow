@@ -23,7 +23,7 @@ export const ADMIN_TAB_LABELS: Record<string, string> = {
 
 /**
  * Signs in via the Firebase Auth Emulator UI.
- * After login the app may redirect to /mobile; this helper then
+ * After login the app may redirect to /editor; this helper then
  * waits for a stable non-emulator URL before returning.
  */
 export async function signInViaEmulator(

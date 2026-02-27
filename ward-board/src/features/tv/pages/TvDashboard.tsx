@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, ShieldAlert } from 'lucide-react';
 import type { Bed, BoardSettings, Unit } from '../../../domain/types';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
 import { UnitsRepository } from '../../../repositories/UnitsRepository';
 import TvRotationContainer from '../components/TvRotationContainer';
 import ThemeToggle from '../../../shared/theme/ThemeToggle';
+import { useAuthStatus } from '../../../hooks/useAuthStatus';
 
 const TvDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
     const unitId = searchParams.get('unit') || 'A';
     const navigate = useNavigate();
+    const { isAdmin } = useAuthStatus();
 
     const [beds, setBeds] = useState<Bed[]>([]);
     const [settings, setSettings] = useState<BoardSettings | null>(null);
@@ -103,18 +105,25 @@ const TvDashboard: React.FC = () => {
     return (
         <div className="tv-dashboard h-screen flex flex-col">
             <header className="tv-header flex justify-between items-center relative">
-                <div className="flex-1"></div>
-
-                <div className="tv-title-group absolute left-1/2 -translate-x-1/2 flex items-center gap-4">
-                    <h1 className="tv-title text-4xl">BedSight</h1>
+                <div className="tv-header-left">
                     <span className="unit-badge text-lg px-4 py-1">{unit.name}</span>
                 </div>
-
-                <div className="tv-header-controls flex items-center gap-6 flex-1 justify-end">
+                <h1 className="tv-title text-4xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</h1>
+                <div className="tv-header-controls flex items-center gap-6">
                     <div className="flex items-center gap-3">
+                        {isAdmin && (
+                            <button
+                                className="theme-toggle !text-primary hover:!bg-primary/10"
+                                onClick={() => navigate('/admin')}
+                                aria-label="Voltar para Admin"
+                                title="Voltar para Admin"
+                            >
+                                <ShieldAlert size={20} />
+                            </button>
+                        )}
                         <button
                             className="theme-toggle"
-                            onClick={() => navigate(`/mobile?unit=${unitId}`)}
+                            onClick={() => navigate(`/editor?unit=${unitId}`)}
                             aria-label="Abrir versão Mobile"
                             title="Abrir versão Mobile"
                         >
@@ -122,20 +131,18 @@ const TvDashboard: React.FC = () => {
                         </button>
                         <ThemeToggle />
                     </div>
-                    <div className="tv-date-wrapper text-right">
+                    <div className="tv-date-wrapper text-right hidden md:flex flex-col items-end">
                         <div className="tv-date text-2xl font-serif mt-1">
                             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </div>
-                        <div className="flex flex-col items-end">
-                            <div className="tv-time text-muted font-bold tracking-widest text-xl">
-                                {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                            {lastUpdated && (
-                                <div className="tv-last-updated text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
-                                    Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </div>
-                            )}
+                        <div className="tv-time text-muted font-bold tracking-widest text-xl">
+                            {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
+                        {lastUpdated && (
+                            <div className="tv-last-updated text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
+                                Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>

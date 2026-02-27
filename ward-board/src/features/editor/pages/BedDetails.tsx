@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import type { Bed, SpecialtyKey, KamishibaiStatus, DischargeEstimate } from '../../../domain/types';
 import { DischargeEstimateLabel } from '../../../domain/types';
 import { BedsRepository } from '../../../repositories/BedsRepository';
@@ -9,7 +9,6 @@ import { KAMISHIBAI_DOMAINS, getKamishibaiLabel } from '../../../domain/specialt
 
 const BedDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const unitId = searchParams.get('unit') || 'A';
 
@@ -146,32 +145,26 @@ const BedDetails: React.FC = () => {
     }
 
     return (
-        <div className="p-4 bed-details flex flex-col gap-6 animate-slideIn">
-            <header className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="p-3 -ml-3 rounded-full hover:bg-surface-2"
-                    aria-label="Voltar para a página anterior"
-                >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="m15 18-6-6 6-6" />
-                    </svg>
-                </button>
-                <div className="flex-1 min-w-0">
+        <div className="p-4 bed-details flex flex-col gap-5 md:gap-6 animate-slideIn">
+            <header className="flex flex-col gap-1">
+                <div className="flex-1 min-w-0 flex items-baseline justify-between">
                     <h2 className="text-2xl font-serif">Leito {bed.number}</h2>
-                    <label htmlFor="patient-alias" className="text-[10px] uppercase font-bold text-muted block mt-1">Iniciais do Paciente</label>
+                    {isSaving && <div className="text-saving animate-pulse font-bold text-xs uppercase tracking-wider text-accent-primary">SALVANDO...</div>}
+                </div>
+
+                <div className="mt-1">
+                    <label htmlFor="patient-alias" className="text-[10px] uppercase font-bold text-muted block mb-0.5">Iniciais do Paciente</label>
                     <input
                         id="patient-alias"
                         type="text"
-                        className="w-full bg-transparent border border-transparent focus:border-accent-primary rounded px-1 py-0.5 text-sm text-secondary focus:text-primary outline-none transition-colors"
-                        placeholder="Iniciais do paciente"
+                        className="w-full bg-surface-1 border border-soft focus:border-accent-primary rounded-md px-3 py-2 text-sm text-primary outline-none transition-colors shadow-sm"
+                        placeholder="Ex: M.A.S"
                         value={aliasText}
                         onChange={(e) => setAliasText(e.target.value)}
                         onBlur={handleSaveAlias}
                         maxLength={50}
                     />
                 </div>
-                {isSaving && <div className="text-saving animate-pulse font-bold">SALVANDO...</div>}
             </header>
 
             {errorMsg && (
@@ -226,18 +219,20 @@ const BedDetails: React.FC = () => {
             <section className="bg-surface-1 p-4 rounded-xl border shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted mb-4">Quadro Kamishibai</h3>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                     {KAMISHIBAI_DOMAINS.map(s => (
-                        <div key={s} className="flex justify-between items-center bg-surface-2 p-2 rounded-lg gap-2">
-                            <span className="text-sm font-semibold truncate flex-1">{getKamishibaiLabel(s)}</span>
-                            <div className="flex gap-1 flex-shrink-0">
+                        <div key={s} className="flex justify-between items-center bg-surface-2 p-3 rounded-lg gap-2">
+                            <span className="text-sm font-semibold truncate flex-1 block">{getKamishibaiLabel(s)}</span>
+                            <div className="flex gap-2 flex-shrink-0">
                                 {(['ok', 'pending', 'blocked'] as KamishibaiStatus[]).map(status => (
                                     <button
                                         key={status}
                                         onClick={() => handleUpdateKamishibai(s, status)}
-                                        className={`w-11 h-11 flex items-center justify-center kami-btn ${bed.kamishibai[s]?.status === status ? 'selected' : ''}`}
+                                        className={`w-10 h-10 flex items-center justify-center rounded-full kami-btn border border-transparent transition-all ${bed.kamishibai[s]?.status === status ? 'selected bg-surface-1 shadow-sm border-soft ring-1 ring-accent-primary/20' : 'hover:bg-surface-1/50'}`}
+                                        aria-label={`Definir status ${status} para ${getKamishibaiLabel(s)}`}
+                                        aria-pressed={bed.kamishibai[s]?.status === status}
                                     >
-                                        <div className={`w-4 h-4 rounded-full kamishibai-dot ${status}`} />
+                                        <div className={`w-3.5 h-3.5 rounded-full kamishibai-dot ${status}`} />
                                     </button>
                                 ))}
                             </div>

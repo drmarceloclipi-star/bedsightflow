@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { db } from '../config';
-import { isGlobalAdmin } from '../../../src/config/admins';
+import { isGlobalAdmin } from '../config/admins';
 
 export const setUnitUserRole = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');

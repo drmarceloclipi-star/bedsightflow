@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
 
 interface Props {
@@ -23,11 +24,19 @@ const MobileOpsScreen: React.FC<Props> = ({ unitId }) => {
     const [msgType, setMsgType] = useState<'success' | 'error'>('success');
     const [running, setRunning] = useState(false);
     const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
+    const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        };
+    }, []);
 
     const flash = (text: string, type: 'success' | 'error' = 'success') => {
         setMsg(text);
         setMsgType(type);
-        setTimeout(() => setMsg(''), 4000);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setMsg(''), 4000);
     };
 
     const openModal = (config: ModalConfig) => setModalConfig(config);
@@ -59,7 +68,7 @@ const MobileOpsScreen: React.FC<Props> = ({ unitId }) => {
             ],
             confirmLabel: 'Executar Reset',
             action: async (reason) => {
-                const resetFn = httpsCallable(functions, 'softResetUnit');
+                const resetFn = httpsCallable(functions, CLOUD_FUNCTIONS.SOFT_RESET_UNIT);
                 await resetFn({ unitId, reason });
                 flash('✓ Reset concluído com sucesso.');
             },
@@ -78,7 +87,7 @@ const MobileOpsScreen: React.FC<Props> = ({ unitId }) => {
             ],
             confirmLabel: 'Reaplicar Leitos',
             action: async (reason) => {
-                const applyFn = httpsCallable(functions, 'applyCanonicalBeds');
+                const applyFn = httpsCallable(functions, CLOUD_FUNCTIONS.APPLY_CANONICAL_BEDS);
                 await applyFn({ unitId, reason });
                 flash('✓ 36 leitos canônicos reaplicados.');
             },

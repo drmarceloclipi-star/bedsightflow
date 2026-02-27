@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../../constants/functionNames';
 import type { AnalyticsPeriodKey, FreshnessMetrics } from '../../../../domain/analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { AnalyticsContract } from './AnalyticsContract';
 
 interface FreshnessProps {
     unitId: string;
@@ -18,7 +21,7 @@ const FreshnessCards: React.FC<FreshnessProps> = ({ unitId, period }) => {
             setLoading(true);
             setError(null);
             try {
-                const getAdminFreshnessBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, FreshnessMetrics>(functions, 'getAdminFreshnessBQ');
+                const getAdminFreshnessBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, FreshnessMetrics>(functions, CLOUD_FUNCTIONS.GET_ADMIN_FRESHNESS_BQ);
                 const result = await getAdminFreshnessBQ({ unitId, periodKey: period });
                 setData(result.data);
             } catch (error) {
@@ -36,12 +39,12 @@ const FreshnessCards: React.FC<FreshnessProps> = ({ unitId, period }) => {
         return <div style={{ color: 'var(--text-muted)' }}>Carregando métricas de atualização...</div>;
     }
 
-    if (error) return <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{error}</div>;
+    if (error) return <AnalyticsEmptyState type="error" />;
 
     if (!data) return null;
 
     const handleDrillDown = (filter: string) => {
-        window.open(`/mobile?unit=${unitId}&filter=${filter}`, '_blank');
+        window.open(`/editor?unit=${unitId}&filter=${filter}`, '_blank');
     };
 
     const freshnessCards = [
@@ -51,50 +54,35 @@ const FreshnessCards: React.FC<FreshnessProps> = ({ unitId, period }) => {
     ];
 
     return (
-        <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', marginTop: 0, color: 'var(--text-primary)' }}>Rastreio de Atualizações (Freshness)</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+        <div className="analytics-exploration-section">
+            <h4 className="analytics-exploration-subtitle">Rastreio de Atualizações (Freshness)</h4>
+            <div className="analytics-grid-3">
                 {freshnessCards.map((card, idx) => (
                     <div key={idx}
                         onClick={() => handleDrillDown(card.filter)}
-                        style={{
-                            padding: '1rem',
-                            backgroundColor: 'var(--bg-surface-2)',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            border: `1px solid ${card.value > 0 ? card.color : 'transparent'}`
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'none';
-                            e.currentTarget.style.boxShadow = 'none';
-                        }}
+                        className={[
+                            'analytics-alert-card',
+                            card.value > 0
+                                ? (card.color === 'var(--danger)' ? 'analytics-alert-card--danger' : 'analytics-alert-card--warning')
+                                : ''
+                        ].join(' ')}
                     >
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{card.label}</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 600, color: card.value > 0 ? card.color : 'var(--text-primary)' }}>
+                        <div className="analytics-alert-label">{card.label}</div>
+                        <div className="analytics-alert-value" style={{ color: card.value > 0 ? card.color : 'inherit' }}>
                             {card.value}
                         </div>
-                        <div style={{
-                            marginTop: '0.75rem',
-                            fontSize: '0.75rem',
-                            color: 'var(--accent)',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                        }}>
-                            Ver leitos <span aria-hidden="true">→</span>
+                        <div className="analytics-alert-link">
+                            Ver leitos <span>→</span>
                         </div>
                     </div>
                 ))}
             </div>
+            <AnalyticsContract
+                metric="Leitos sem atualização recente"
+                universe="N = Leitos Ativos (Ocupados + Vagos) na unidade"
+                window="agora"
+                inclusionRule="Avalia o tempo desde a última modificação no leito (lastUpdate). Ignora inativos."
+            />
         </div>
     );
 };

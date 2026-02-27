@@ -19,6 +19,13 @@ const MobileTvSettingsScreen: React.FC<Props> = ({ unitId }) => {
     const [saved, setSaved] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const unsub = BoardSettingsRepository.listenToSettings(unitId, setSettings);
@@ -69,7 +76,8 @@ const MobileTvSettingsScreen: React.FC<Props> = ({ unitId }) => {
         try {
             await BoardSettingsRepository.updateSettings(unitId, settings, reason);
             setSaved(true);
-            setTimeout(() => setSaved(false), 2000);
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+            flashTimeoutRef.current = setTimeout(() => setSaved(false), 2000);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 setErrorMsg(error.message);
@@ -184,25 +192,25 @@ const MobileTvSettingsScreen: React.FC<Props> = ({ unitId }) => {
                 <div className="madmin-number-grid">
                     <MobileNumberField
                         label="Kanban — leitos"
-                        value={(settings as BoardSettings & { kanbanBedsPerPage?: number }).kanbanBedsPerPage ?? 18}
+                        value={settings.kanbanBedsPerPage ?? 18}
                         onChange={v => handleBedsPerPageChange('kanbanBedsPerPage', v)}
                         min={1} max={72}
                     />
                     <MobileNumberField
                         label="Kanban — colunas"
-                        value={(settings as BoardSettings & { kanbanColumnsPerPage?: number }).kanbanColumnsPerPage ?? 1}
+                        value={settings.kanbanColumnsPerPage ?? 1}
                         onChange={v => handleBedsPerPageChange('kanbanColumnsPerPage', v)}
                         min={1} max={2}
                     />
                     <MobileNumberField
                         label="Kamishibai — leitos"
-                        value={(settings as BoardSettings & { kamishibaiBedsPerPage?: number }).kamishibaiBedsPerPage ?? 18}
+                        value={settings.kamishibaiBedsPerPage ?? 18}
                         onChange={v => handleBedsPerPageChange('kamishibaiBedsPerPage', v)}
                         min={1} max={72}
                     />
                     <MobileNumberField
                         label="Kamishibai — colunas"
-                        value={(settings as BoardSettings & { kamishibaiColumnsPerPage?: number }).kamishibaiColumnsPerPage ?? 1}
+                        value={settings.kamishibaiColumnsPerPage ?? 1}
                         onChange={v => handleBedsPerPageChange('kamishibaiColumnsPerPage', v)}
                         min={1} max={2}
                     />

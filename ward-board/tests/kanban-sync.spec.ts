@@ -32,10 +32,10 @@ test.describe('Editor Mobile to TV Kanban Synchronization', () => {
         // Click "Sign In"
         await editorPage.click('button:has-text("Sign In")');
 
-        // 2. Wait for navigation to /mobile
-        await editorPage.waitForURL(/\/mobile/);
+        // 2. Wait for navigation to /editor
+        await editorPage.waitForURL(/\/editor/);
 
-        // Ensure we are selecting Unit A if required (the URL might just be /mobile, but the content should load beds)
+        // Ensure we are selecting Unit A if required (the URL might just be /editor, but the content should load beds)
         // Wait for the beds to be loaded. '301.1' should be visible.
         await editorPage.waitForSelector('text="301.1"');
 

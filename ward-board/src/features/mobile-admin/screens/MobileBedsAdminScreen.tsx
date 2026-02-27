@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { functions } from '../../../infra/firebase/config';
 import { httpsCallable } from 'firebase/functions';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import type { Bed } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
@@ -13,6 +14,8 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
     const [beds, setBeds] = useState<Bed[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionMsg, setActionMsg] = useState('');
+    const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const [modalConfig, setModalConfig] = useState<{
         title: string;
         description: string;
@@ -21,6 +24,12 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
         consequences?: string[];
         onConfirm: (reason: string) => Promise<void>;
     } | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const unsub = BedsRepository.listenToBeds(unitId, (data) => {
@@ -32,7 +41,8 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
 
     const flash = (msg: string) => {
         setActionMsg(msg);
-        setTimeout(() => setActionMsg(''), 3000);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setActionMsg(''), 3000);
     };
 
     const handleApplyCanonical = () => {
@@ -45,7 +55,7 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
                 'A numeração seguirá o padrão 301.1 a 313.2',
             ],
             onConfirm: async (reason) => {
-                const applyFn = httpsCallable(functions, 'applyCanonicalBeds');
+                const applyFn = httpsCallable(functions, CLOUD_FUNCTIONS.APPLY_CANONICAL_BEDS);
                 await applyFn({ unitId, reason });
                 flash('✓ 36 leitos canônicos aplicados!');
             }
@@ -58,7 +68,11 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
             kamishibai: { title: 'Limpar Kamishibai', msg: 'Limpar status Kamishibai' },
             all: { title: 'Limpar Tudo', msg: 'Limpar TODOS os dados' },
         };
-        const functionNames = { kanban: 'resetBedKanban', kamishibai: 'resetBedKamishibai', all: 'resetBedAll' };
+        const functionNames = {
+            kanban: CLOUD_FUNCTIONS.RESET_BED_KANBAN,
+            kamishibai: CLOUD_FUNCTIONS.RESET_BED_KAMISHIBAI,
+            all: CLOUD_FUNCTIONS.RESET_BED_ALL
+        };
         const config = labels[mode];
 
         setModalConfig({
@@ -87,7 +101,7 @@ const MobileBedsAdminScreen: React.FC<Props> = ({ unitId }) => {
             </div>
 
             {actionMsg && (
-                <div className="madmin-flash state-success-bg">
+                <div className="madmin-flash state-success-bg" role="status" aria-live="polite">
                     {actionMsg}
                 </div>
             )}

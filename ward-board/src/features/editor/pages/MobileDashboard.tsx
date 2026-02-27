@@ -26,6 +26,46 @@ const MobileDashboard: React.FC = () => {
         return () => unsubscribe();
     }, [unitId]);
 
+    const filterType = searchParams.get('filter') || '';
+    const [now] = useState(() => Date.now());
+
+    // Safety generic date parser
+    const parseDate = (val: unknown): Date => {
+        if (!val) return new Date();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const v = val as any;
+        if (typeof v.toDate === 'function') return v.toDate();
+        if (typeof v.seconds === 'number') return new Date(v.seconds * 1000);
+        if (typeof v === 'string' || typeof v === 'number') return new Date(v);
+        return new Date();
+    };
+
+    const filteredBeds = beds.filter(bed => {
+        if (!filterType) return true;
+
+        if (filterType === 'blocked') {
+            return bed.mainBlocker && bed.mainBlocker.trim().length > 0;
+        }
+
+        if (filterType === 'kamishibai=pending' || filterType === 'kamishibai=blocked') {
+            const targetStatus = filterType.split('=')[1]; // pending or blocked
+            if (!bed.kamishibai) return false;
+            return Object.values(bed.kamishibai).some(k => k.status === targetStatus);
+        }
+
+        if (filterType.startsWith('stale')) {
+            const hoursStr = filterType.replace('stale', '').replace('h', '');
+            const hours = parseInt(hoursStr, 10);
+            if (isNaN(hours)) return true;
+
+            const lastUpdate = parseDate(bed.updatedAt);
+            const diffHours = (now - lastUpdate.getTime()) / (1000 * 60 * 60);
+            return diffHours > hours;
+        }
+
+        return true;
+    });
+
     if (loading) {
         return (
             <div className="p-4 mobile-dashboard">
@@ -58,11 +98,11 @@ const MobileDashboard: React.FC = () => {
         <div className="p-4 mobile-dashboard">
             <header className="mb-6 flex justify-between items-center">
                 <h2 className="text-2xl font-serif">Leitos {unit?.name}</h2>
-                <div className="text-sm text-muted">{beds.length} ativos</div>
+                <div className="text-sm text-muted">{filteredBeds.length} {filterType ? `(de ${beds.length}) ` : ''}ativos</div>
             </header>
 
             <div className="grid gap-4">
-                {beds.map(bed => (
+                {filteredBeds.map(bed => (
                     <div
                         key={bed.id}
                         className="bg-surface-1 p-4 rounded-lg border shadow-sm active:scale-95 transition-transform"

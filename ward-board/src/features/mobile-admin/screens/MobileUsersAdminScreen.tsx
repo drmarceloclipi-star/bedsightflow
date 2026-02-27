@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { functions } from '../../../infra/firebase/config';
 import { httpsCallable } from 'firebase/functions';
+import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { UnitUsersRepository } from '../../../repositories/UnitUsersRepository';
 import type { UnitUserRole, UnitRole } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
@@ -23,6 +24,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState('');
     const [msgType, setMsgType] = useState<'success' | 'error'>('success');
+    const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [modalConfig, setModalConfig] = useState<{
         title: string;
@@ -30,6 +32,12 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
         confirmLabel: string;
         onConfirm: (reason: string) => Promise<void>;
     } | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const unsub = UnitUsersRepository.listenToUsers(unitId, (data) => {
@@ -42,7 +50,8 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
     const flash = (text: string, type: 'success' | 'error' = 'success') => {
         setMsg(text);
         setMsgType(type);
-        setTimeout(() => setMsg(''), 4000);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setMsg(''), 4000);
     };
 
     const handleAddUser = (e: React.FormEvent) => {
@@ -56,7 +65,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             onConfirm: async (reason) => {
                 setSubmitting(true);
                 try {
-                    const setRoleFn = httpsCallable(functions, 'setUnitUserRole');
+                    const setRoleFn = httpsCallable(functions, CLOUD_FUNCTIONS.SET_UNIT_USER_ROLE);
                     await setRoleFn({ unitId, email: newEmail.toLowerCase().trim(), role: newRole, reason });
                     setNewEmail('');
                     flash(`✓ ${newEmail} adicionado com sucesso.`);
@@ -76,7 +85,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             description: `Mudar o acesso de ${email} para ${ROLE_LABELS[role]}?`,
             confirmLabel: 'Confirmar Alteração',
             onConfirm: async (reason) => {
-                const setRoleFn = httpsCallable(functions, 'setUnitUserRole');
+                const setRoleFn = httpsCallable(functions, CLOUD_FUNCTIONS.SET_UNIT_USER_ROLE);
                 await setRoleFn({ unitId, userUid: userId, email, role, reason });
                 flash('Role atualizado com sucesso.');
             }
@@ -89,7 +98,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             description: `Remover o acesso de ${email} nesta unidade?`,
             confirmLabel: 'Remover Acesso',
             onConfirm: async (reason) => {
-                const removeFn = httpsCallable(functions, 'removeUnitUser');
+                const removeFn = httpsCallable(functions, CLOUD_FUNCTIONS.REMOVE_UNIT_USER);
                 await removeFn({ unitId, userUid: userId, reason });
                 flash(`${email} removido da unidade.`);
             }
@@ -104,7 +113,11 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
             </div>
 
             {msg && (
-                <div className={`madmin-flash ${msgType === 'success' ? 'state-success-bg' : 'state-danger-bg'}`}>
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className={`madmin-flash ${msgType === 'error' ? 'state-danger-bg' : 'state-success-bg'}`}
+                >
                     {msg}
                 </div>
             )}

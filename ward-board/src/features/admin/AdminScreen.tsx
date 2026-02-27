@@ -76,11 +76,11 @@ const AdminScreen: React.FC = () => {
             />
 
             <header className="admin-header">
-                <div className="admin-header-top">
+                <div className="admin-header-top relative">
                     <div className="admin-header-left">
-                        <span className="admin-unit-name">BedSight</span>
-                        <span className="admin-badge">Admin</span>
+                        <span className="unit-badge text-sm px-3 py-1 bg-surface-2">Admin</span>
                     </div>
+                    <span className="admin-unit-name text-2xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
                     <button onClick={handleLogout} className="admin-back-btn">
                         Sair
                     </button>

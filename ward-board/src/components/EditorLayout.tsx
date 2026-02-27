@@ -1,0 +1,69 @@
+import { Outlet, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { Tv, ShieldAlert, ChevronLeft } from 'lucide-react';
+import ThemeToggle from '../shared/theme/ThemeToggle';
+import { useAuthStatus } from '../hooks/useAuthStatus';
+
+export default function EditorLayout() {
+    const [searchParams] = useSearchParams();
+    const unitId = searchParams.get('unit') || 'A';
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { isAdmin } = useAuthStatus();
+
+    // Determinar se estamos numa página "interna" (como /editor/bed/:id)
+    const isRoot = location.pathname === '/editor' || location.pathname === '/editor/';
+
+    return (
+        <div className="mobile-layout">
+            <header className="mobile-header">
+                <div className="header-content relative py-2">
+                    <div className="flex items-center gap-2 min-w-[60px] z-10">
+                        {isRoot ? (
+                            <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2 mt-1 whitespace-nowrap">
+                                Unidade {unitId}
+                            </span>
+                        ) : (
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="flex items-center text-secondary hover:text-primary p-1 -ml-2 rounded-full hover:bg-surface-2 transition-colors mt-1"
+                                aria-label="Voltar para a lista de leitos"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                        )}
+                    </div>
+
+                    <h1 className="text-2xl font-serif absolute left-1/2 -translate-x-1/2 mt-1 z-0" aria-hidden="true">
+                        BedSight
+                    </h1>
+
+                    <div className="flex items-center gap-1 sm:gap-2 z-10 justify-end flex-1">
+                        {isAdmin && (
+                            <button
+                                className="theme-toggle !text-primary hover:!bg-primary/10"
+                                onClick={() => navigate('/mobile-admin')}
+                                aria-label="Acessar painel de administração"
+                                title="Acessar Admin"
+                            >
+                                <ShieldAlert size={20} />
+                            </button>
+                        )}
+                        <button
+                            className="theme-toggle"
+                            onClick={() => navigate(`/tv?unit=${unitId}`)}
+                            aria-label="Abrir modo TV da unidade"
+                            title="Abrir TV"
+                        >
+                            <Tv size={20} />
+                        </button>
+                        <ThemeToggle />
+                    </div>
+                </div>
+            </header>
+
+            <main className="mobile-main pb-safe">
+                <Outlet />
+            </main>
+        </div>
+    );
+}

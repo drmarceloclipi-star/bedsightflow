@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../../constants/functionNames';
 import type { AnalyticsPeriodKey, AdminOverviewMetrics } from '../../../../domain/analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { AnalyticsContract } from './AnalyticsContract';
 
 interface OverviewCardsProps {
     unitId: string;
@@ -18,7 +21,7 @@ const OverviewCards: React.FC<OverviewCardsProps> = ({ unitId, period }) => {
             setLoading(true);
             setError(null);
             try {
-                const getAdminOverviewBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, AdminOverviewMetrics>(functions, 'getAdminOverviewBQ');
+                const getAdminOverviewBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, AdminOverviewMetrics>(functions, CLOUD_FUNCTIONS.GET_ADMIN_OVERVIEW_BQ);
                 const result = await getAdminOverviewBQ({ unitId, periodKey: period });
                 setData(result.data);
             } catch (error) {
@@ -36,7 +39,7 @@ const OverviewCards: React.FC<OverviewCardsProps> = ({ unitId, period }) => {
         return <div style={{ color: 'var(--text-muted)' }}>Carregando visão geral...</div>;
     }
 
-    if (error) return <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{error}</div>;
+    if (error) return <AnalyticsEmptyState type="error" />;
 
     if (!data) return null;
 
@@ -51,96 +54,61 @@ const OverviewCards: React.FC<OverviewCardsProps> = ({ unitId, period }) => {
         { label: 'Leitos Ocupados', value: data.occupiedBeds },
         { label: 'Leitos Vagos', value: data.vacantBeds },
         { label: 'Pacientes Ativos', value: data.activePatients },
+        { label: 'Altas < 24h', value: data.dischargeLt24h },
     ];
 
     const handleDrillDown = (filter: string) => {
         // Will open in a new tab to preserve the admin dashboard context
-        window.open(`/mobile?unit=${unitId}&filter=${filter}`, '_blank');
+        window.open(`/editor?unit=${unitId}&filter=${filter}`, '_blank');
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {/* ALERTS SECTION */}
-            <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)' }}>
-                    AGORA — Situação Operacional
-                </h3>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '1rem'
-                }}>
+        <div className="analytics-overview-cards">
+            {/* CONTEXT SECTION */}
+            <div className="analytics-exploration-section">
+                <h4 className="analytics-exploration-subtitle">Visão de Contexto</h4>
+                <div className="analytics-grid-4">
+                    {contextCards.map((card, idx) => (
+                        <div key={idx} className="mc-context-card">
+                            <span className="mc-context-label">{card.label}</span>
+                            <span className="mc-context-value">{card.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ALERTS SECTION (Historical/Exploration context) */}
+            <div className="analytics-exploration-section">
+                <h4 className="analytics-exploration-subtitle">Alertas no Período</h4>
+                <div className="analytics-grid-4">
                     {alertCards.map((card, idx) => (
                         <div key={idx}
                             onClick={() => handleDrillDown(card.filter)}
-                            style={{
-                                backgroundColor: 'var(--bg-surface-1)',
-                                padding: '1.25rem',
-                                borderRadius: '8px',
-                                border: `1px solid ${card.value > 0 ? card.color : 'var(--border-soft)'}`,
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s, box-shadow 0.2s',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                position: 'relative'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'none';
-                                e.currentTarget.style.boxShadow = 'none';
-                            }}
+                            className={[
+                                'analytics-alert-card',
+                                card.value > 0
+                                    ? (card.color === 'var(--danger)' ? 'analytics-alert-card--danger' : 'analytics-alert-card--warning')
+                                    : ''
+                            ].join(' ')}
                         >
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', paddingRight: '2rem' }}>
-                                {card.label}
-                            </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 600, color: card.value > 0 ? card.color : 'var(--text-primary)' }}>
+                            <div className="analytics-alert-label">{card.label}</div>
+                            <div className="analytics-alert-value" style={{ color: card.value > 0 ? card.color : 'inherit' }}>
                                 {card.value}
                             </div>
-                            <div style={{
-                                marginTop: '1rem',
-                                fontSize: '0.75rem',
-                                color: 'var(--accent)',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}>
-                                Abrir lista <span aria-hidden="true">→</span>
+                            <div className="analytics-alert-link">
+                                Abrir lista <span>→</span>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* CONTEXT SECTION */}
-            <div>
-                <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>Visão de Contexto</h4>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: '1rem'
-                }}>
-                    {contextCards.map((card, idx) => (
-                        <div key={idx} style={{
-                            backgroundColor: 'var(--bg-surface-2)',
-                            padding: '1rem',
-                            borderRadius: '8px',
-                            border: '1px solid var(--border-soft)',
-                        }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                                {card.label}
-                            </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {card.value}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <AnalyticsContract
+                metric="Situação Operacional e Alertas"
+                universe="N = Leitos Ativos (Ocupados + Vagos) na unidade"
+                window="agora"
+                inclusionRule="Ignora leitos inativos ou bloqueados fisicamente que não fazem parte do censo."
+            />
         </div>
     );
 };

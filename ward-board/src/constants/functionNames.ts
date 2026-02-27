@@ -1,0 +1,27 @@
+/**
+ * Centralized names for Firebase Cloud Functions to avoid typos
+ * and make management easier.
+ */
+export const CLOUD_FUNCTIONS = {
+    // Admin / Command operations
+    UPDATE_BOARD_SETTINGS: 'updateBoardSettings',
+    APPLY_CANONICAL_BEDS: 'applyCanonicalBeds',
+    SET_UNIT_USER_ROLE: 'setUnitUserRole',
+    REMOVE_UNIT_USER: 'removeUnitUser',
+    SOFT_RESET_UNIT: 'softResetUnit',
+    RESET_BED_KANBAN: 'resetBedKanban',
+    RESET_BED_KAMISHIBAI: 'resetBedKamishibai',
+    RESET_BED_ALL: 'resetBedAll',
+
+    // Analytics (BigQuery)
+    GET_ADMIN_FRESHNESS_BQ: 'getAdminFreshnessBQ',
+    GET_ADMIN_KAMISHIBAI_STATS_BQ: 'getAdminKamishibaiStatsBQ',
+    GET_ADMIN_FLOW_METRICS_BQ: 'getAdminFlowMetricsBQ',
+    GET_ADMIN_OVERVIEW_BQ: 'getAdminOverviewBQ',
+    GET_ADMIN_TREND_COMPARISON_BQ: 'getAdminTrendComparisonBQ',
+    GET_ADMIN_TOP_BLOCKERS_BQ: 'getAdminTopBlockersBQ',
+
+    // Mission Control
+    GET_ADMIN_MISSION_CONTROL_SNAPSHOT: 'getAdminMissionControlSnapshot',
+    GET_ADMIN_MISSION_CONTROL_PERIOD: 'getAdminMissionControlPeriod',
+} as const;

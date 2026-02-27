@@ -8,6 +8,9 @@ import KamishibaiStatusChart from '../components/analytics/KamishibaiStatusChart
 import TopBlockersTable from '../components/analytics/TopBlockersTable';
 import FreshnessCards from '../components/analytics/FreshnessCards';
 import TrendComparisonPanel from '../components/analytics/TrendComparisonPanel';
+import MissionControlTab from '../components/analytics/MissionControlTab';
+
+
 
 interface AnalyticsScreenProps {
     unitId?: string;
@@ -19,34 +22,36 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ unitId: propUnitId })
     const [period, setPeriod] = useState<AnalyticsPeriodKey>('7d');
 
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2rem',
-            paddingBottom: '4rem',
-            maxWidth: '1200px',
-            margin: '0 auto'
-        }}>
-            <AnalyticsFilters unitId={safeUnitId} period={period} onPeriodChange={setPeriod} />
+        <div className="analytics-dashboard-container">
+            {/* OPERATIONAL ALERTS (Top priority) */}
+            <MissionControlTab unitId={safeUnitId} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+            {/* EXPLORATION (Context and Trends) */}
+            <div className="analytics-exploration-content">
+                <div className="analytics-section-title">
+                    <span>🔍 Exploração e Tendências</span>
+                    <AnalyticsFilters unitId={safeUnitId} period={period} onPeriodChange={setPeriod} />
+                </div>
+
                 {/* AGORA */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <section>
-                        <OverviewCards unitId={safeUnitId} period={period} />
-                    </section>
-                    <section>
-                        <FreshnessCards unitId={safeUnitId} period={period} />
-                    </section>
+                <div className="analytics-exploration-section">
+                    <div className="analytics-grid-2">
+                        <section>
+                            <OverviewCards unitId={safeUnitId} period={period} />
+                        </section>
+                        <section>
+                            <FreshnessCards unitId={safeUnitId} period={period} />
+                        </section>
+                    </div>
                 </div>
 
                 {/* PERÍODO */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', borderBottom: '1px solid var(--border-soft)', paddingBottom: '0.5rem' }}>
-                        PERÍODO — Tendências e Volume
+                <div className="analytics-exploration-section">
+                    <h3 className="analytics-exploration-title">
+                        Histórico e Volume (Janela: {period})
                     </h3>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+                    <div className="analytics-grid-2">
                         <section>
                             <KamishibaiStatusChart unitId={safeUnitId} period={period} />
                         </section>
@@ -55,7 +60,7 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ unitId: propUnitId })
                         </section>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+                    <div className="analytics-grid-2">
                         <section>
                             <TopBlockersTable unitId={safeUnitId} period={period} />
                         </section>

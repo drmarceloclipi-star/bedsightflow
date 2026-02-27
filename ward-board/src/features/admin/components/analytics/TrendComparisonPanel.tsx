@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../../infra/firebase/config';
+import { CLOUD_FUNCTIONS } from '../../../../constants/functionNames';
 import type { AnalyticsPeriodKey } from '../../../../domain/analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { AnalyticsContract } from './AnalyticsContract';
 
 /**
  * The backend getAdminTrendComparisonBQ returns { currentPeriod, previousPeriod }
@@ -33,7 +36,7 @@ const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period }
             setLoading(true);
             setError(null);
             try {
-                const getAdminTrendComparisonBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, TrendComparisonBQResult>(functions, 'getAdminTrendComparisonBQ');
+                const getAdminTrendComparisonBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, TrendComparisonBQResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TREND_COMPARISON_BQ);
                 const result = await getAdminTrendComparisonBQ({ unitId, periodKey: period });
                 setData(result.data);
             } catch (err) {
@@ -51,11 +54,9 @@ const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period }
         return <div style={{ color: 'var(--text-muted)' }}>Calculando comparação de tendências...</div>;
     }
 
-    if (error) {
-        return <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{error}</div>;
-    }
+    if (error) return <AnalyticsEmptyState type="error" />;
 
-    if (!data || (!data.currentPeriod?.length && !data.previousPeriod?.length)) return null;
+    if (!data || (!data.currentPeriod?.length && !data.previousPeriod?.length)) return <AnalyticsEmptyState type="empty" message="Sem dados para comparar no período" />;
 
     // Sum the values for current and previous periods
     const currentTotal = data.currentPeriod?.reduce((acc, p) => acc + p.value, 0) ?? 0;
@@ -80,28 +81,37 @@ const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period }
     ];
 
     return (
-        <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', marginTop: 0, color: 'var(--text-primary)' }}>Comparativo com Período Anterior</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+        <div className="analytics-chart-container">
+            <h4 className="analytics-exploration-subtitle">Comparativo com Período Anterior</h4>
+            <div className="analytics-comparison-grid">
                 {metrics.map((metric, idx) => {
                     const isPositive = metric.diffPercent > 0;
                     const isNeutral = metric.diffPercent === 0;
-                    const color = isNeutral ? 'var(--text-muted)' : isPositive ? 'var(--danger)' : 'var(--success)';
+                    const deltaClass = isNeutral
+                        ? 'analytics-comparison-delta--neutral'
+                        : isPositive ? 'analytics-comparison-delta--positive' : 'analytics-comparison-delta--negative';
 
                     return (
-                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', backgroundColor: 'var(--bg-surface-2)', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{metric.label}</div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-                                <span style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{metric.current}</span>
-                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color }}>
+                        <div key={idx} className="analytics-comparison-card">
+                            <div className="analytics-comparison-label">{metric.label}</div>
+                            <div className="analytics-comparison-value-row">
+                                <span className="analytics-comparison-value">{metric.current}</span>
+                                <span className={`analytics-comparison-delta ${deltaClass}`}>
                                     {isPositive ? '↑' : isNeutral ? '-' : '↓'} {Math.abs(metric.diffPercent)}%
                                 </span>
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Anterior: {metric.previous}</div>
+                            <div className="analytics-comparison-previous">Anterior: {metric.previous}</div>
                         </div>
                     );
                 })}
             </div>
+
+            <AnalyticsContract
+                metric="Comparativo de volume de altas e transferências"
+                universe="N = Total de eventos de giro de leito"
+                window="periodo"
+                inclusionRule="Compara a janela de dias atual com a janela imediatamente anterior de igual tamanho."
+            />
         </div>
     );
 };

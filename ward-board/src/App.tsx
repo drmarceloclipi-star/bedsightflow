@@ -1,13 +1,13 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from './infra/firebase/config';
 import { ThemeProvider } from './shared/theme/ThemeContext';
+import { useAuthStatus } from './hooks/useAuthStatus';
+import { isMobileDevice } from './utils/device';
 
-const MobileLayout = lazy(() => import('./components/MobileLayout'));
+const EditorLayout = lazy(() => import('./components/EditorLayout'));
 const TvLayout = lazy(() => import('./components/TvLayout'));
-const MobileDashboard = lazy(() => import('./features/mobile/pages/MobileDashboard'));
-const BedDetails = lazy(() => import('./features/mobile/pages/BedDetails'));
+const MobileDashboard = lazy(() => import('./features/editor/pages/MobileDashboard'));
+const BedDetails = lazy(() => import('./features/editor/pages/BedDetails'));
 const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
@@ -19,25 +19,8 @@ const FallbackLoader = () => (
   </div>
 );
 
-import { ADMIN_EMAILS } from './config/admins';
-
-/** Detects phones and tablets via User-Agent (runs once, client-side only). */
-const isMobileDevice = (): boolean =>
-  /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email.toLowerCase()) : false;
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+  const { user, isAdmin, loading } = useAuthStatus();
 
   if (loading) {
     return (
@@ -52,7 +35,7 @@ function App() {
       <Router>
         <Suspense fallback={<FallbackLoader />}>
           <Routes>
-            <Route path="/login" element={user ? <Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/mobile"} replace /> : <LoginScreen />} />
+            <Route path="/login" element={user ? <Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/editor"} replace /> : <LoginScreen />} />
 
             {/* Admin Routes — global with unit selector */}
             {/* On mobile devices, redirect to the mobile-optimised admin */}
@@ -73,10 +56,10 @@ function App() {
               element={isAdmin ? <MobileAdminRouter /> : <Navigate to="/login" replace />}
             />
 
-            {/* Mobile Routes */}
+            {/* Editor Routes */}
             <Route
-              path="/mobile"
-              element={user ? <MobileLayout /> : <Navigate to="/login" replace />}
+              path="/editor"
+              element={user ? <EditorLayout /> : <Navigate to="/login" replace />}
             >
               <Route index element={<MobileDashboard />} />
               <Route path="bed/:id" element={<BedDetails />} />
@@ -90,7 +73,7 @@ function App() {
               <Route index element={<TvDashboard />} />
             </Route>
 
-            <Route path="/" element={<Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/mobile"} replace />} />
+            <Route path="/" element={<Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/editor"} replace />} />
           </Routes>
         </Suspense>
       </Router>

@@ -7,6 +7,7 @@ export { setUnitUserRole } from './callables/setUnitUserRole';
 export { removeUnitUser } from './callables/removeUnitUser';
 export { softResetUnit } from './callables/softResetUnit';
 export { auditBedWrites } from './triggers/auditBedWrites';
+export { setGlobalAdminClaim } from './callables/setGlobalAdminClaim';
 
 // Analytics (BigQuery integration callables)
 export { getAdminOverviewBQ } from './callables/analytics/getAdminOverviewBQ';
@@ -15,3 +16,5 @@ export { getAdminKamishibaiStatsBQ } from './callables/analytics/getAdminKamishi
 export { getAdminTopBlockersBQ } from './callables/analytics/getAdminTopBlockersBQ';
 export { getAdminFreshnessBQ } from './callables/analytics/getAdminFreshnessBQ';
 export { getAdminTrendComparisonBQ } from './callables/analytics/getAdminTrendComparisonBQ';
+export { getAdminMissionControlSnapshot } from './callables/analytics/getAdminMissionControlSnapshot';
+export { getAdminMissionControlPeriod } from './callables/analytics/getAdminMissionControlPeriod';
