@@ -74,7 +74,7 @@ const AdminHome: React.FC = () => {
             <header className="admin-header">
                 <div className="admin-header-top">
                     <div className="admin-header-left">
-                        <span className="admin-unit-name">Ward Board</span>
+                        <span className="admin-unit-name">BedSight</span>
                         <span className="admin-badge">Admin</span>
                     </div>
                     <button

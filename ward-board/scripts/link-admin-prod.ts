@@ -5,8 +5,10 @@ import { getFirestore } from "firebase-admin/firestore";
 const app = initializeApp({ projectId: 'lean-841e5' });
 const db = getFirestore(app);
 
+import { ADMIN_EMAILS } from "../src/config/admins";
+
 const ADMIN_UID = 'wooxz2taLDMj4zBktsNOSGjs8l72';
-const ADMIN_EMAIL = 'drmarceloclipi@gmail.com';
+const ADMIN_EMAIL = ADMIN_EMAILS[0];
 const ADMIN_NAME = 'Dr. Marcelo Cavalcanti';
 
 async function linkAdminToUnitA() {

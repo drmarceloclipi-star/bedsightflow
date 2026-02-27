@@ -102,12 +102,15 @@ const TvDashboard: React.FC = () => {
 
     return (
         <div className="tv-dashboard h-screen flex flex-col">
-            <header className="tv-header flex justify-between items-center">
-                <div className="tv-title-group flex items-center gap-4">
-                    <h1 className="tv-title text-4xl">Ward Board</h1>
+            <header className="tv-header flex justify-between items-center relative">
+                <div className="flex-1"></div>
+
+                <div className="tv-title-group absolute left-1/2 -translate-x-1/2 flex items-center gap-4">
+                    <h1 className="tv-title text-4xl">BedSight</h1>
                     <span className="unit-badge text-lg px-4 py-1">{unit.name}</span>
                 </div>
-                <div className="tv-header-controls flex items-center gap-6">
+
+                <div className="tv-header-controls flex items-center gap-6 flex-1 justify-end">
                     <div className="flex items-center gap-3">
                         <button
                             className="theme-toggle"

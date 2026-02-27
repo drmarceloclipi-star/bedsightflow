@@ -249,17 +249,16 @@ async function seed() {
         const involvedSpecialties = Math.random() > 0.3 ? ['medical' as const] : [];
 
         // Realistic last-update timestamp (drives Freshness metrics)
-        const lastUpdate = pickLastUpdate();
+        const updatedAt = pickLastUpdate();
 
         await bedRef.set({
             id,
             ...data,
             involvedSpecialties,
             kamishibai,
-            lastUpdate,
-            updatedAt: lastUpdate,
+            updatedAt,
         });
-        console.log(`  ✅ Bed ${data.number} — ${data.patientAlias} | blocker: ${data.mainBlocker || 'none'} | last update: ${lastUpdate.slice(11, 16)}`);
+        console.log(`  ✅ Bed ${data.number} — ${data.patientAlias} | blocker: ${data.mainBlocker || 'none'} | last update: ${updatedAt.slice(11, 16)}`);
     }
 
     console.log('\n✨ Seed finished successfully!');

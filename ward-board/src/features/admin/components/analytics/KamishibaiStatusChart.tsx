@@ -45,11 +45,18 @@ const KamishibaiStatusChart: React.FC<KamishibaiStatsProps> = ({ unitId, period 
 
     if (!data) return null;
 
+    const totalItems = data.distribution.ok + data.distribution.pending + data.distribution.blocked + data.distribution.na;
+
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {/* Distribution */}
             <div style={{ backgroundColor: 'var(--bg-surface-1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', marginTop: 0, color: 'var(--text-primary)' }}>Distribuição de Status Globais</h3>
+                <h3 style={{ fontSize: '1rem', marginBottom: '0.25rem', marginTop: 0, color: 'var(--text-primary)' }}>
+                    Status dos Itens Kamishibai (N={totalItems})
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', marginTop: 0 }}>
+                    N = total de itens avaliados no período
+                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>OK</span>

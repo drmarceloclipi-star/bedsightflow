@@ -54,6 +54,7 @@ export const auditBedWrites = functions.region('southamerica-east1').firestore
             before: beforeData || null,
             after: afterData || null,
             diff: diff || null,
+            reason: 'Atualização direta de leito',
             createdAt: now
         });
     });

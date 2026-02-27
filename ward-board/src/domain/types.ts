@@ -74,7 +74,6 @@ export interface Bed {
     mainBlocker: string;    // Bloqueador principal
     involvedSpecialties: SpecialtyKey[]; // Especialidades envolvidas no caso
     kamishibai: Record<SpecialtyKey, KamishibaiEntry>;
-    lastUpdate: string | Timestamp; // ISO string or Firestore Timestamp
     updatedAt?: string | Timestamp;
     updatedBy?: {
         uid: string;

@@ -36,7 +36,7 @@ export const getAdminFreshnessBQ = functions
 
         for (const doc of bedsSnap.docs) {
             const bed = doc.data()
-            const rawTs = bed.updatedAt ?? bed.lastUpdate
+            const rawTs = bed.updatedAt
             if (!rawTs) continue
 
             let updatedMs: number

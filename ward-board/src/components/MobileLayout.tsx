@@ -12,7 +12,7 @@ export default function MobileLayout() {
             <header className="mobile-header">
                 <div className="header-content">
                     <div className="flex items-center gap-2">
-                        <h1>Ward Board</h1>
+                        <h1>BedSight</h1>
                         <span className="unit-badge">Unidade {unitId}</span>
                     </div>
                     <div className="flex items-center gap-2">

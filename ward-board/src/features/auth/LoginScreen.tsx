@@ -3,6 +3,7 @@ import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectRes
 import { auth } from '../../infra/firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { authorizedUsersRepository } from '../../repositories/authorizedUsersRepository';
+import { ADMIN_EMAILS } from '../../config/admins';
 
 const isLocalhost = window.location.hostname === 'localhost';
 
@@ -21,7 +22,6 @@ const LoginScreen: React.FC = () => {
                 const user = result.user;
                 if (user.email) {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
-                    const ADMIN_EMAILS = ['drmarceloclipi@gmail.com', 'admin@lean.com'];
                     if (isAuthorized) {
                         navigate(ADMIN_EMAILS.includes(user.email.toLowerCase()) ? '/admin' : '/mobile');
                     } else {
@@ -55,7 +55,6 @@ const LoginScreen: React.FC = () => {
                 const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
 
                 if (isAuthorized) {
-                    const ADMIN_EMAILS = ['drmarceloclipi@gmail.com', 'admin@lean.com'];
                     if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
                         navigate('/admin');
                     } else {
@@ -76,12 +75,12 @@ const LoginScreen: React.FC = () => {
 
     return (
         <div className="login-container">
-            <div className="login-watermark">LEAN</div>
+            <div className="login-watermark">FLOW</div>
 
             <div className="login-card">
                 <div className="login-header">
-                    <h1 className="login-title">Ward Board</h1>
-                    <p className="login-subtitle">UNIDADE DE GESTÃO HOSPITALAR</p>
+                    <h1 className="login-title">BedSight</h1>
+                    <p className="login-subtitle">INTELIGÊNCIA NA GESTÃO HOSPITALAR</p>
                 </div>
 
                 <div className="login-notice">
@@ -111,7 +110,7 @@ const LoginScreen: React.FC = () => {
 
                 <div className="login-footer" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.25rem 0' }}>
-                        Ward Board &copy; 2026
+                        BedSight &copy; 2026
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
                         Desenvolvido por Dr. Marcelo Hugo R. T. Cavalcanti

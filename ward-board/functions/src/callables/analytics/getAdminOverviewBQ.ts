@@ -62,8 +62,8 @@ export const getAdminOverviewBQ = functions
                 }
             }
 
-            // Stale check: use updatedAt, falling back to lastUpdate
-            const rawTs = bed.updatedAt ?? bed.lastUpdate
+            // Stale check: use updatedAt
+            const rawTs = bed.updatedAt
             if (rawTs) {
                 let updatedMs: number
                 if (typeof rawTs === 'string') {

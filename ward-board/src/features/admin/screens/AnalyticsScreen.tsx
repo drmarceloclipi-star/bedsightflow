@@ -9,9 +9,13 @@ import TopBlockersTable from '../components/analytics/TopBlockersTable';
 import FreshnessCards from '../components/analytics/FreshnessCards';
 import TrendComparisonPanel from '../components/analytics/TrendComparisonPanel';
 
-const AnalyticsScreen: React.FC = () => {
-    const { unitId } = useParams<{ unitId: string }>();
-    const safeUnitId = unitId || 'A';
+interface AnalyticsScreenProps {
+    unitId?: string;
+}
+
+const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ unitId: propUnitId }) => {
+    const { unitId: routeUnitId } = useParams<{ unitId: string }>();
+    const safeUnitId = propUnitId || routeUnitId || 'A';
     const [period, setPeriod] = useState<AnalyticsPeriodKey>('7d');
 
     return (
@@ -25,32 +29,41 @@ const AnalyticsScreen: React.FC = () => {
         }}>
             <AnalyticsFilters unitId={safeUnitId} period={period} onPeriodChange={setPeriod} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                <section>
-                    <OverviewCards unitId={safeUnitId} period={period} />
-                </section>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+                {/* AGORA */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <section>
-                        <FlowTrendChart unitId={safeUnitId} period={period} />
-                    </section>
-                    <section>
-                        <KamishibaiStatusChart unitId={safeUnitId} period={period} />
-                    </section>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
-                    <section>
-                        <TopBlockersTable unitId={safeUnitId} period={period} />
+                        <OverviewCards unitId={safeUnitId} period={period} />
                     </section>
                     <section>
                         <FreshnessCards unitId={safeUnitId} period={period} />
                     </section>
                 </div>
 
-                <section>
-                    <TrendComparisonPanel unitId={safeUnitId} period={period} />
-                </section>
+                {/* PERÍODO */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', borderBottom: '1px solid var(--border-soft)', paddingBottom: '0.5rem' }}>
+                        PERÍODO — Tendências e Volume
+                    </h3>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+                        <section>
+                            <KamishibaiStatusChart unitId={safeUnitId} period={period} />
+                        </section>
+                        <section>
+                            <FlowTrendChart unitId={safeUnitId} period={period} />
+                        </section>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+                        <section>
+                            <TopBlockersTable unitId={safeUnitId} period={period} />
+                        </section>
+                        <section>
+                            <TrendComparisonPanel unitId={safeUnitId} period={period} />
+                        </section>
+                    </div>
+                </div>
             </div>
         </div>
     );

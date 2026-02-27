@@ -147,7 +147,7 @@ const AdminUnitShell: React.FC = () => {
                     {activeTab === 'users' && <UsersAdminScreen unitId={unitId} />}
                     {activeTab === 'ops' && <OpsScreen unitId={unitId} />}
                     {activeTab === 'audit' && <AuditScreen unitId={unitId} />}
-                    {activeTab === 'analytics' && <AnalyticsScreen />}
+                    {activeTab === 'analytics' && <AnalyticsScreen unitId={unitId} />}
                 </Suspense>
             </main>
         </div>

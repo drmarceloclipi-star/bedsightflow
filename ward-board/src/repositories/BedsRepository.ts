@@ -3,7 +3,6 @@ import {
     onSnapshot,
     doc,
     updateDoc,
-    setDoc,
     getDocs,
     query,
     orderBy,
@@ -58,7 +57,7 @@ export const BedsRepository = {
         await updateDoc(bedRef, {
             ...cleanData,
             updatedBy: actor ?? null,
-            lastUpdate: serverTimestamp()
+            updatedAt: serverTimestamp()
         });
     },
 
@@ -73,7 +72,10 @@ export const BedsRepository = {
     },
 
     async bulkUpsertBeds(unitId: string, beds: Partial<Bed>[]): Promise<void> {
-        const promises = beds.map((bed) => {
+        const { writeBatch } = await import('firebase/firestore');
+        const batch = writeBatch(db);
+
+        beds.forEach((bed) => {
             const bedId = bed.number!;
             const bedRef = doc(db, 'units', unitId, 'beds', bedId);
             const data = {
@@ -84,11 +86,12 @@ export const BedsRepository = {
                 mainBlocker: bed.mainBlocker ?? '',
                 involvedSpecialties: bed.involvedSpecialties ?? ['medical'],
                 kamishibai: bed.kamishibai ?? {},
-                lastUpdate: serverTimestamp(),
+                updatedAt: serverTimestamp(),
             };
-            return setDoc(bedRef, data, { merge: true });
+            batch.set(bedRef, data, { merge: true });
         });
-        await Promise.all(promises);
+
+        await batch.commit();
     }
 };
 

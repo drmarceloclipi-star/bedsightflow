@@ -8,6 +8,8 @@ service cloud.firestore {
     }
 
     function isGlobalAdmin() {
+      // NOTE: This list must stay in sync with src/config/admins.ts
+      // Future improvement: use Custom Claims via Firebase Admin SDK
       return isAuthed() &&
         (request.auth.token.email == 'drmarceloclipi@gmail.com' || request.auth.token.email == 'admin@lean.com');
     }

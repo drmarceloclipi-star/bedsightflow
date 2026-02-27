@@ -11,6 +11,7 @@ const BedDetails = lazy(() => import('./features/mobile/pages/BedDetails'));
 const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
+const MobileAdminRouter = lazy(() => import('./features/mobile-admin/MobileAdminRouter'));
 
 const FallbackLoader = () => (
   <div className="h-screen flex items-center justify-center bg-app">
@@ -18,11 +19,16 @@ const FallbackLoader = () => (
   </div>
 );
 
+import { ADMIN_EMAILS } from './config/admins';
+
+/** Detects phones and tablets via User-Agent (runs once, client-side only). */
+const isMobileDevice = (): boolean =>
+  /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const ADMIN_EMAILS = ['drmarceloclipi@gmail.com', 'admin@lean.com'];
   const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email.toLowerCase()) : false;
 
   useEffect(() => {
@@ -46,12 +52,25 @@ function App() {
       <Router>
         <Suspense fallback={<FallbackLoader />}>
           <Routes>
-            <Route path="/login" element={user ? <Navigate to={isAdmin ? "/admin" : "/mobile"} replace /> : <LoginScreen />} />
+            <Route path="/login" element={user ? <Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/mobile"} replace /> : <LoginScreen />} />
 
             {/* Admin Routes — global with unit selector */}
+            {/* On mobile devices, redirect to the mobile-optimised admin */}
             <Route
               path="/admin/*"
-              element={isAdmin ? <AdminRouter /> : <Navigate to="/login" replace />}
+              element={
+                isAdmin
+                  ? isMobileDevice()
+                    ? <Navigate to="/mobile-admin" replace />
+                    : <AdminRouter />
+                  : <Navigate to="/login" replace />
+              }
+            />
+
+            {/* Mobile Admin Routes — mobile-optimised admin panel */}
+            <Route
+              path="/mobile-admin/*"
+              element={isAdmin ? <MobileAdminRouter /> : <Navigate to="/login" replace />}
             />
 
             {/* Mobile Routes */}
@@ -71,7 +90,7 @@ function App() {
               <Route index element={<TvDashboard />} />
             </Route>
 
-            <Route path="/" element={<Navigate to={isAdmin ? "/admin" : "/mobile"} replace />} />
+            <Route path="/" element={<Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/mobile"} replace />} />
           </Routes>
         </Suspense>
       </Router>

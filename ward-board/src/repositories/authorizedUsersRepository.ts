@@ -9,6 +9,7 @@ import {
     Timestamp
 } from 'firebase/firestore';
 import { db } from '../infra/firebase/config';
+import { ADMIN_EMAILS } from '../config/admins';
 
 export interface AuthorizedUser {
     id?: string;
@@ -21,7 +22,6 @@ const COLLECTION_NAME = 'authorized_users';
 export const authorizedUsersRepository = {
     async isAuthorized(email: string): Promise<boolean> {
         // The admins are always authorized
-        const ADMIN_EMAILS = ['drmarceloclipi@gmail.com', 'admin@lean.com'];
         if (ADMIN_EMAILS.includes(email.toLowerCase())) return true;
 
         const q = query(collection(db, COLLECTION_NAME), where('email', '==', email.toLowerCase()));
