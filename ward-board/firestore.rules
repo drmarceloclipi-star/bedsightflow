@@ -1,13 +1,82 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para o Ward Board MVP
-    // Permite leitura e escrita na coleção de unidades e seus leitos para desenvolvimento
-    match /units/{unitId}/{document=**} {
-      allow read, write: if true;
+
+    // ── Helpers ───────────────────────────────────────────────
+    function isAuthed() {
+      return request.auth != null;
     }
-    
-    // Bloqueio padrão para o restante do banco
+
+    function isGlobalAdmin() {
+      return isAuthed() &&
+        (request.auth.token.email == 'drmarceloclipi@gmail.com' || request.auth.token.email == 'admin@lean.com');
+    }
+
+    // Unit role helpers (looks up units/{unitId}/users/{uid} doc)
+    function unitUserDoc(unitId) {
+      return get(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid));
+    }
+
+    function isUnitMember(unitId) {
+      return isAuthed() && (
+        isGlobalAdmin() ||
+        exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid))
+      );
+    }
+
+    function isUnitEditorOrAdmin(unitId) {
+      return isAuthed() && (
+        isGlobalAdmin() ||
+        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
+         unitUserDoc(unitId).data.role in ['editor', 'admin'])
+      );
+    }
+
+    function isUnitAdmin(unitId) {
+      return isAuthed() && (
+        isGlobalAdmin() ||
+        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
+         unitUserDoc(unitId).data.role == 'admin')
+      );
+    }
+
+    // ── authorized_users (global whitelist) ───────────────────
+    match /authorized_users/{userId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
+    }
+
+    // ── Units root doc ─────────────────────────────────────────
+    match /units/{unitId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
+    }
+
+    // ── Beds ──────────────────────────────────────────────────
+    match /units/{unitId}/beds/{bedId} {
+      allow read: if isUnitMember(unitId);
+      allow write: if isUnitEditorOrAdmin(unitId);
+    }
+
+    // ── Board Settings ────────────────────────────────────────
+    match /units/{unitId}/settings/{doc} {
+      allow read: if isUnitMember(unitId);
+      allow write: if isUnitAdmin(unitId);
+    }
+
+    // ── Audit Logs ────────────────────────────────────────────
+    match /units/{unitId}/audit_logs/{logId} {
+      allow read: if isUnitAdmin(unitId);
+      allow write: if false;
+    }
+
+    // ── Unit Users / RBAC ─────────────────────────────────────
+    match /units/{unitId}/users/{uid} {
+      allow read: if isUnitAdmin(unitId);
+      allow write: if isUnitAdmin(unitId);
+    }
+
+    // ── Default lock ──────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

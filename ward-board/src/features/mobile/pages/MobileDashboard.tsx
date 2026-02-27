@@ -26,7 +26,33 @@ const MobileDashboard: React.FC = () => {
         return () => unsubscribe();
     }, [unitId]);
 
-    if (loading) return <div className="p-8 text-center animate-pulse">Carregando leitos...</div>;
+    if (loading) {
+        return (
+            <div className="p-4 mobile-dashboard">
+                <header className="mb-6 flex justify-between items-center">
+                    <div className="skeleton h-8 w-32" />
+                    <div className="skeleton h-4 w-16" />
+                </header>
+                <div className="grid gap-4">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="bg-surface-1 p-4 rounded-lg border shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="skeleton h-6 w-12" />
+                                <div className="skeleton h-5 w-20" />
+                            </div>
+                            <div className="skeleton h-6 w-3/4 mb-4" />
+                            <div className="flex justify-between items-end">
+                                <div className="skeleton h-4 w-1/2" />
+                                <div className="flex gap-1">
+                                    {[1, 2, 3].map(j => <div key={j} className="skeleton h-2 w-2 rounded-full" />)}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 mobile-dashboard">

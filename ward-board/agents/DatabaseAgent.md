@@ -12,6 +12,6 @@ The DatabaseAgent is specialized in everything related to the project's data lay
 
 ## Technical Stack
 
-- Firebase Firestore
-- Firebase Security Rules
-- TypeScript (for data models and seeding scripts)
+- Firebase Firestore (always use `southamerica-east1` region)
+16: - Firebase Security Rules
+17: - TypeScript (for data models and seeding scripts)

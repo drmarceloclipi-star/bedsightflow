@@ -75,6 +75,12 @@ export interface Bed {
     involvedSpecialties: SpecialtyKey[]; // Especialidades envolvidas no caso
     kamishibai: Record<SpecialtyKey, KamishibaiEntry>;
     lastUpdate: string | Timestamp; // ISO string or Firestore Timestamp
+    updatedAt?: string | Timestamp;
+    updatedBy?: {
+        uid: string;
+        email: string;
+        displayName?: string;
+    };
 }
 
 export interface Unit {
@@ -97,6 +103,16 @@ export interface BoardSettings {
     unitId: string;
     rotationEnabled: boolean;
     screens: BoardScreenConfig[];
+    kanbanBedsPerPage: number;
+    kanbanColumnsPerPage?: number;
+    kamishibaiBedsPerPage: number;
+    kamishibaiColumnsPerPage?: number;
+    updatedAt?: string | Timestamp;
+    updatedBy?: {
+        uid: string;
+        email: string;
+        displayName?: string;
+    };
 }
 
 export interface SummaryMetrics {
@@ -105,3 +121,23 @@ export interface SummaryMetrics {
     withBlockers: number;
     pendingKamishibai: number;
 }
+
+// Admin RBAC per unit
+export type UnitRole = 'admin' | 'editor' | 'viewer';
+
+export interface UnitUserRole {
+    id?: string;       // doc id = uid
+    uid?: string;
+    email: string;
+    displayName?: string;
+    role: UnitRole;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    updatedBy?: {
+        uid: string;
+        email: string;
+        displayName?: string;
+    };
+}
+
+export type AdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'analytics';

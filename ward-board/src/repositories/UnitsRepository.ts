@@ -27,6 +27,8 @@ export const UnitsRepository = {
                 ...doc.data()
             })) as Unit[];
             callback(units);
+        }, (error) => {
+            console.error("Error listening to units:", error);
         });
     }
 };

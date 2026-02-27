@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Smartphone } from 'lucide-react';
 import type { Bed, BoardSettings, Unit } from '../../../domain/types';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
@@ -10,11 +11,13 @@ import ThemeToggle from '../../../shared/theme/ThemeToggle';
 const TvDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
     const unitId = searchParams.get('unit') || 'A';
+    const navigate = useNavigate();
 
     const [beds, setBeds] = useState<Bed[]>([]);
     const [settings, setSettings] = useState<BoardSettings | null>(null);
     const [unit, setUnit] = useState<Unit | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [now, setNow] = useState(new Date());
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -25,20 +28,27 @@ const TvDashboard: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const handleError = (err: Error) => {
+            console.error('TV Dashboard Error:', err);
+            setError('Perda de conexão com o banco de dados. Tentando reconectar...');
+        };
+
         // Listen to beds
         const unsubscribeBeds = BedsRepository.listenToBeds(unitId, (data) => {
             setBeds(data);
             setLastUpdated(new Date());
-        });
+            setError(null); // Clear error on success
+        }, handleError);
 
         // Listen to settings
         const unsubscribeSettings = BoardSettingsRepository.listenToSettings(unitId, (data: BoardSettings) => {
             setSettings(data);
             setLastUpdated(new Date());
-        });
+            setError(null); // Clear error on success
+        }, handleError);
 
         // Get unit info
-        UnitsRepository.getUnit(unitId).then(setUnit).finally(() => {
+        UnitsRepository.getUnit(unitId).then(setUnit).catch(handleError).finally(() => {
             setLoading(false);
         });
 
@@ -50,8 +60,33 @@ const TvDashboard: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-app">
-                <div className="text-2xl font-serif animate-pulse">Carregando painel...</div>
+            <div className="h-screen flex flex-col bg-app overflow-hidden p-8">
+                <header className="flex justify-between items-center mb-12">
+                    <div className="flex items-center gap-6">
+                        <div className="skeleton h-16 w-64" />
+                        <div className="skeleton h-10 w-24" />
+                    </div>
+                    <div className="skeleton h-16 w-80" />
+                </header>
+                <main className="flex-1 flex gap-8">
+                    <div className="flex-1 skeleton h-full rounded-2xl" />
+                </main>
+            </div>
+        );
+    }
+
+    if (error && beds.length === 0) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-app p-8 text-center">
+                <div className="text-6xl mb-6">📡</div>
+                <h1 className="text-3xl font-serif mb-4">Problema de Conexão</h1>
+                <p className="text-muted max-w-lg mb-8">
+                    Não foi possível estabelecer uma conexão em tempo real com o servidor.
+                    O painel tentará se reconectar automaticamente assim que a rede estiver disponível.
+                </p>
+                <div className="text-sm font-mono bg-surface-2 p-3 rounded border border-danger/20 text-danger">
+                    {error}
+                </div>
             </div>
         );
     }
@@ -68,22 +103,32 @@ const TvDashboard: React.FC = () => {
     return (
         <div className="tv-dashboard h-screen flex flex-col">
             <header className="tv-header flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-4xl">Ward Board</h1>
+                <div className="tv-title-group flex items-center gap-4">
+                    <h1 className="tv-title text-4xl">Ward Board</h1>
                     <span className="unit-badge text-lg px-4 py-1">{unit.name}</span>
                 </div>
-                <div className="flex items-center gap-6">
-                    <ThemeToggle />
-                    <div className="text-right">
-                        <div className="text-2xl font-serif mt-1">
+                <div className="tv-header-controls flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                        <button
+                            className="theme-toggle"
+                            onClick={() => navigate(`/mobile?unit=${unitId}`)}
+                            aria-label="Abrir versão Mobile"
+                            title="Abrir versão Mobile"
+                        >
+                            <Smartphone size={20} />
+                        </button>
+                        <ThemeToggle />
+                    </div>
+                    <div className="tv-date-wrapper text-right">
+                        <div className="tv-date text-2xl font-serif mt-1">
                             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </div>
                         <div className="flex flex-col items-end">
-                            <div className="text-muted font-bold tracking-widest text-xl">
+                            <div className="tv-time text-muted font-bold tracking-widest text-xl">
                                 {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </div>
                             {lastUpdated && (
-                                <div className="text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
+                                <div className="tv-last-updated text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
                                     Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </div>
                             )}
@@ -92,7 +137,7 @@ const TvDashboard: React.FC = () => {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-hidden">
+            <main className="tv-main flex-1 overflow-hidden">
                 {settings && (
                     <TvRotationContainer
                         beds={beds}

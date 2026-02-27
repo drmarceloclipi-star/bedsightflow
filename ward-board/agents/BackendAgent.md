@@ -13,6 +13,6 @@ The BackendAgent focuses on the server-side logic and integrations that power th
 ## Technical Stack
 
 - Node.js
-- TypeScript
-- Firebase Cloud Functions
-- Google Cloud Platform
+16: - TypeScript
+17: - Firebase Cloud Functions (always use `southamerica-east1` region)
+18: - Google Cloud Platform

@@ -11,32 +11,38 @@ interface TvRotationContainerProps {
     unitName?: string;
 }
 
-const MAX_BEDS_PER_PAGE = 8;
+
 
 const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, settings, unitName }) => {
     const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
     const [progress, setProgress] = useState(0);
 
-    const bedsByPage = useMemo(() => {
+    const paginateBeds = (allBeds: Bed[], pageSize: number) => {
         const pages: Bed[][] = [];
-        for (let i = 0; i < beds.length; i += MAX_BEDS_PER_PAGE) {
-            pages.push(beds.slice(i, i + MAX_BEDS_PER_PAGE));
+        for (let i = 0; i < allBeds.length; i += pageSize) {
+            pages.push(allBeds.slice(i, i + pageSize));
         }
         return pages;
-    }, [beds]);
+    };
 
     const expandedScreens = useMemo(() => {
-        const screens: { key: string; label: string; duration: number; beds?: Bed[]; metrics?: SummaryMetrics }[] = [];
+        const screens: { key: string; label: string; duration: number; beds?: Bed[]; metrics?: SummaryMetrics; columns?: number }[] = [];
         const enabled = settings.screens.filter(s => s.enabled);
 
         enabled.forEach(screen => {
             if (screen.key === 'kanban' || screen.key === 'kamishibai') {
-                bedsByPage.forEach((pageBeds, idx) => {
+                const pageSize = screen.key === 'kanban' ? settings.kanbanBedsPerPage : settings.kamishibaiBedsPerPage;
+                const pages = paginateBeds(beds, pageSize || 18);
+
+                const columns = screen.key === 'kanban' ? (settings.kanbanColumnsPerPage ?? 1) : (settings.kamishibaiColumnsPerPage ?? 1);
+
+                pages.forEach((pageBeds, idx) => {
                     screens.push({
                         key: screen.key,
-                        label: `${screen.label} ${bedsByPage.length > 1 ? `(${idx + 1}/${bedsByPage.length})` : ''}`,
+                        label: `${screen.label} ${pages.length > 1 ? `(${idx + 1}/${pages.length})` : ''}`,
                         duration: screen.durationSeconds,
-                        beds: pageBeds
+                        beds: pageBeds,
+                        columns
                     });
                 });
             } else if (screen.key === 'summary') {
@@ -48,13 +54,15 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
             }
         });
         return screens;
-    }, [settings.screens, bedsByPage]);
+    }, [settings.screens, settings.kanbanBedsPerPage, settings.kamishibaiBedsPerPage, settings.kanbanColumnsPerPage, settings.kamishibaiColumnsPerPage, beds]);
 
     const metrics: SummaryMetrics = useMemo(() => {
         return SummaryCalculator.calculateMetrics(beds);
     }, [beds]);
 
-    const activeScreen = expandedScreens[currentScreenIndex];
+    // Ensure valid index if setting changes alter expandedScreens length
+    const validScreenIndex = currentScreenIndex >= expandedScreens.length ? 0 : currentScreenIndex;
+    const activeScreen = expandedScreens[validScreenIndex];
 
     useEffect(() => {
         if (!settings.rotationEnabled || expandedScreens.length <= 1) {
@@ -70,7 +78,10 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
             setProgress(newProgress);
 
             if (newProgress >= 100) {
-                setCurrentScreenIndex((prev) => (prev + 1) % expandedScreens.length);
+                setCurrentScreenIndex((prev) => {
+                    const valid = prev >= expandedScreens.length ? 0 : prev;
+                    return (valid + 1) % expandedScreens.length;
+                });
                 setProgress(0);
                 clearInterval(interval);
             }
@@ -81,11 +92,12 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
 
     if (!activeScreen) return <div className="p-8 text-center text-2xl">Nenhuma tela habilitada.</div>;
 
+
     return (
         <div className="h-full flex flex-col relative">
             <div className="flex-1 overflow-hidden">
-                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} />}
-                {activeScreen.key === 'kamishibai' && <KamishibaiScreen beds={activeScreen.beds || []} />}
+                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} columns={activeScreen.columns} />}
+                {activeScreen.key === 'kamishibai' && <KamishibaiScreen beds={activeScreen.beds || []} columns={activeScreen.columns} />}
                 {activeScreen.key === 'summary' && <SummaryScreen metrics={metrics} unitName={unitName} />}
             </div>
 

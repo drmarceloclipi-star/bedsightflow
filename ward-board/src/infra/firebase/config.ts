@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCUalOgay8sBO_SOuinbrkmEhtuPjw04Ws",
@@ -14,9 +15,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+// southamerica-east1: All functions now use this region
+export const functions = getFunctions(app, 'southamerica-east1');
 
 // Connect to emulators if running locally
 if (window.location.hostname === 'localhost') {
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099');
+    connectFunctionsEmulator(functions, 'localhost', 5001);
 }
+

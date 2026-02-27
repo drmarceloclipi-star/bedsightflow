@@ -53,7 +53,7 @@ export const isMedicalSpecialty = (s: SpecialtyKey): boolean => {
  * Regra provisória: apenas "MÉDICA" (medical).
  */
 export const getVisibleSpecialties = (involved: SpecialtyKey[]): SpecialtyKey[] => {
-    return involved.filter(s => s === 'medical');
+    return involved.filter(s => isMedicalSpecialty(s));
 };
 
 /**

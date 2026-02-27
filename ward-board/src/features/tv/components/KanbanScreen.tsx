@@ -5,121 +5,203 @@ import { getShortSpecialty, getVisibleSpecialties } from '../../../domain/specia
 
 interface KanbanScreenProps {
     beds: Bed[];
+    columns?: number;
 }
 
-const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds }) => {
-    // Ordenar leitos conforme a lógica do hospital (numérica/leito)
-    const sortedBeds = [...beds].sort((a, b) => {
-        return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
-    });
+const getDischargeColorClass = (estimate: string) => {
+    switch (estimate) {
+        case '24h': return 'state-success-bg';
+        case '2-3_days': return 'state-warning-bg';
+        case '>3_days': return 'state-danger-bg';
+        default: return 'kanban-badge-indefinida';
+    }
+};
 
-    const getDischargeColorClass = (estimate: string) => {
-        switch (estimate) {
-            case '24h': return 'state-success-bg';
-            case '2-3_days': return 'state-warning-bg';
-            case '>3_days': return 'state-danger-bg';
-            default: return '';
-        }
-    };
+const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1 }) => {
+    const sortedBeds = [...beds].sort((a, b) =>
+        a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    const renderTable = (bedsList: Bed[]) => (
+        <table className="kanban-compact-table">
+            <thead>
+                <tr>
+                    <th style={{ width: '10%' }}>Leito</th>
+                    <th style={{ width: '16%' }}>Paciente</th>
+                    <th style={{ width: '18%' }}>Especialidades</th>
+                    <th style={{ width: '18%' }}>Previsão Alta</th>
+                    <th style={{ width: '38%' }}>Bloqueador Principal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {bedsList.map((bed) => {
+                    const visibleSpecialties = getVisibleSpecialties(
+                        (bed.involvedSpecialties || []) as SpecialtyKey[]
+                    );
+
+                    return (
+                        <tr key={bed.id}>
+                            <td>
+                                <span className="kanban-bed-num">{bed.number}</span>
+                            </td>
+                            <td>
+                                <span className="kanban-patient">{bed.patientAlias || '—'}</span>
+                            </td>
+                            <td>
+                                <div className="kanban-chips">
+                                    {visibleSpecialties.length > 0
+                                        ? visibleSpecialties.map(s => (
+                                            <span
+                                                key={s}
+                                                className="specialty-chip-mini"
+                                                title={SpecialtyLabel[s as SpecialtyKey]}
+                                            >
+                                                {getShortSpecialty(s as SpecialtyKey)}
+                                            </span>
+                                        ))
+                                        : <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>—</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <span className={`kanban-badge ${getDischargeColorClass(bed.expectedDischarge)}`}>
+                                    {DischargeEstimateLabel[bed.expectedDischarge]}
+                                </span>
+                            </td>
+                            <td>
+                                <span className="kanban-blocker" title={bed.mainBlocker}>
+                                    {bed.mainBlocker || <span style={{ opacity: 0.3 }}>Nenhum</span>}
+                                </span>
+                            </td>
+                        </tr>
+                    );
+                })}
+            </tbody>
+        </table>
+    );
+
+    const showDualColumns = columns > 1 && sortedBeds.length > 0;
+    const midPoint = showDualColumns ? Math.ceil(sortedBeds.length / 2) : sortedBeds.length;
+
+    const leftBeds = showDualColumns ? sortedBeds.slice(0, midPoint) : sortedBeds;
+    const rightBeds = showDualColumns ? sortedBeds.slice(midPoint) : [];
 
     return (
-        <div className="animate-slideIn h-full flex flex-col p-4">
-            <h2 className="text-3xl font-serif mb-6 flex justify-between items-center">
-                <span>Quadro Kanban — Fluxo de Alta</span>
-                <span className="text-sm font-sans text-muted uppercase tracking-widest">{sortedBeds.length} Leitos</span>
+        <div className="animate-slideIn h-full flex flex-col" style={{ padding: '0.5rem 1.25rem 1rem' }}>
+            <h2 className="kanban-title">
+                Quadro Kanban — Fluxo de Alta
             </h2>
 
-            <div className="flex-grow overflow-hidden">
-                <table className="bg-surface-1 rounded-xl shadow-lg w-full kanban-table">
-                    <thead>
-                        <tr>
-                            <th style={{ width: '10%' }}>Leito</th>
-                            <th style={{ width: '25%' }}>Paciente</th>
-                            <th style={{ width: '25%' }}>Especialidades Médicas</th>
-                            <th style={{ width: '15%' }}>Previsão Alta</th>
-                            <th style={{ width: '25%' }}>Bloqueador Principal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedBeds.map((bed) => {
-                            const specialties = bed.involvedSpecialties || [];
-                            const visibleSpecialties = getVisibleSpecialties(specialties);
-                            const remainingCount = 0; // Ocultar contagem de outras especialidades por enquanto
-
-                            return (
-                                <tr key={bed.id}>
-                                    <td className="text-3xl font-bold py-4 px-6">{bed.number}</td>
-                                    <td className="py-4 px-6">
-                                        <div className="text-2xl font-medium truncate" title={bed.patientAlias}>{bed.patientAlias || '--'}</div>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <div className="flex flex-wrap gap-2 items-center">
-                                            {visibleSpecialties.map(s => (
-                                                <span key={s} className="specialty-chip" title={SpecialtyLabel[s as SpecialtyKey]}>
-                                                    {getShortSpecialty(s as SpecialtyKey)}
-                                                </span>
-                                            ))}
-                                            {remainingCount > 0 && (
-                                                <span className="text-xs font-bold text-muted px-2">
-                                                    +{remainingCount}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`unit-badge ${getDischargeColorClass(bed.expectedDischarge)}`}>
-                                            {DischargeEstimateLabel[bed.expectedDischarge]}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-6 text-xl text-secondary truncate max-w-[300px]" title={bed.mainBlocker}>
-                                        {bed.mainBlocker || <span className="opacity-30">Nenhum</span>}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <div className="kanban-table-wrapper" style={{ display: 'grid', gridTemplateColumns: showDualColumns ? 'minmax(0, 1fr) minmax(0, 1fr)' : '1fr', gap: '2rem' }}>
+                <div className="kanban-table-inner-wrapper">
+                    {renderTable(leftBeds)}
+                </div>
+                {showDualColumns && (
+                    <div className="kanban-table-inner-wrapper">
+                        {renderTable(rightBeds)}
+                    </div>
+                )}
             </div>
 
             <style>{`
-                .kanban-table {
+                .kanban-title {
+                    font-size: 1.4rem;
+                    font-family: var(--font-serif);
+                    color: var(--text-secondary);
+                    margin-bottom: 0.75rem;
+                    flex-shrink: 0;
+                }
+
+                .kanban-table-wrapper {
+                    flex: 1;
+                    overflow: auto;
+                    min-height: 0;
+                }
+
+                .kanban-table-inner-wrapper {
+                    min-width: 0;
+                    overflow: auto;
+                }
+
+                .kanban-compact-table {
+                    width: 100%;
                     border-collapse: collapse;
                     table-layout: fixed;
                 }
-                .kanban-table th {
+
+                .kanban-compact-table thead th {
                     text-align: left;
-                    font-size: 1rem;
+                    font-size: 0.65rem;
+                    font-weight: 700;
                     text-transform: uppercase;
+                    letter-spacing: 0.08em;
                     color: var(--text-muted);
-                    padding: 1.5rem 1.5rem;
-                    border-bottom: 3px solid var(--surface-2);
-                    letter-spacing: 0.05em;
+                    padding: 0.4rem 0.6rem;
+                    border-bottom: 2px solid var(--border-soft);
+                    white-space: nowrap;
                 }
-                .kanban-table td {
-                    border-bottom: 2px solid var(--surface-2);
-                    transition: background 0.2s;
+
+                .kanban-compact-table tbody td {
+                    padding: 0.35rem 0.6rem;
+                    border-bottom: 1px solid var(--border-soft);
+                    vertical-align: middle;
+                    overflow: hidden;
                 }
-                .kanban-table tr:hover td {
-                    background: var(--surface-2);
-                }
-                .kanban-table tr:last-child td {
+
+                .kanban-compact-table tbody tr:last-child td {
                     border-bottom: none;
                 }
-                .specialty-chip {
-                    background: var(--surface-2);
-                    color: var(--text-primary);
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    padding: 4px 10px;
-                    border-radius: 6px;
-                    border: 1px solid var(--border-color);
+
+                .kanban-compact-table tbody tr:hover td {
+                    background-color: var(--bg-surface-2);
                 }
-                .unit-badge {
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    padding: 6px 16px;
-                    border-radius: 8px;
+
+                .kanban-bed-num {
+                    font-size: 1rem;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                    white-space: nowrap;
+                }
+
+                .kanban-patient {
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    color: var(--text-primary);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .kanban-badge {
                     display: inline-block;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    padding: 0.15rem 0.5rem;
+                    border-radius: 99px;
+                    border: 1px solid currentColor;
+                    white-space: nowrap;
+                }
+
+                .kanban-badge-indefinida {
+                    color: var(--text-muted);
+                    border-color: var(--border-soft);
+                    border-style: dashed;
+                }
+
+                .kanban-blocker {
+                    font-size: 0.82rem;
+                    color: var(--text-secondary);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    display: block;
+                }
+
+                .kanban-chips {
+                    display: flex;
+                    flex-wrap: nowrap;
+                    gap: 0.2rem;
+                    overflow: hidden;
                 }
             `}</style>
         </div>
@@ -127,4 +209,3 @@ const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds }) => {
 };
 
 export default KanbanScreen;
-

@@ -17,3 +17,4 @@ The FrontendAgent is dedicated to the visual and interactive aspects of the LEAN
 - Vanilla CSS
 - Vite
 - Framer Motion (for micro-animations)
+- Firebase Functions (always target `southamerica-east1` region)

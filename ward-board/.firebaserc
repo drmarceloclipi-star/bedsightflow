@@ -1,0 +1,11 @@
+{
+  "projects": {},
+  "targets": {},
+  "etags": {
+    "lean-841e5": {
+      "extensionInstances": {
+        "firestore-bigquery-export": "1002cbda45eeea0dcf0ae2134e07d1869d0371f86d4705c9123d4168d0ba9c72"
+      }
+    }
+  }
+}

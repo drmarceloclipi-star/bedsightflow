@@ -1,10 +1,10 @@
 import {
     doc,
     onSnapshot,
-    setDoc,
     getDoc
 } from 'firebase/firestore';
-import { db } from '../infra/firebase/config';
+import { db, functions } from '../infra/firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import type { BoardSettings, BoardScreenConfig } from '../domain/types';
 
 const DEFAULT_SCREENS: BoardScreenConfig[] = [
@@ -14,7 +14,7 @@ const DEFAULT_SCREENS: BoardScreenConfig[] = [
 ];
 
 export const BoardSettingsRepository = {
-    listenToSettings(unitId: string, callback: (settings: BoardSettings) => void) {
+    listenToSettings(unitId: string, callback: (settings: BoardSettings) => void, onError?: (error: Error) => void) {
         const settingsRef = doc(db, 'units', unitId, 'settings', 'board');
 
         return onSnapshot(settingsRef, (snapshot) => {
@@ -25,15 +25,26 @@ export const BoardSettingsRepository = {
                 callback({
                     unitId,
                     rotationEnabled: true,
-                    screens: DEFAULT_SCREENS
+                    screens: DEFAULT_SCREENS,
+                    kanbanBedsPerPage: 18,
+                    kamishibaiBedsPerPage: 18,
+                    kanbanColumnsPerPage: 1,
+                    kamishibaiColumnsPerPage: 1
                 });
             }
+        }, (error) => {
+            console.error("Error listening to board settings:", error);
+            if (onError) onError(error);
         });
     },
 
-    async updateSettings(unitId: string, settings: Partial<BoardSettings>) {
-        const settingsRef = doc(db, 'units', unitId, 'settings', 'board');
-        await setDoc(settingsRef, settings, { merge: true });
+    async updateSettings(unitId: string, settings: Partial<BoardSettings>, reason: string) {
+        const updateFn = httpsCallable(functions, 'updateBoardSettings');
+        await updateFn({
+            unitId,
+            reason,
+            settings
+        });
     },
 
     async getSettings(unitId: string): Promise<BoardSettings> {
@@ -47,7 +58,11 @@ export const BoardSettingsRepository = {
         return {
             unitId,
             rotationEnabled: true,
-            screens: DEFAULT_SCREENS
+            screens: DEFAULT_SCREENS,
+            kanbanBedsPerPage: 18,
+            kamishibaiBedsPerPage: 18,
+            kanbanColumnsPerPage: 1,
+            kamishibaiColumnsPerPage: 1
         };
     }
 };
