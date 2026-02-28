@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type AnalyticsWindow = 'agora' | 'periodo';
+export type AnalyticsWindow = 'agora' | 'periodo' | 'turno atual';
 
 export interface AnalyticsContractProps {
     metric: string;
@@ -32,7 +32,7 @@ export const AnalyticsContract: React.FC<AnalyticsContractProps> = ({
                 <div className="mc-contract-item">
                     <span className="mc-contract-label">Janela:</span>
                     <span className={`mc-contract-badge mc-contract-badge--${window}`}>
-                        {window === 'agora' ? 'Snapshot (Agora)' : 'Histórico (Período)'}
+                        {window === 'agora' ? 'Snapshot (Agora)' : window === 'turno atual' ? 'Turno Atual' : 'Histórico (Período)'}
                     </span>
                 </div>
                 {inclusionRule && (

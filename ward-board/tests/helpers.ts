@@ -7,16 +7,17 @@
  * - ReasonModal interaction (replaces window.prompt)
  */
 
-import type { Page, Dialog } from '@playwright/test';
+import { expect, type Page, type Dialog } from '@playwright/test';
 
 // ─── Tab label map matching AdminUnitShell.tsx ─────────────────────────────
 
 export const ADMIN_TAB_LABELS: Record<string, string> = {
-    tv: '📺 TV',
-    beds: '🛏️ Leitos',
-    users: '👥 Usuários',
-    ops: '⚙️ Operações',
-    audit: '🕵️ Auditoria',
+    tv: 'TV',
+    beds: 'Leitos',
+    users: 'Acesso na Unidade',
+    ops: 'Ops',
+    audit: 'Auditoria',
+    analytics: 'Analytics',
 };
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -29,8 +30,13 @@ export const ADMIN_TAB_LABELS: Record<string, string> = {
 export async function signInViaEmulator(
     page: Page,
     email: string,
-    displayName: string,
+    displayName?: string,
 ) {
+    // Log console errors to terminal
+    page.on('console', msg => {
+        if (msg.type() === 'error') console.log(`BROWSER ERROR: ${msg.text()}`);
+    });
+
     await page.goto('/login', { waitUntil: 'networkidle' });
     const googleBtn = page.locator('button:has-text("Entrar com Google")');
     await googleBtn.waitFor({ state: 'visible' });
@@ -50,14 +56,8 @@ export async function signInViaEmulator(
         await page.click('button:has-text("Sign In")');
     }
 
-    // Wait until we've left the emulator host and landed in the app
-    await page.waitForURL(
-        (url) => !url.hostname.includes('localhost') || url.port !== '9099',
-        { timeout: 12000 },
-    );
-
-    // Give React state a moment to settle auth
-    await page.waitForTimeout(1000);
+    // Wait until login completes and app redirects us to either admin or editor
+    await page.waitForURL(/\/admin|\/mobile-admin|\/editor/, { timeout: 15000 });
 }
 
 export const signInAsAdmin = (page: Page) =>
@@ -73,13 +73,22 @@ export const signInAsEditor = (page: Page) =>
  * Uses the exact emoji-prefixed labels from AdminUnitShell.tsx.
  */
 export async function goToAdminTab(page: Page, tabKey: string, unitId = 'A') {
-    await page.goto(`/admin/unit/${unitId}`);
+    if (!page.url().includes(`/admin/unit/${unitId}`)) {
+        // Attempt soft-navigation from AdminHome to avoid Firebase Auth dropping session on reload
+        const unitCard = page.locator('.admin-card').filter({ hasText: `ID: ${unitId}` });
+        await unitCard.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { });
+
+        if (await unitCard.isVisible()) {
+            await unitCard.locator('button', { hasText: 'Entrar →' }).click();
+        } else {
+            await page.goto(`/admin/unit/${unitId}`);
+        }
+    }
 
     // Wait until the tab bar is rendered
     const tabLabel = ADMIN_TAB_LABELS[tabKey] ?? tabKey;
     await page.waitForSelector(`button:has-text("${tabLabel}")`, { timeout: 10000 });
     await page.click(`button:has-text("${tabLabel}")`);
-    await page.waitForTimeout(500);
 }
 
 // ─── Dialog handling ────────────────────────────────────────────────────────
@@ -119,4 +128,27 @@ export async function fillReasonModal(page: Page, reason = 'Motivo de teste E2E'
     await input.waitFor({ state: 'visible', timeout: 8000 });
     await input.fill(reason);
     await page.locator('button', { hasText: 'Confirmar' }).last().click();
+}
+
+/**
+ * Fills and confirms the ConfirmModal, optionally typing a requireWord first.
+ */
+export async function fillConfirmModal(
+    page: Page,
+    reason = 'Motivo teste E2E',
+    requiredWord?: string,
+) {
+    if (requiredWord) {
+        const requiredWordInput = page.locator('#modal-typing');
+        await requiredWordInput.waitFor({ state: 'visible', timeout: 8000 });
+        await requiredWordInput.fill(requiredWord);
+    }
+
+    const reasonInput = page.locator('#modal-reason');
+    await reasonInput.waitFor({ state: 'visible', timeout: 5000 });
+    await reasonInput.fill(reason);
+
+    const confirmBtn = page.locator('.modal-btn-confirm');
+    await expect(confirmBtn).not.toBeDisabled({ timeout: 5000 });
+    await confirmBtn.click();
 }

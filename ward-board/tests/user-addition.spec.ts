@@ -23,7 +23,7 @@
  */
 
 import { test, expect, request } from '@playwright/test';
-import { signInAsAdmin, goToAdminTab, autoAcceptDialogs, fillReasonModal } from './helpers';
+import { signInAsAdmin, goToAdminTab, autoAcceptDialogs, fillConfirmModal } from './helpers';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const TEST_EMAIL = 'e2e-add-user@lean.com';
@@ -91,7 +91,7 @@ test.describe('Admin – User Addition Flow', () => {
         await goToAdminTab(page, 'users');
 
         // Read current count
-        const countBadge = page.locator('text=/Acesso na Unidade \\(\\d+\\)/');
+        const countBadge = page.locator('span.font-bold', { hasText: /Acesso na Unidade/ });
         await expect(countBadge).toBeVisible({ timeout: 8000 });
         const beforeText = await countBadge.textContent() ?? '';
         const beforeCount = parseInt(beforeText.match(/\d+/)?.[0] ?? '0', 10);
@@ -102,7 +102,7 @@ test.describe('Admin – User Addition Flow', () => {
             const row = page.locator('tr, [role="row"]').filter({ hasText: TEST_EMAIL });
             const removeBtn = row.locator('button, span', { hasText: /remover/i });
             await removeBtn.click();
-            await fillReasonModal(page, 'Limpeza antes do teste E2E');
+            await fillConfirmModal(page, 'Limpeza antes do teste E2E');
             await expect(page.locator(`text="${TEST_EMAIL}"`)).not.toBeVisible({ timeout: 10000 });
         }
 
@@ -118,8 +118,8 @@ test.describe('Admin – User Addition Flow', () => {
         await page.locator('select').first().selectOption({ label: 'Editor' });
 
         // ── Click Adicionar — ReasonModal appears ──────────────────────────
-        await page.locator('button', { hasText: 'Adicionar' }).click();
-        await fillReasonModal(page, AUDIT_REASON);
+        await page.locator('button[type="submit"]', { hasText: 'Adicionar' }).click();
+        await fillConfirmModal(page, AUDIT_REASON);
 
         // ── Assertions ────────────────────────────────────────────────────
         await expect(page.locator(`text="${TEST_EMAIL}"`)).toBeVisible({ timeout: 20000 });
@@ -133,7 +133,7 @@ test.describe('Admin – User Addition Flow', () => {
     test('Adding an email with no Firebase Auth account does not increment the count', async ({ page }) => {
         await goToAdminTab(page, 'users');
 
-        const countBadge = page.locator('text=/Acesso na Unidade \\(\\d+\\)/');
+        const countBadge = page.locator('span.font-bold', { hasText: /Acesso na Unidade/ });
         await expect(countBadge).toBeVisible({ timeout: 8000 });
         const beforeText = await countBadge.textContent() ?? '';
         const beforeCount = parseInt(beforeText.match(/\d+/)?.[0] ?? '0', 10);
@@ -141,10 +141,10 @@ test.describe('Admin – User Addition Flow', () => {
         const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
         await emailInput.fill('nobody-xyz-9999@nowhere.invalid');
         await page.locator('select').first().selectOption({ label: 'Editor' });
-        await page.locator('button', { hasText: 'Adicionar' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Adicionar' }).click();
 
         // Fill the modal reason
-        await fillReasonModal(page, AUDIT_REASON);
+        await fillConfirmModal(page, AUDIT_REASON);
 
         // Wait for function response
         await page.waitForTimeout(10000);
@@ -159,7 +159,7 @@ test.describe('Admin – User Addition Flow', () => {
 
     test('Admin can remove the previously added user', async ({ page }) => {
         await goToAdminTab(page, 'users');
-        await expect(page.locator('text=/Acesso na Unidade/')).toBeVisible({ timeout: 8000 });
+        await expect(page.locator('h2', { hasText: /Acesso na Unidade/ })).toBeVisible({ timeout: 8000 });
 
         // Ensure user is present (add if missing)
         const userInList = await page.locator(`text="${TEST_EMAIL}"`).isVisible({ timeout: 2000 }).catch(() => false);
@@ -167,12 +167,12 @@ test.describe('Admin – User Addition Flow', () => {
             const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
             await emailInput.fill(TEST_EMAIL);
             await page.locator('select').first().selectOption({ label: 'Editor' });
-            await page.locator('button', { hasText: 'Adicionar' }).click();
-            await fillReasonModal(page, AUDIT_REASON);
+            await page.locator('button[type="submit"]', { hasText: 'Adicionar' }).click();
+            await fillConfirmModal(page, AUDIT_REASON);
             await expect(page.locator(`text="${TEST_EMAIL}"`)).toBeVisible({ timeout: 20000 });
         }
 
-        const countBadge = page.locator('text=/Acesso na Unidade \\(\\d+\\)/');
+        const countBadge = page.locator('span.font-bold', { hasText: /Acesso na Unidade/ });
         const beforeText = await countBadge.textContent() ?? '';
         const beforeCount = parseInt(beforeText.match(/\d+/)?.[0] ?? '0', 10);
 
@@ -182,7 +182,7 @@ test.describe('Admin – User Addition Flow', () => {
         await expect(removeBtn).toBeVisible({ timeout: 5000 });
         await removeBtn.click();
         // native confirm() auto-accepted, then ReasonModal
-        await fillReasonModal(page, 'Limpeza pós-teste E2E');
+        await fillConfirmModal(page, 'Limpeza pós-teste E2E');
 
         await expect(page.locator(`text="${TEST_EMAIL}"`)).not.toBeVisible({ timeout: 15000 });
         await expect(countBadge).toContainText(`${beforeCount - 1}`, { timeout: 15000 });

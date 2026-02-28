@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../infra/firebase/config';
 import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
+import { UnitSettingsRepository } from '../../../repositories/UnitSettingsRepository';
+import { useAuthStatus } from '../../../hooks/useAuthStatus';
+import type { UnitOpsSettings, KanbanMode } from '../../../domain/types';
 
 interface Props {
     unitId: string;
@@ -20,15 +23,32 @@ type ModalConfig = {
 };
 
 const OpsScreen: React.FC<Props> = ({ unitId }) => {
+    const { user } = useAuthStatus();
     const [msg, setMsg] = useState('');
     const [msgType, setMsgType] = useState<'success' | 'error'>('success');
-    const [running, setRunning] = useState(false);
+    const [savingMode, setSavingMode] = useState(false);
+    const [runningAction, setRunningAction] = useState(false);
+    const [savingHuddle, setSavingHuddle] = useState<'AM' | 'PM' | null>(null);
     const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
+    const [opsSettings, setOpsSettings] = useState<UnitOpsSettings | null>(null);
+    const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        const unsub = UnitSettingsRepository.subscribeUnitOpsSettings(unitId, setOpsSettings);
+        return () => unsub();
+    }, [unitId]);
+
+    useEffect(() => {
+        return () => {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        };
+    }, []);
 
     const flash = (text: string, type: 'success' | 'error' = 'success') => {
         setMsg(text);
         setMsgType(type);
-        setTimeout(() => setMsg(''), 4000);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setMsg(''), 4000);
     };
 
     const openModal = (config: ModalConfig) => setModalConfig(config);
@@ -37,14 +57,55 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
     const runAction = async (reason: string) => {
         if (!modalConfig) return;
         closeModal();
-        setRunning(true);
+        setRunningAction(true);
         try {
             await modalConfig.action(reason);
         } catch (err: unknown) {
             console.error(err);
             flash('Erro durante a operação. Verifique os logs.', 'error');
         } finally {
-            setRunning(false);
+            setRunningAction(false);
+        }
+    };
+
+    const handleModeChange = async (newMode: KanbanMode) => {
+        if (!user || opsSettings?.kanbanMode === newMode) return;
+        setSavingMode(true);
+        try {
+            await UnitSettingsRepository.setUnitKanbanMode(unitId, newMode, {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || '',
+            });
+            flash('Modo operacional salvo com sucesso.', 'success');
+        } catch (err) {
+            console.error('Falha ao alterar modo:', err);
+            flash('Falha ao salvar modo. Alteração revertida.', 'error');
+        } finally {
+            setSavingMode(false);
+        }
+    };
+
+    // ── v1: Registrar Huddle ──────────────────────────────────────────────────
+    const handleRegisterHuddle = async (huddleType: 'AM' | 'PM') => {
+        if (!user) return;
+        setSavingHuddle(huddleType);
+        try {
+            const schedule = opsSettings?.huddleSchedule;
+            await UnitSettingsRepository.registerHuddle(
+                unitId,
+                huddleType,
+                { id: user.uid, name: user.displayName || user.email || user.uid },
+                schedule
+            );
+            const now = new Date();
+            const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+            flash(`✓ Huddle ${huddleType} registrado às ${hhmm}`, 'success');
+        } catch (err) {
+            console.error('Falha ao registrar huddle:', err);
+            flash('Falha ao registrar huddle.', 'error');
+        } finally {
+            setSavingHuddle(null);
         }
     };
 
@@ -88,7 +149,7 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
     };
 
     const handleExportJSON = async () => {
-        setRunning(true);
+        setRunningAction(true);
         try {
             const [beds, settings] = await Promise.all([
                 BedsRepository.listBeds(unitId),
@@ -114,7 +175,7 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
             console.error(err);
             flash('Erro ao exportar.', 'error');
         } finally {
-            setRunning(false);
+            setRunningAction(false);
         }
     };
 
@@ -141,6 +202,90 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                     </p>
                 </div>
 
+                {/* Status Operacional */}
+                <div className="mb-6 bg-surface-1 border rounded-lg p-6 shadow-sm">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-semibold text-primary mb-1">Modo Operacional</h3>
+                                <p className="text-sm text-muted">
+                                    Define o nível de cobrança e governança para esta unidade.
+                                </p>
+                            </div>
+
+                            {opsSettings ? (
+                                <div className="flex items-center gap-1 bg-surface-2 p-1 border rounded-lg">
+                                    {(['PASSIVE', 'ACTIVE_LITE'] as KanbanMode[]).map((m) => (
+                                        <button
+                                            key={m}
+                                            disabled={savingMode}
+                                            onClick={() => handleModeChange(m)}
+                                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${opsSettings.kanbanMode === m
+                                                ? 'bg-white text-primary shadow-sm ring-1 ring-border'
+                                                : 'text-muted-more hover:text-primary-800 hover:bg-surface-3'
+                                                }`}
+                                        >
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="skeleton h-10 w-48 rounded-lg" />
+                            )}
+                        </div>
+                        <div className="bg-surface-2 border p-4 rounded-md text-sm mt-2">
+                            {opsSettings?.kanbanMode === 'PASSIVE' ? (
+                                <p className="text-muted"><strong className="text-primary font-semibold">PASSIVE:</strong> Sem obrigatoriedades, sem cobrança operacional. Apenas visualização de dados.</p>
+                            ) : opsSettings?.kanbanMode === 'ACTIVE_LITE' ? (
+                                <p className="text-muted"><strong className="text-primary font-semibold">ACTIVE LITE:</strong> Habilita regras mínimas de governança (bloqueio estruturado, ciclos, aging, pendências).</p>
+                            ) : (
+                                <p className="text-muted">Carregando...</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── v1: Cadência Huddle ────────────────────────────────────────────── */}
+                <div className="mb-6 bg-surface-1 border rounded-lg p-6 shadow-sm">
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <h3 className="text-sm font-semibold text-primary mb-1">Cadência Huddle (Lean)</h3>
+                            <p className="text-sm text-muted">
+                                Registra que o huddle do turno atual foi realizado.
+                                O painel TV exibe alerta caso o huddle ainda não tenha sido registrado.
+                            </p>
+                        </div>
+
+                        {/* Info do último huddle */}
+                        {opsSettings?.lastHuddleAt && (
+                            <div className="text-xs text-muted bg-surface-2 border rounded px-3 py-2">
+                                Último: <strong>{opsSettings.lastHuddleType}</strong>
+                                {' '}— turno{' '}
+                                <code className="font-mono">{opsSettings.lastHuddleShiftKey ?? '—'}</code>
+                                {opsSettings.lastHuddleRegisteredBy && (
+                                    <> por <strong>{opsSettings.lastHuddleRegisteredBy.name}</strong></>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            {(['AM', 'PM'] as const).map(type => (
+                                <button
+                                    key={type}
+                                    id={`btn-register-huddle-${type.toLowerCase()}`}
+                                    onClick={() => handleRegisterHuddle(type)}
+                                    disabled={savingHuddle !== null}
+                                    aria-busy={savingHuddle === type}
+                                    className={`btn ${savingHuddle === type ? 'btn-disabled' : 'btn-primary'
+                                        } flex items-center gap-2`}
+                                >
+                                    {savingHuddle === type ? '...' : `Registrar Huddle ${type}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Flash */}
                 {msg && (
                     <div
@@ -158,27 +303,27 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                     <OpsCard
                         title="Resetar dados da unidade (soft)"
                         description="Limpa kanban + kamishibai de todos os leitos. A lista de leitos é mantida."
-                        buttonLabel={running ? 'Executando...' : 'Executar Reset'}
+                        buttonLabel={runningAction ? 'Executando...' : 'Executar Reset'}
                         buttonColorClass="btn-danger"
-                        disabled={running}
+                        disabled={runningAction}
                         onClick={handleSoftReset}
                     />
 
                     <OpsCard
                         title="Reaplicar leitos padrão (36)"
                         description="Cria ou atualiza os 36 leitos canônicos. Leitos existentes são preservados."
-                        buttonLabel={running ? 'Executando...' : 'Reaplicar Leitos'}
+                        buttonLabel={runningAction ? 'Executando...' : 'Reaplicar Leitos'}
                         buttonColorClass="btn-warning"
-                        disabled={running}
+                        disabled={runningAction}
                         onClick={handleReapplyCanonical}
                     />
 
                     <OpsCard
                         title="Exportar snapshot JSON"
                         description="Baixa um arquivo JSON com unit settings + estado atual de todos os leitos."
-                        buttonLabel={running ? 'Exportando...' : 'Exportar snapshot'}
+                        buttonLabel={runningAction ? 'Exportando...' : 'Exportar snapshot'}
                         buttonColorClass="btn-primary"
-                        disabled={running}
+                        disabled={runningAction}
                         onClick={handleExportJSON}
                     />
                 </div>

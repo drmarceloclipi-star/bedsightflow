@@ -1,8 +1,8 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import type { Timestamp } from 'firebase-admin/firestore'
 
-type KamishibaiStatus = 'ok' | 'blocked' | 'pending' | 'na'
+type KamishibaiStatus = 'ok' | 'blocked' | 'na'
 
 /**
  * Returns current ward overview metrics from live Firestore data.
@@ -11,7 +11,7 @@ type KamishibaiStatus = 'ok' | 'blocked' | 'pending' | 'na'
  *  - occupancy (occupied / vacant)
  *  - expected discharges within 24h
  *  - beds with a documented blocker
- *  - kamishibai pending / blocked counts
+ *  - kamishibai blocked counts
  *  - stale beds (not updated in >24h)
  */
 export const getAdminOverviewBQ = functions
@@ -36,7 +36,6 @@ export const getAdminOverviewBQ = functions
         let vacantBeds = 0
         let dischargeLt24h = 0
         let bedsWithBlocker = 0
-        let pendingKamishibai = 0
         let blockedKamishibai = 0
         let staleBeds24h = 0
 
@@ -57,7 +56,6 @@ export const getAdminOverviewBQ = functions
             if (bed.kamishibai && typeof bed.kamishibai === 'object') {
                 for (const entry of Object.values(bed.kamishibai)) {
                     const status = (entry as { status: KamishibaiStatus }).status
-                    if (status === 'pending') pendingKamishibai++
                     if (status === 'blocked') blockedKamishibai++
                 }
             }
@@ -81,7 +79,6 @@ export const getAdminOverviewBQ = functions
             vacantBeds,
             dischargeLt24h,
             bedsWithBlocker,
-            pendingKamishibai,
             blockedKamishibai,
             staleBeds24h,
         }

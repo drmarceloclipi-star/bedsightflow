@@ -1,5 +1,6 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { Timestamp } from 'firebase-admin/firestore'
 
 /**
  * Returns the top blockers ranking for the unit from live Firestore data.
@@ -49,8 +50,8 @@ export const getAdminTopBlockersBQ = functions
         const prevSnap = await db.collection(`units/${unitId}/audit_logs`)
             .where('entityType', '==', 'bed')
             .where('action', '==', 'RESET_BED_KANBAN')
-            .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(prevStart))
-            .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(prevEnd))
+            .where('createdAt', '>=', Timestamp.fromDate(prevStart))
+            .where('createdAt', '<=', Timestamp.fromDate(prevEnd))
             .get()
 
         const prevCounts = new Map<string, number>()

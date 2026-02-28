@@ -1,6 +1,6 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import type { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
 
 type RangeKey = 'today' | '7d' | '30d'
 
@@ -50,7 +50,7 @@ export const getAdminMissionControlPeriod = functions
             .collection(`units/${unitId}/audit_logs`)
             .where('entityType', '==', 'bed')
             .where('action', 'in', ['RESET_BED_KANBAN', 'RESET_BED_ALL'])
-            .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(windowStart))
+            .where('createdAt', '>=', Timestamp.fromDate(windowStart))
             .get()
 
         // Query previous period
@@ -58,8 +58,8 @@ export const getAdminMissionControlPeriod = functions
             .collection(`units/${unitId}/audit_logs`)
             .where('entityType', '==', 'bed')
             .where('action', 'in', ['RESET_BED_KANBAN', 'RESET_BED_ALL'])
-            .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(prevWindowStart))
-            .where('createdAt', '<', admin.firestore.Timestamp.fromDate(windowStart))
+            .where('createdAt', '>=', Timestamp.fromDate(prevWindowStart))
+            .where('createdAt', '<', Timestamp.fromDate(windowStart))
             .get()
 
         // Build discharges by day for current period

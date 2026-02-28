@@ -1,13 +1,40 @@
-import React from 'react';
-import type { Bed } from '../../../domain/types';
+import React, { useMemo } from 'react';
+import type { Bed, UnitOpsSettings } from '../../../domain/types';
 import { getKamishibaiLabel, KAMISHIBAI_DOMAINS } from '../../../domain/specialtyUtils';
+import {
+    resolveKamishibaiVisualState,
+    visualStateToCssClass,
+    type ResolveKamishibaiOpts,
+} from '../../../domain/kamishibaiVisualState';
+import { currentShiftKey } from '../../../domain/shiftKey';
+import { DEFAULT_SHIFT_SCHEDULE } from '../../../domain/shiftKey';
 
 interface KamishibaiScreenProps {
     beds: Bed[];
     columns?: number;
+    /** Configuração operacional da unidade (v1). Ausente → defaults v0. */
+    opsSettings?: UnitOpsSettings | null;
 }
 
-const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1 }) => {
+const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, opsSettings }) => {
+
+    /**
+     * Calcular currentShiftKey UMA VEZ por render para todo o quadro.
+     * Recalcula quando opsSettings.huddleSchedule muda (ex: nova leitura do Firestore).
+     */
+    const resolvedCurrentShiftKey = useMemo(() => {
+        const schedule = opsSettings?.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE;
+        return currentShiftKey(schedule);
+    }, [opsSettings?.huddleSchedule]);
+
+    const kamishibaiEnabled = opsSettings?.kamishibaiEnabled ?? true;
+
+    /** Opts v1 compartilhados para todos os dots da tela. */
+    const resolveOpts: ResolveKamishibaiOpts = {
+        kamishibaiEnabled,
+        resolvedCurrentShiftKey,
+        schedule: opsSettings?.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE,
+    };
 
     const renderTable = (bedsList: Bed[]) => (
         <table className="kamishibai-compact-table bg-surface-1 rounded-lg shadow-sm">
@@ -24,10 +51,35 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1 }
                     <tr key={bed.id}>
                         <td><span className="kamishibai-bed-num">{bed.number}</span></td>
                         {KAMISHIBAI_DOMAINS.map(s => {
-                            const entry = bed.kamishibai?.[s];
+                            const state = resolveKamishibaiVisualState(bed, s, resolveOpts);
+                            const dotClass = visualStateToCssClass(state);
+                            const showDot = state === 'OK' || state === 'BLOCKED' || state === 'NOT_APPLICABLE';
+                            // data-state diferencia INACTIVE de UNREVIEWED_THIS_SHIFT no DOM:
+                            // permite telemetria futura sem alterar visual
+                            const dataState = state === 'UNREVIEWED_THIS_SHIFT' ? 'unreviewed' : state.toLowerCase();
                             return (
-                                <td key={s} className="text-center">
-                                    <div className={`kamishibai-dot ${entry?.status || 'na'}`} />
+                                <td key={s} className="text-center" data-state={dataState} data-domain={s}>
+                                    {showDot ? (
+                                        <div
+                                            className={`kamishibai-dot ${dotClass}`}
+                                            role="img"
+                                            aria-label={
+                                                state === 'OK' ? 'OK — revisado neste turno' :
+                                                    state === 'BLOCKED' ? 'Impedido' :
+                                                        'Não aplicável'
+                                            }
+                                        />
+                                    ) : (
+                                        <div
+                                            className="kamishibai-dot kamishibai-empty"
+                                            role="img"
+                                            aria-label={
+                                                state === 'INACTIVE'
+                                                    ? 'Leito vazio ou Kamishibai inativo'
+                                                    : 'Não revisado neste turno'
+                                            }
+                                        />
+                                    )}
                                 </td>
                             );
                         })}
@@ -49,16 +101,22 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1 }
                 <h2 className="kamishibai-title text-3xl font-serif">Quadro Kamishibai — Pendências por Domínio / Equipe</h2>
                 <div className="kamishibai-legend flex gap-4 text-xs font-bold uppercase tracking-widest text-secondary">
                     <div className="flex items-center gap-2">
-                        <div className="kamishibai-dot ok" style={{ width: '16px', height: '16px', margin: 0 }} /> <span>OK / Concluído</span>
+                        <div className="kamishibai-dot kamishibai-dot--ok" style={{ width: '16px', height: '16px', margin: 0 }} />
+                        <span>OK / Concluído</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="kamishibai-dot pending" style={{ width: '16px', height: '16px', margin: 0 }} /> <span>Pendente</span>
+                        <div className="kamishibai-dot kamishibai-dot--blocked" style={{ width: '16px', height: '16px', margin: 0 }} />
+                        <span>Impedido</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="kamishibai-dot blocked" style={{ width: '16px', height: '16px', margin: 0 }} /> <span>Impedido</span>
+                        {/* Placeholder visual para NOT_APPLICABLE na legenda */}
+                        <div className="kamishibai-dot kamishibai-placeholder--na" style={{ width: '16px', height: '16px', margin: 0 }} />
+                        <span>N/A</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="kamishibai-dot na" style={{ width: '16px', height: '16px', margin: 0 }} /> <span>N/A</span>
+                        {/* Célula vazia = sem cor (não revisado no turno) */}
+                        <div className="kamishibai-dot kamishibai-empty" style={{ width: '16px', height: '16px', margin: 0, border: '1px solid var(--border-soft)' }} />
+                        <span>Sem cor (não revisado)</span>
                     </div>
                 </div>
             </div>
@@ -134,4 +192,3 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1 }
 };
 
 export default KamishibaiScreen;
-

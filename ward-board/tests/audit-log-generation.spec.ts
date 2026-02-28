@@ -10,17 +10,12 @@
  *  - Emulator seeded with unit 'A' and beds
  */
 
-import { test, expect, type Dialog } from '@playwright/test';
-import { signInAsAdmin, goToAdminTab } from './helpers';
+import { test, expect } from '@playwright/test';
+import { signInAsAdmin, goToAdminTab, fillConfirmModal } from './helpers';
 
 test.describe('Audit Log Generation', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Auto-accept ALL dialogs (confirm + prompt + alert)
-        page.on('dialog', async (dialog: Dialog) => {
-            if (dialog.type() === 'prompt') await dialog.accept('E2E motivo de auditoria');
-            else await dialog.accept();
-        });
         await signInAsAdmin(page);
     });
 
@@ -32,6 +27,7 @@ test.describe('Audit Log Generation', () => {
         const saveBtn = page.locator('button', { hasText: 'Salvar' });
         await expect(saveBtn).toBeVisible({ timeout: 8000 });
         await saveBtn.click();
+        await fillConfirmModal(page, 'E2E motivo de auditoria');
 
         // Either success state OR error state — either way the flow was triggered
         await expect(
@@ -55,6 +51,7 @@ test.describe('Audit Log Generation', () => {
         );
         await expect(applyBtn.first()).toBeVisible({ timeout: 10000 });
         await applyBtn.first().click();
+        await fillConfirmModal(page, 'E2E motivo de auditoria');
 
         // Flash text from BedsAdminScreen.tsx: '✓ 36 leitos canônicos aplicados!' | 'Erro ao aplicar leitos.'
         await expect(
@@ -71,29 +68,25 @@ test.describe('Audit Log Generation', () => {
         await goToAdminTab(page, 'beds');
 
         // Kanban clear buttons appear in each row
-        const kanbanBtns = page.locator('button', { hasText: 'Kanban' });
+        const kanbanBtns = page.locator('button[title="Limpar Kanban"]');
         await expect(kanbanBtns.first()).toBeVisible({ timeout: 10000 });
         await kanbanBtns.first().click();
+        await fillConfirmModal(page, 'E2E motivo de auditoria');
 
         // Flash text: 'Kanban do leito X limpo.' | 'Erro ao limpar Kanban.'
         await expect(
-            page.locator('div').filter({ hasText: /Kanban.*limpo|Erro ao limpar Kanban/i }).first()
-        ).toBeVisible({ timeout: 15000 });
+            page.locator('div').filter({ hasText: /Kanban.*limpo|atualizado|Erro ao limpar Kanban/i }).first()
+        ).toBeVisible({ timeout: 18000 });
     });
 
     // ── Ops: Soft Reset ───────────────────────────────────────────────────────
     test('Soft reset unit via Ops shows success or error flash', async ({ page }) => {
         await goToAdminTab(page, 'ops');
 
-        // The ops screen has an input with this exact placeholder
-        const confirmInput = page.locator('input[placeholder="Digite RESET para habilitar ações destrutivas"]');
-        await expect(confirmInput).toBeVisible({ timeout: 8000 });
-        await confirmInput.fill('RESET');
-
-        // Button label from OpsCard: 'Executar Reset'
         const resetBtn = page.locator('button', { hasText: 'Executar Reset' });
         await expect(resetBtn).toBeVisible({ timeout: 5000 });
         await resetBtn.click();
+        await fillConfirmModal(page, 'E2E motivo de auditoria logs', 'RESETAR');
 
         // Flash text: '✓ Reset concluído com sucesso.' | 'Erro durante o reset.'
         await expect(

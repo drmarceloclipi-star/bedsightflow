@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Smartphone, ShieldAlert } from 'lucide-react';
-import type { Bed, BoardSettings, Unit } from '../../../domain/types';
+import type { Bed, BoardSettings, Unit, UnitOpsSettings } from '../../../domain/types';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { BoardSettingsRepository } from '../../../repositories/BoardSettingsRepository';
 import { UnitsRepository } from '../../../repositories/UnitsRepository';
+import { UnitSettingsRepository } from '../../../repositories/UnitSettingsRepository';
 import TvRotationContainer from '../components/TvRotationContainer';
 import ThemeToggle from '../../../shared/theme/ThemeToggle';
 import { useAuthStatus } from '../../../hooks/useAuthStatus';
+import { currentShiftKey, DEFAULT_SHIFT_SCHEDULE } from '../../../domain/shiftKey';
 
 const TvDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -22,12 +24,36 @@ const TvDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [now, setNow] = useState(new Date());
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [opsSettings, setOpsSettings] = useState<UnitOpsSettings | null>(null);
 
     // Relógio atualizado a cada 30 segundos
     useEffect(() => {
         const tick = setInterval(() => setNow(new Date()), 30000);
         return () => clearInterval(tick);
     }, []);
+
+    // ── v1: Huddle pendente ──────────────────────────────────────────────────
+    // Computa UMA VEZ por ciclo de render. Usa 'now' (state) — nunca Date.now() direto no JSX.
+    const { huddlePending, huddleSubtext } = useMemo(() => {
+        if (!opsSettings) return { huddlePending: false, huddleSubtext: '' };
+        const schedule = opsSettings.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE;
+        const shiftKey = currentShiftKey(schedule);
+        const pending = !opsSettings.lastHuddleShiftKey || opsSettings.lastHuddleShiftKey !== shiftKey;
+        let subtext = 'Nenhum huddle registrado neste turno';
+        if (opsSettings.lastHuddleAt) {
+            const raw = opsSettings.lastHuddleAt;
+            const lastAt: Date | null =
+                raw instanceof Date ? raw :
+                    typeof raw === 'string' ? new Date(raw) :
+                        (raw as { toDate?: () => Date }).toDate?.() ?? null;
+            if (lastAt) {
+                const diffH = Math.round((now.getTime() - lastAt.getTime()) / 3600000);
+                subtext = `Último: ${opsSettings.lastHuddleType ?? ''} há ${diffH}h`;
+            }
+        }
+        return { huddlePending: pending, huddleSubtext: subtext };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [opsSettings, now]);
 
     useEffect(() => {
         const handleError = (err: Error) => {
@@ -54,9 +80,12 @@ const TvDashboard: React.FC = () => {
             setLoading(false);
         });
 
+        const unsubscribeOps = UnitSettingsRepository.subscribeUnitOpsSettings(unitId, setOpsSettings);
+
         return () => {
             unsubscribeBeds();
             unsubscribeSettings();
+            unsubscribeOps();
         };
     }, [unitId]);
 
@@ -108,7 +137,14 @@ const TvDashboard: React.FC = () => {
                 <div className="tv-header-left">
                     <span className="unit-badge text-lg px-4 py-1">{unit.name}</span>
                 </div>
-                <h1 className="tv-title text-4xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</h1>
+                <h1 className="tv-title absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+                    <img
+                        src="/bedsight-flow-logo.png"
+                        alt="BedSight Flow"
+                        className="w-auto object-contain"
+                        style={{ height: '40px', maxWidth: 'calc(100vw - 250px)' }}
+                    />
+                </h1>
                 <div className="tv-header-controls flex items-center gap-6">
                     <div className="flex items-center gap-3">
                         {isAdmin && (
@@ -138,6 +174,11 @@ const TvDashboard: React.FC = () => {
                         <div className="tv-time text-muted font-bold tracking-widest text-xl">
                             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
+                        {opsSettings && (
+                            <div className="tv-mode text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
+                                Modo: {opsSettings.kanbanMode}
+                            </div>
+                        )}
                         {lastUpdated && (
                             <div className="tv-last-updated text-[10px] text-muted-more uppercase tracking-tighter mt-0.5 opacity-60">
                                 Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -147,12 +188,42 @@ const TvDashboard: React.FC = () => {
                 </div>
             </header>
 
+            {/* ── Badge HUDDLE PENDENTE (v1) ─────────────────────────────────────
+                Aparece no topo quando lastHuddleShiftKey !== currentShiftKey.
+                Desaparece em realtime após registerHuddle() ser chamado. */}
+            {huddlePending && (
+                <div
+                    className="huddle-pending-badge"
+                    role="alert"
+                    aria-live="polite"
+                    style={{
+                        background: 'var(--state-warning-bg)',
+                        borderBottom: '2px solid var(--state-warning)',
+                        color: 'var(--state-warning)',
+                        padding: '0.4rem 2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                    }}
+                >
+                    <span>⚠ HUDDLE PENDENTE</span>
+                    <span style={{ fontWeight: 400, opacity: 0.75, textTransform: 'none', letterSpacing: 0 }}>
+                        {huddleSubtext}
+                    </span>
+                </div>
+            )}
+
             <main className="tv-main flex-1 overflow-hidden">
                 {settings && (
                     <TvRotationContainer
                         beds={beds}
                         settings={settings}
                         unitName={unit.name}
+                        opsSettings={opsSettings}
                     />
                 )}
             </main>

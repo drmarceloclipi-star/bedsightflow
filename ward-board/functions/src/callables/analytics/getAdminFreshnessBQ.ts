@@ -1,6 +1,6 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import type { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
 
 /**
  * Returns data freshness metrics from live Firestore data.
@@ -59,7 +59,7 @@ export const getAdminFreshnessBQ = functions
         sevenDaysAgo.setHours(0, 0, 0, 0)
 
         const logsSnap = await db.collection(`units/${unitId}/audit_logs`)
-            .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(sevenDaysAgo))
+            .where('createdAt', '>=', Timestamp.fromDate(sevenDaysAgo))
             .get()
 
         // updatesByHour: counts per hour of day (0-23), based on local hour of log

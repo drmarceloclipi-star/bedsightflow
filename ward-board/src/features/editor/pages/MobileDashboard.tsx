@@ -47,8 +47,8 @@ const MobileDashboard: React.FC = () => {
             return bed.mainBlocker && bed.mainBlocker.trim().length > 0;
         }
 
-        if (filterType === 'kamishibai=pending' || filterType === 'kamishibai=blocked') {
-            const targetStatus = filterType.split('=')[1]; // pending or blocked
+        if (filterType === 'kamishibai=blocked') {
+            const targetStatus = 'blocked';
             if (!bed.kamishibai) return false;
             return Object.values(bed.kamishibai).some(k => k.status === targetStatus);
         }

@@ -36,7 +36,9 @@ export const authorizedUsersRepository = {
             return {
                 id: docSnap.id,
                 email: data.email,
-                addedAt: (data.addedAt as Timestamp).toDate()
+                addedAt: data.addedAt && typeof data.addedAt.toDate === 'function'
+                    ? data.addedAt.toDate()
+                    : new Date(data.addedAt || Date.now())
             };
         });
     },

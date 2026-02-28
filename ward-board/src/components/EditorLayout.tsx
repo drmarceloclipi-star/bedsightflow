@@ -1,6 +1,6 @@
 import { Outlet, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Tv, ShieldAlert, ChevronLeft } from 'lucide-react';
-import ThemeToggle from '../shared/theme/ThemeToggle';
+
 import { useAuthStatus } from '../hooks/useAuthStatus';
 
 export default function EditorLayout() {
@@ -33,8 +33,8 @@ export default function EditorLayout() {
                         )}
                     </div>
 
-                    <h1 className="text-2xl font-serif absolute left-1/2 -translate-x-1/2 mt-1 z-0" aria-hidden="true">
-                        BedSight
+                    <h1 className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none" aria-hidden="true">
+                        <img src="/bedsight-flow-logo.png" alt="BedSight Flow" style={{ height: '24px', width: 'auto', maxWidth: 'calc(100vw - 160px)' }} />
                     </h1>
 
                     <div className="flex items-center gap-1 sm:gap-2 z-10 justify-end flex-1">
@@ -56,7 +56,6 @@ export default function EditorLayout() {
                         >
                             <Tv size={20} />
                         </button>
-                        <ThemeToggle />
                     </div>
                 </div>
             </header>

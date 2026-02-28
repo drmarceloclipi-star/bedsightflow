@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-
 import type { AnalyticsPeriodKey } from '../../../domain/analytics';
+
 import AnalyticsFilters from '../../admin/components/analytics/AnalyticsFilters';
-import OverviewCards from '../../admin/components/analytics/OverviewCards';
 import FlowTrendChart from '../../admin/components/analytics/FlowTrendChart';
 import KamishibaiStatusChart from '../../admin/components/analytics/KamishibaiStatusChart';
 import TopBlockersTable from '../../admin/components/analytics/TopBlockersTable';
@@ -33,8 +32,6 @@ const MobileAnalyticsScreen: React.FC<Props> = ({ unitId }) => {
                         onPeriodChange={setPeriod}
                     />
                 </div>
-
-                <OverviewCards unitId={unitId} period={period} />
                 <FreshnessCards unitId={unitId} period={period} />
                 <FlowTrendChart unitId={unitId} period={period} />
                 <KamishibaiStatusChart unitId={unitId} period={period} />

@@ -1,7 +1,7 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 
-type KamishibaiStatus = 'ok' | 'blocked' | 'pending' | 'na'
+type KamishibaiStatus = 'ok' | 'blocked' | 'na'
 
 /**
  * Returns Kamishibai status distribution and per-specialty breakdown
@@ -25,9 +25,9 @@ export const getAdminKamishibaiStatsBQ = functions
         const db = admin.firestore()
         const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
 
-        const distribution = { ok: 0, pending: 0, blocked: 0, na: 0 }
+        const distribution = { ok: 0, blocked: 0, na: 0 }
         // specialty → counts
-        const specialtyMap = new Map<string, { ok: number; pending: number; blocked: number; na: number }>()
+        const specialtyMap = new Map<string, { ok: number; blocked: number; na: number }>()
 
         for (const doc of bedsSnap.docs) {
             const bed = doc.data()
@@ -41,7 +41,7 @@ export const getAdminKamishibaiStatsBQ = functions
 
                 // accumulate per-specialty
                 if (!specialtyMap.has(specialty)) {
-                    specialtyMap.set(specialty, { ok: 0, pending: 0, blocked: 0, na: 0 })
+                    specialtyMap.set(specialty, { ok: 0, blocked: 0, na: 0 })
                 }
                 const sc = specialtyMap.get(specialty)!
                 sc[status] = (sc[status] ?? 0) + 1
@@ -50,7 +50,7 @@ export const getAdminKamishibaiStatsBQ = functions
 
         const byDomain = Array.from(specialtyMap.entries())
             .map(([domain, counts]) => ({ domain: domain.toUpperCase(), ...counts }))
-            .sort((a, b) => (b.ok + b.pending + b.blocked + b.na) - (a.ok + a.pending + a.blocked + a.na))
+            .sort((a, b) => (b.ok + b.blocked + b.na) - (a.ok + a.blocked + a.na))
 
         return { distribution, byDomain }
     })

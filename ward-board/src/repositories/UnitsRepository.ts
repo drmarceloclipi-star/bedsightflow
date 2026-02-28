@@ -3,7 +3,8 @@ import {
     onSnapshot,
     doc,
     getDoc,
-    query
+    query,
+    addDoc
 } from 'firebase/firestore';
 import { db } from '../infra/firebase/config';
 import type { Unit } from '../domain/types';
@@ -17,6 +18,12 @@ export const UnitsRepository = {
             return { id: docSnap.id, ...docSnap.data() } as Unit;
         }
         return null;
+    },
+
+    async addUnit(unitData: Omit<Unit, 'id'>): Promise<string> {
+        const unitsCol = collection(db, 'units');
+        const docRef = await addDoc(unitsCol, unitData);
+        return docRef.id;
     },
 
     listenToUnits(callback: (units: Unit[]) => void) {

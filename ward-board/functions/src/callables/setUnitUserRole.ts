@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db } from '../config';
 import { isGlobalAdmin } from '../config/admins';
@@ -29,21 +29,29 @@ export const setUnitUserRole = functions.region('southamerica-east1').https.onCa
     let targetUid: string;
     let targetDisplayName: string;
     try {
+        console.log(`[setUnitUserRole] Looking up user: ${email}`);
         const userRecord = await admin.auth().getUserByEmail(email.toLowerCase().trim());
         targetUid = userRecord.uid;
         // displayName may be undefined for users who signed up without a name
         targetDisplayName = userRecord.displayName ?? userRecord.email ?? email;
     } catch (err: any) {
+        console.error(`[setUnitUserRole] Error in auth lookup for ${email}:`, err);
         if (err.code === 'auth/user-not-found') {
-            // Auto-create the Firebase Auth user so admins don't need to pre-create UIDs
-            const newUser = await admin.auth().createUser({
-                email: email.toLowerCase().trim(),
-                emailVerified: false,
-                disabled: false,
-            });
-            targetUid = newUser.uid;
-            targetDisplayName = newUser.displayName ?? email;
+            console.log(`[setUnitUserRole] Creating new user: ${email}`);
+            try {
+                const newUser = await admin.auth().createUser({
+                    email: email.toLowerCase().trim(),
+                    emailVerified: false,
+                    disabled: false,
+                });
+                targetUid = newUser.uid;
+                targetDisplayName = newUser.displayName ?? email;
+            } catch (createErr: any) {
+                console.error(`[setUnitUserRole] Error creating user ${email}:`, createErr);
+                throw new functions.https.HttpsError('internal', `Error creating user: ${createErr.message}`);
+            }
         } else {
+            console.error(`[setUnitUserRole] Unexpected error looking up user ${email}:`, err);
             throw new functions.https.HttpsError('internal', `Error looking up user: ${err.message}`);
         }
     }

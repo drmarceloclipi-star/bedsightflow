@@ -78,8 +78,13 @@ const LoginScreen: React.FC = () => {
             <div className="login-watermark">FLOW</div>
 
             <div className="login-card">
-                <div className="login-header">
-                    <h1 className="login-title">BedSight</h1>
+                <div className="login-header flex flex-col items-center">
+                    <img
+                        src="/bedsight-flow-logo.png"
+                        alt="BedSight Flow"
+                        className="w-auto object-contain mb-3"
+                        style={{ height: 'auto', maxHeight: '56px', maxWidth: '100%' }}
+                    />
                     <p className="login-subtitle">INTELIGÊNCIA NA GESTÃO HOSPITALAR</p>
                 </div>
 
@@ -110,7 +115,7 @@ const LoginScreen: React.FC = () => {
 
                 <div className="login-footer" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.25rem 0' }}>
-                        BedSight &copy; 2026
+                        BedSight Flow &copy; 2026
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
                         Desenvolvido por Dr. Marcelo Hugo R. T. Cavalcanti

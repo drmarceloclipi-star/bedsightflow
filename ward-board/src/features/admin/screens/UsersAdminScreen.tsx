@@ -107,7 +107,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
         <div className="admin-screen">
             <header className="admin-screen-header">
                 <div>
-                    <h2 className="admin-screen-title">Usuários da Unidade</h2>
+                    <h2 className="admin-screen-title">Acesso na Unidade</h2>
                     <p className="admin-screen-subtitle">Controle quem pode editar e visualizar este painel</p>
                 </div>
             </header>
@@ -150,7 +150,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
 
             <div className="admin-card">
                 <div className="p-4 border-b">
-                    <span className="font-bold">Equipe com Acesso ({users.length})</span>
+                    <span className="font-bold">Acesso na Unidade ({users.length})</span>
                 </div>
                 {loading ? (
                     <div className="p-12 text-center text-muted">Carregando lista de usuários...</div>

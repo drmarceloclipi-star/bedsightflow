@@ -1,7 +1,9 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { UnitsRepository } from '../../repositories/UnitsRepository';
 import type { Unit, AdminTab } from '../../domain/types';
+import { IconTv, IconBeds, IconUsers, IconOps, IconAudit, IconStats } from '../../components/icons/MobileBottomNavIcons';
 
 const TvSettingsScreen = lazy(() => import('./screens/TvSettingsScreen'));
 const BedsAdminScreen = lazy(() => import('./screens/BedsAdminScreen'));
@@ -10,13 +12,13 @@ const OpsScreen = lazy(() => import('./screens/OpsScreen'));
 const AuditScreen = lazy(() => import('./screens/AuditScreen'));
 const AnalyticsScreen = lazy(() => import('./screens/AnalyticsScreen'));
 
-const TABS: { key: AdminTab; label: string; icon: string }[] = [
-    { key: 'tv', label: 'TV', icon: '📺' },
-    { key: 'beds', label: 'Leitos', icon: '🛏️' },
-    { key: 'users', label: 'Usuários', icon: '👥' },
-    { key: 'ops', label: 'Operações', icon: '⚙️' },
-    { key: 'audit', label: 'Auditoria', icon: '🕵️' },
-    { key: 'analytics', label: 'Analytics', icon: '📊' },
+const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
+    { key: 'tv', label: 'TV', icon: <IconTv size={18} /> },
+    { key: 'beds', label: 'Leitos', icon: <IconBeds size={18} /> },
+    { key: 'users', label: 'Acesso na Unidade', icon: <IconUsers size={18} /> },
+    { key: 'ops', label: 'Ops', icon: <IconOps size={18} /> },
+    { key: 'audit', label: 'Auditoria', icon: <IconAudit size={18} /> },
+    { key: 'analytics', label: 'Analytics', icon: <IconStats size={18} /> },
 ];
 
 const AdminUnitShell: React.FC = () => {
@@ -87,13 +89,19 @@ const AdminUnitShell: React.FC = () => {
                 <div className="admin-header-top relative">
                     {/* Left: Unit name */}
                     <div className="admin-header-left">
-                        <span className="unit-badge text-sm px-3 py-1 bg-surface-2">
+                        <span className="unit-badge">
                             {unit?.name || unitId}
                         </span>
                     </div>
 
                     {/* Center: Brand */}
-                    <span className="admin-unit-name text-2xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+                    <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+                        <img
+                            src="/bedsight-flow-logo.png"
+                            alt="BedSight Flow"
+                            className="w-auto object-contain"
+                            style={{ height: '24px', maxWidth: 'calc(100vw - 160px)' }}
+                        />      </span>
 
                     {/* Right: quick-access links & Back */}
                     <div className="admin-header-right flex items-center gap-4">
@@ -102,21 +110,22 @@ const AdminUnitShell: React.FC = () => {
                             title="Abrir exibição TV"
                             className="btn btn-outline flex items-center gap-2 px-3 py-1.5 text-sm"
                         >
-                            <span aria-hidden="true">📺</span> TV
+                            <IconTv size={20} aria-hidden="true" /> TV
                         </button>
                         <button
                             onClick={() => window.open(`/editor?unit=${unitId}`, '_blank')}
                             title="Abrir edição mobile"
                             className="btn btn-outline flex items-center gap-2 px-3 py-1.5 text-sm"
                         >
-                            <span aria-hidden="true">📱</span> Mobile
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg> Mobile
                         </button>
                         <button
                             onClick={() => navigate('/admin')}
-                            className="admin-back-btn m-0"
+                            className="admin-back-btn"
                             aria-label="Voltar para lista de unidades"
                         >
-                            Sair / Unidades
+                            <ChevronLeft size={16} />
+                            Unidades
                         </button>
                     </div>
                 </div>
@@ -131,7 +140,7 @@ const AdminUnitShell: React.FC = () => {
                             onClick={() => setActiveTab(tab.key)}
                             className={`admin-tab${activeTab === tab.key ? ' admin-tab--active' : ''}`}
                         >
-                            <span aria-hidden="true" className="admin-tab-icon">{tab.icon}</span>
+                            <span aria-hidden="true" className="admin-tab-icon flex items-center">{tab.icon}</span>
                             {tab.label}
                         </button>
                     ))}

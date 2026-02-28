@@ -9,9 +9,10 @@ import { AnalyticsContract } from './AnalyticsContract';
 interface TopBlockersProps {
     unitId: string;
     period: AnalyticsPeriodKey;
+    refreshTrigger?: number;
 }
 
-const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period }) => {
+const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period, refreshTrigger }) => {
     const [data, setData] = useState<BlockerMetric[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period }) => {
         };
 
         fetchData();
-    }, [unitId, period]);
+    }, [unitId, period, refreshTrigger]);
 
     if (loading) {
         return <div className="analytics-loading-text">Carregando bloqueadores...</div>;

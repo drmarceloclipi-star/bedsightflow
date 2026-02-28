@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { UnitsRepository } from '../../repositories/UnitsRepository';
 import type { Unit } from '../../domain/types';
 
@@ -10,15 +11,27 @@ const MobileOpsScreen = lazy(() => import('./screens/MobileOpsScreen'));
 const MobileAuditScreen = lazy(() => import('./screens/MobileAuditScreen'));
 const MobileAnalyticsScreen = lazy(() => import('./screens/MobileAnalyticsScreen'));
 
+import {
+    IconTv,
+    IconBeds,
+    IconUsers,
+    IconOps,
+    IconAudit,
+    IconStats,
+    type NavIconProps
+} from '../../components/icons/MobileBottomNavIcons';
+
+// ... other imports
+
 type MobileAdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'analytics';
 
-const TABS: { key: MobileAdminTab; label: string; icon: string }[] = [
-    { key: 'tv', label: 'TV', icon: '📺' },
-    { key: 'beds', label: 'Leitos', icon: '🛏️' },
-    { key: 'users', label: 'Equipe', icon: '👥' },
-    { key: 'ops', label: 'Ops', icon: '⚙️' },
-    { key: 'audit', label: 'Audit', icon: '🕵️' },
-    { key: 'analytics', label: 'Stats', icon: '📊' },
+const TABS: { key: MobileAdminTab; label: string; Icon: React.FC<NavIconProps> }[] = [
+    { key: 'tv', label: 'TV', Icon: IconTv },
+    { key: 'beds', label: 'Leitos', Icon: IconBeds },
+    { key: 'users', label: 'Equipe', Icon: IconUsers },
+    { key: 'ops', label: 'Ops', Icon: IconOps },
+    { key: 'audit', label: 'Audit', Icon: IconAudit },
+    { key: 'analytics', label: 'Stats', Icon: IconStats },
 ];
 
 const MobileAdminUnitShell: React.FC = () => {
@@ -97,30 +110,32 @@ const MobileAdminUnitShell: React.FC = () => {
                     <div className="madmin-header-left">
                         <button
                             onClick={() => navigate('/mobile-admin')}
-                            className="madmin-back-btn mr-2"
+                            className="madmin-back-btn"
                             aria-label="Voltar para lista de unidades"
                         >
-                            ←
+                            <ChevronLeft size={22} />
                         </button>
-                        <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2">
-                            {unit?.name || unitId}
+                        <span className="unit-badge">
+                            {(unit?.name || unitId).replace(/^Unidade\s/i, 'Unid. ')}
                         </span>
                     </div>
-                    <span className="madmin-unit-name text-xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+                    <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+                        <img src="/bedsight-flow-logo.png" alt="BedSight Flow" style={{ height: '24px', width: 'auto', maxWidth: 'calc(100vw - 160px)' }} />
+                    </span>
                     <div className="madmin-header-right flex items-center gap-2">
                         <button
-                            onClick={() => window.open(`/tv?unit=${unitId}`, '_blank')}
+                            onClick={() => navigate(`/tv?unit=${unitId}`)}
                             title="Abrir exibição TV"
-                            className="flex items-center justify-center bg-surface-2 p-1.5 rounded shadow-sm text-sm"
+                            className="madmin-header-btn"
                         >
-                            📺
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-tv" aria-hidden="true"><path d="m17 2-5 5-5-5"></path><rect width="20" height="15" x="2" y="7" rx="2"></rect></svg>
                         </button>
                         <button
-                            onClick={() => window.open(`/editor?unit=${unitId}`, '_blank')}
+                            onClick={() => navigate(`/editor?unit=${unitId}`)}
                             title="Abrir edição mobile"
-                            className="flex items-center justify-center bg-surface-2 p-1.5 rounded shadow-sm text-sm"
+                            className="madmin-header-btn"
                         >
-                            📱
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -144,18 +159,25 @@ const MobileAdminUnitShell: React.FC = () => {
 
             {/* Fixed bottom navigation bar */}
             <nav className="madmin-bottom-nav" role="tablist" aria-label="Painéis de administração">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.key}
-                        role="tab"
-                        aria-selected={activeTab === tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`madmin-bottom-tab${activeTab === tab.key ? ' madmin-bottom-tab--active' : ''}`}
-                    >
-                        <span className="madmin-bottom-tab-icon" aria-hidden="true">{tab.icon}</span>
-                        <span className="madmin-bottom-tab-label">{tab.label}</span>
-                    </button>
-                ))}
+                {TABS.map(tab => {
+                    const IconComponent = tab.Icon;
+                    return (
+                        <button
+                            key={tab.key}
+                            role="tab"
+                            aria-selected={activeTab === tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`madmin-bottom-tab${activeTab === tab.key ? ' madmin-bottom-tab--active' : ''}`}
+                        >
+                            <span className="madmin-bottom-tab-icon" aria-hidden="true">
+                                <IconComponent
+                                    className={activeTab === tab.key ? "text-primary-600" : "text-muted"}
+                                />
+                            </span>
+                            <span className="madmin-bottom-tab-label">{tab.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
         </div>
     );

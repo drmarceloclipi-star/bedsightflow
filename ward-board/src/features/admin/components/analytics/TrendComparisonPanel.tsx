@@ -24,9 +24,10 @@ interface TrendComparisonBQResult {
 interface TrendComparisonProps {
     unitId: string;
     period: AnalyticsPeriodKey;
+    refreshTrigger?: number;
 }
 
-const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period }) => {
+const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period, refreshTrigger }) => {
     const [data, setData] = useState<TrendComparisonBQResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -48,10 +49,10 @@ const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period }
         };
 
         fetchData();
-    }, [unitId, period]);
+    }, [unitId, period, refreshTrigger]);
 
     if (loading) {
-        return <div style={{ color: 'var(--text-muted)' }}>Calculando comparação de tendências...</div>;
+        return <div className="analytics-loading-text">Calculando comparação de tendências...</div>;
     }
 
     if (error) return <AnalyticsEmptyState type="error" />;

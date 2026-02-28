@@ -1,6 +1,6 @@
-import * as functions from 'firebase-functions'
+import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import type { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
 
 type PeriodKey = 'today' | '7d' | '30d'
 
@@ -18,8 +18,8 @@ async function countAuditEventsPerDay(
 ): Promise<{ date: string; value: number }[]> {
     const logsSnap = await db.collection(`units/${unitId}/audit_logs`)
         .where('entityType', '==', 'bed')
-        .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(startDate))
-        .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(endDate))
+        .where('createdAt', '>=', Timestamp.fromDate(startDate))
+        .where('createdAt', '<=', Timestamp.fromDate(endDate))
         .orderBy('createdAt', 'desc')
         .get()
 

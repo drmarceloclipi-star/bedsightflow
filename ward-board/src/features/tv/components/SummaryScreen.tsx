@@ -27,10 +27,6 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({ metrics, unitName }) => {
                     <span className="summary-value">{metrics.withBlockers}</span>
                 </div>
 
-                <div className="summary-card highlight-warning">
-                    <span className="summary-label">Pendências Kamishibai</span>
-                    <span className="summary-value">{metrics.pendingKamishibai}</span>
-                </div>
             </div>
 
             <div className="mt-16 text-muted text-lg font-serif italic">

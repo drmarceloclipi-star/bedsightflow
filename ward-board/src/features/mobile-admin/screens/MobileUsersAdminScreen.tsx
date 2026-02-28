@@ -108,7 +108,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
     return (
         <div className="madmin-screen-pad">
             <div className="madmin-screen-header-stack">
-                <h2 className="madmin-screen-title">Usuários da Unidade</h2>
+                <h2 className="madmin-screen-title">Acesso na Unidade</h2>
                 <p className="madmin-screen-subtitle">Controle quem pode editar e visualizar</p>
             </div>
 
@@ -155,7 +155,7 @@ const MobileUsersAdminScreen: React.FC<Props> = ({ unitId }) => {
 
             {/* Users list */}
             <div className="madmin-section-label">
-                Equipe com Acesso ({users.length})
+                Acesso na Unidade ({users.length})
             </div>
 
             {loading ? (

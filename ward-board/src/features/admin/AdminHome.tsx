@@ -5,7 +5,8 @@ import { auth } from '../../infra/firebase/config';
 import { UnitsRepository } from '../../repositories/UnitsRepository';
 import { authorizedUsersRepository, type AuthorizedUser } from '../../repositories/authorizedUsersRepository';
 import ConfirmModal from '../../shared/components/ConfirmModal';
-import type { Unit } from '../../domain/types';
+import type { Unit, SpecialtyKey } from '../../domain/types';
+import { SpecialtyLabel } from '../../domain/types';
 
 const AdminHome: React.FC = () => {
     const navigate = useNavigate();
@@ -15,6 +16,13 @@ const AdminHome: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [activeSection, setActiveSection] = useState<'units' | 'users'>('units');
     const [userToDelete, setUserToDelete] = useState<AuthorizedUser | null>(null);
+
+    // New Unit state
+    const [isAddUnitModalOpen, setIsAddUnitModalOpen] = useState(false);
+    const [newUnitName, setNewUnitName] = useState('');
+    const [newUnitSpecialties, setNewUnitSpecialties] = useState<SpecialtyKey[]>([]);
+    const [creatingUnit, setCreatingUnit] = useState(false);
+    const [unitCreationError, setUnitCreationError] = useState<string | null>(null);
 
     useEffect(() => {
         const unsub = UnitsRepository.listenToUnits(setUnits);
@@ -57,6 +65,43 @@ const AdminHome: React.FC = () => {
         setUsers(data.sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime()));
     };
 
+    const handleCreateUnit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newUnitName.trim()) return;
+
+        setCreatingUnit(true);
+        setUnitCreationError(null);
+        try {
+            await UnitsRepository.addUnit({
+                name: newUnitName.trim(),
+                totalBeds: 0,
+                specialties: newUnitSpecialties,
+            });
+            setIsAddUnitModalOpen(false);
+            setNewUnitName('');
+            setNewUnitSpecialties([]);
+        } catch (error) {
+            console.error('Error creating unit:', error);
+            setUnitCreationError('Não foi possível criar a unidade. Verifique sua conexão e tente novamente.');
+        } finally {
+            setCreatingUnit(false);
+        }
+    };
+
+    const closeAddUnitModal = () => {
+        if (creatingUnit) return;
+        setIsAddUnitModalOpen(false);
+        setNewUnitName('');
+        setNewUnitSpecialties([]);
+        setUnitCreationError(null);
+    };
+
+    const toggleSpecialty = (sp: SpecialtyKey) => {
+        setNewUnitSpecialties(prev =>
+            prev.includes(sp) ? prev.filter(k => k !== sp) : [...prev, sp]
+        );
+    };
+
     return (
         <div className="admin-shell">
             <ConfirmModal
@@ -76,7 +121,14 @@ const AdminHome: React.FC = () => {
                     <div className="admin-header-left">
                         <span className="unit-badge text-sm px-3 py-1 bg-surface-2">Admin</span>
                     </div>
-                    <span className="admin-unit-name text-2xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+                    <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+                        <img
+                            src="/bedsight-flow-logo.png"
+                            alt="BedSight Flow"
+                            className="w-auto object-contain"
+                            style={{ height: '24px', maxWidth: 'calc(100vw - 160px)' }}
+                        />
+                    </span>
                     <div className="admin-header-right">
                         <button
                             onClick={handleLogout}
@@ -112,6 +164,15 @@ const AdminHome: React.FC = () => {
                 {/* Units Section */}
                 {activeSection === 'units' && (
                     <div className="admin-section-grid">
+                        <div className="flex justify-between items-center mb-4 col-span-full">
+                            <h2 className="text-lg font-semibold text-primary">Unidades Gerenciadas ({units.length})</h2>
+                            <button
+                                onClick={() => setIsAddUnitModalOpen(true)}
+                                className="btn btn-primary"
+                            >
+                                + Nova Unidade
+                            </button>
+                        </div>
                         {units.length === 0 ? (
                             <div className="p-8 text-center text-muted">
                                 Nenhuma unidade encontrada no banco de dados.
@@ -209,6 +270,97 @@ const AdminHome: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Add Unit Modal */}
+            {isAddUnitModalOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={closeAddUnitModal}
+                    onKeyDown={e => e.key === 'Escape' && closeAddUnitModal()}
+                    role="presentation"
+                >
+                    <div
+                        className="bg-surface rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in slide-in-from-bottom-4 duration-300 relative border border-surface-3"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="add-unit-title"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="px-6 py-5 border-b border-surface-2 bg-surface-1">
+                            <h2 id="add-unit-title" className="text-xl font-serif font-bold text-primary">Nova Unidade</h2>
+                            <p className="text-sm text-muted mt-1">
+                                Cadastre uma nova unidade para gerenciamento.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleCreateUnit} className="p-6 space-y-6">
+                            <div className="space-y-2">
+                                <label htmlFor="unitName" className="block text-sm font-semibold text-primary">
+                                    Nome da Unidade
+                                </label>
+                                <input
+                                    id="unitName"
+                                    type="text"
+                                    value={newUnitName}
+                                    onChange={e => setNewUnitName(e.target.value)}
+                                    placeholder="Ex: UTI Adulto"
+                                    required
+                                    className="admin-input"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-primary">
+                                    Especialidades Atendidas
+                                </label>
+                                <div className="max-h-48 overflow-y-auto p-2 border border-surface-3 rounded-xl bg-surface-1/50 grid grid-cols-2 gap-2">
+                                    {(Object.entries(SpecialtyLabel) as [SpecialtyKey, string][])
+                                        .sort((a, b) => a[1].localeCompare(b[1]))
+                                        .map(([key, label]) => (
+                                            <label key={key} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-surface cursor-pointer text-sm transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newUnitSpecialties.includes(key)}
+                                                    onChange={() => toggleSpecialty(key)}
+                                                    className="rounded border-surface-3 text-brand focus:ring-brand bg-surface"
+                                                />
+                                                <span className="text-primary truncate" title={label}>{label}</span>
+                                            </label>
+                                        ))}
+                                </div>
+                                <p className="text-xs text-muted mt-1">
+                                    Selecione as especialidades que acompanharão leitos nesta unidade.
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-surface-2">
+                                <button
+                                    type="button"
+                                    onClick={() => closeAddUnitModal()}
+                                    disabled={creatingUnit}
+                                    className="px-4 py-2 text-sm font-medium text-muted hover:text-primary transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={creatingUnit || !newUnitName.trim()}
+                                    className={`btn ${creatingUnit || !newUnitName.trim() ? 'btn-disabled' : 'btn-primary'}`}
+                                >
+                                    {creatingUnit ? 'Criando...' : 'Criar Unidade'}
+                                </button>
+                            </div>
+
+                            {unitCreationError && (
+                                <div className="rounded-lg bg-danger/10 border border-danger/30 px-4 py-3 text-sm text-danger">
+                                    {unitCreationError}
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

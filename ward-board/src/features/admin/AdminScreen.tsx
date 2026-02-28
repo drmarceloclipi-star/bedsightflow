@@ -80,7 +80,14 @@ const AdminScreen: React.FC = () => {
                     <div className="admin-header-left">
                         <span className="unit-badge text-sm px-3 py-1 bg-surface-2">Admin</span>
                     </div>
-                    <span className="admin-unit-name text-2xl font-serif absolute left-1/2 -translate-x-1/2">BedSight</span>
+                    <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+                        <img
+                            src="/bedsight-flow-logo.png"
+                            alt="BedSight Flow"
+                            className="w-auto object-contain"
+                            style={{ height: '24px', maxWidth: 'calc(100vw - 160px)' }}
+                        />
+                    </span>
                     <button onClick={handleLogout} className="admin-back-btn">
                         Sair
                     </button>
