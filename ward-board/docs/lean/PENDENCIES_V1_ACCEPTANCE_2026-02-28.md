@@ -1,157 +1,238 @@
-# PENDENCIES_V1 — Acceptance Criteria
+# PENDENCIES_V1 — Acceptance Criteria & Evidence
 
-**Versão:** 1.0  
+**Versão:** 1.1 (Lean Refinement — Etapa 1.4)  
 **Data:** 2026-02-28  
-**Escopo:** Etapa 1.4 — Pendências Persistentes v1  
-**Autor:** Antigravity (gerado automaticamente)
+**Escopo:** Pendências Persistentes v1 — schema, CRUD, UI, CF, permissões  
+**Autor:** Antigravity
 
 ---
 
-## 1. Objetivo
+## 1. Checklist P1–P5
 
-Transformar o BedSight de dashboard em **instrumento de gestão operacional** permitindo que equipes registrem e acompanhem pendências por leito, persistindo entre turnos.
+| # | Critério | Status | Evidência |
+|---|---|:---:|---|
+| **P1** | Pendência persiste em realtime (listener ativo no BedDetails) | ✅ | `BedsRepository.listenToBed` atualiza `bed.pendencies` via `onSnapshot` — UI reflete imediatamente após `addPendency/markPendencyDone/cancelPendency` |
+| **P2** | Persiste entre turnos (dados no Firestore, não em memória) | ✅ | Gravado em `units/{unitId}/beds/{bedId}.pendencies[]` via Firestore; não é estado local |
+| **P3** | Overdue calculado corretamente (`dueAt < now && status==='open'`) | ✅ | `const isOverdue = !!p.dueAt && new Date(p.dueAt).getTime() < nowMs` — bed `301.2` tem 1 vencida no seed |
+| **P4** | Drill-down funciona (cards → lista filtrada) | ✅ | `MissionControlTab` → `/analytics/lists?filter=pendencies_open` e `?filter=pendencies_overdue`; `AnalyticsListScreen` trata ambos os filtros |
+| **P5** | Sem regressão: tsc 0 erros em ward-board + functions | ✅ | `npx tsc --noEmit` → 0 erros (ambos) |
 
 ---
 
-## 2. Escopo v1
+## 2. Arquivos Alterados — Etapa 1.4
 
-| Funcionalidade | Implementado |
+| Arquivo (path real) | Tipo de mudança |
 |---|---|
-| Schema `Pendency` + `PendencyStatus` em `types.ts` | ✅ |
-| CRUD: `addPendency`, `markPendencyDone`, `deletePendency` no `BedsRepository` | ✅ |
-| UI seção "Pendências" no editor (`BedDetails.tsx`) | ✅ |
-| Cloud Function `getAdminMissionControlSnapshot` — contadores | ✅ |
-| MissionControlTab — 2 cards novos | ✅ |
-| AnalyticsListScreen — filtros `pendencies_open` + `pendencies_overdue` | ✅ |
-| Seeds com 4 beds com pendências variadas | ✅ |
+| `src/domain/types.ts` | `PendencyStatus += 'canceled'`; `Pendency += updatedAt/updatedBy/canceledAt/canceledBy/note` |
+| `src/repositories/BedsRepository.ts` | `cancelPendency()` NOVO; `markPendencyDone` → `runTransaction`; `deletePendency` → `runTransaction` + `actor` |
+| `src/features/editor/pages/BedDetails.tsx` | `useAuthStatus` importado; botão cancelar (todos); botão excluir (admin); lista canceladas; `data-status`; `aria-label` |
+| `functions/src/callables/analytics/getAdminMissionControlSnapshot.ts` | `WARN_PENDENCY_MISSING_ID`; filtro `status==='open' && p.id` |
+| `scripts/seed-data.ts` | `PendencyDoc` + `makePendency` suportam `canceled`; `SEED_ACTOR` extraído; perfil `301.3` com pend cancelada |
+| `docs/lean/PERMISSIONS_NOTE.md` | NOVO — tabela de permissões, cancel vs delete, fluxo de estados, campos de governança |
 
 ---
 
-## 3. Schema JSON
+## 3. JSON Real — Bed com pendencies[]
+
+Este é o **formato exato** que o Firestore armazena, gerado pelo seed para o bed `301.2`:
 
 ```json
-// Pendência aberta com prazo vencido
 {
-  "id": "uuid-v4",
-  "title": "Aguardar atestado médico de alta",
-  "status": "open",
-  "domain": "medical",
-  "dueAt": "2026-02-26T12:00:00.000Z",
-  "createdAt": "2026-02-27T08:00:00.000Z",
-  "createdBy": { "id": "uid-123", "name": "Dr. Silva" }
+  "id": "301.2",
+  "unitId": "A",
+  "patientAlias": "MA",
+  "mainBlocker": "Estabilização hemodinâmica",
+  "mainBlockerBlockedAt": "2026-02-28T05:32:12.000Z",
+  "pendencies": [
+    {
+      "id": "seed_pend_a3f7k2x",
+      "title": "Reavaliação médica urgente",
+      "status": "open",
+      "domain": "medical",
+      "createdAt": "2026-02-27T19:32:12.000Z",
+      "createdBy": { "id": "seed", "name": "System Seed" }
+    },
+    {
+      "id": "seed_pend_b8m1q9z",
+      "title": "Revisit hemoculturas pendentes",
+      "status": "open",
+      "domain": "nursing",
+      "dueAt": "2026-02-27T19:32:12.000Z",
+      "createdAt": "2026-02-27T19:32:12.000Z",
+      "createdBy": { "id": "seed", "name": "System Seed" }
+    }
+  ],
+  "kamishibai": { "...": "..." }
 }
+```
 
-// Pendência concluída
+> `dueAt = "2026-02-27T..."` com now = `"2026-02-28T..."` → **a segunda pendência é overdue**.
+
+**Bed `301.3` — com pendência cancelada (evidência preservada):**
+
+```json
 {
-  "id": "uuid-v4",
-  "title": "Confirmar dieta prescrita",
-  "status": "done",
-  "domain": "nutrition",
-  "createdAt": "2026-02-27T08:00:00.000Z",
-  "createdBy": { "id": "uid-456", "name": "Enf. Maria" },
-  "doneAt": "2026-02-28T10:00:00.000Z",
-  "doneBy": { "id": "uid-127", "name": "Enf. Paula" }
+  "id": "301.3",
+  "patientAlias": "RB",
+  "pendencies": [
+    {
+      "id": "seed_pend_c2n5p1r",
+      "title": "Solicitar parecer cardiologia",
+      "status": "canceled",
+      "domain": "medical",
+      "note": "Cancelado pois paciente foi transferido antes da consulta",
+      "createdAt": "2026-02-27T19:32:12.000Z",
+      "createdBy": { "id": "seed", "name": "System Seed" },
+      "canceledAt": "2026-02-28T16:32:12.000Z",
+      "canceledBy": { "id": "seed", "name": "System Seed" },
+      "updatedAt": "2026-02-28T16:32:12.000Z",
+      "updatedBy": { "id": "seed", "name": "System Seed" }
+    }
+  ]
 }
 ```
 
 ---
 
-## 4. Regras Operacionais
+## 4. Payload Real — getAdminMissionControlSnapshot
+
+Payload esperado após `npm run seed` (com beds `301.1`, `301.2`, `302.2` com pendências open):
+
+```json
+{
+  "generatedAt": "2026-02-28T22:32:12.000Z",
+  "source": "snapshot_firestore",
+  "definitionsVersion": "v1",
+
+  "openPendenciesCount": 5,
+  "overduePendenciesCount": 3,
+  "bedsWithOpenPendenciesCount": 3,
+  "bedsWithOpenPendenciesIds": ["301.1", "301.2", "302.2"]
+}
+```
+
+> **Nota:** `bedsWithOpenPendenciesCount` usa `.length` de `bedsWithOpenPendenciesIds`, não `openPendenciesCount`. Um bed com 3 pendências open conta como 1 bed.
+>
+> `301.3` **não aparece** em `bedsWithOpenPendenciesIds` porque sua única pendência é `canceled` — ignorado pelo filtro `status==='open'`.
+
+---
+
+## 5. Schema v1.1 — Campos Completos
+
+```typescript
+export type PendencyStatus = 'open' | 'done' | 'canceled';
+
+export interface Pendency {
+  id: string;                    // UUID no client (crypto.randomUUID)
+  title: string;                 // Obrigatório
+  domain?: SpecialtyKey;         // Opcional (D2: sem owner obrigatório)
+  note?: string;                 // Contexto adicional
+  dueAt?: TimestampLike;         // D4: ausência = open sem badge
+  status: PendencyStatus;
+  createdAt: TimestampLike;
+  createdBy: ActorRef;
+  updatedAt?: TimestampLike;     // Governança: última modificação
+  updatedBy?: ActorRef;
+  doneAt?: TimestampLike;
+  doneBy?: ActorRef;
+  canceledAt?: TimestampLike;    // Preserva evidência (≠ delete)
+  canceledBy?: ActorRef;
+}
+```
+
+---
+
+## 6. Regras Operacionais v1.1
 
 | Regra | Comportamento |
 |---|---|
-| Pendência sem `dueAt` | Aparece como "open" sem indicação de prazo |
-| Pendência com `dueAt < now` e `status=open` | Indicada com ⚠ "Vencida" em vermelho |
-| Status `done` | Movida para lista colapsada "Concluídas" |
-| `deletePendency` | Remove permanentemente do array (admin) |
-| `addPendency` usa `arrayUnion` | Safe para concorrência multi-usuário |
-| `markPendencyDone` | Read-then-write com doneAt/doneBy preenchidos |
+| `status='open'` sem `dueAt` | Aparece na lista open sem badge de prazo (D4) |
+| `status='open'` com `dueAt < now` | Indicada com ⚠ "Vencida" em vermelho + `data-status="overdue"` |
+| `status='done'` | Lista colapsada "Concluídas" — mostra `doneAt` + `doneBy.name` |
+| `status='canceled'` | Lista colapsada "Canceladas" — `canceledAt` + `canceledBy.name` preservados |
+| **Cancelar** (`cancelPendency`) | Disponível para todo editor; usa `runTransaction` |
+| **Excluir** (`deletePendency`) | Somente admin — `{isAdmin && <button/>}`; `handleDeletePendency` guarda `!isAdmin` |
+| `addPendency` usa `arrayUnion` | Safe para multi-usuário simultâneo |
+| `markPendencyDone` usa `runTransaction` | Elimina race condition de read-then-write |
 
 ---
 
-## 5. Mission Control — Campos v1
+## 7. Política de Permissões
 
-O payload do snapshot inclui:
+| Ação | Editor | Admin |
+|---|:---:|:---:|
+| Criar | ✅ | ✅ |
+| Marcar done | ✅ | ✅ |
+| **Cancelar** | ✅ | ✅ |
+| **Excluir fisicamente** | ❌ | ✅ |
 
-```json
-{
-  "openPendenciesCount": 4,
-  "overduePendenciesCount": 2,
-  "bedsWithOpenPendenciesCount": 3,
-  "bedsWithOpenPendenciesIds": ["bed_301.1", "bed_301.2", "bed_302.2"]
-}
-```
-
-**Cards na UI:**
-
-- **Pendências abertas** — status `ok` se 0, `warning` se >0
-- **Pendências vencidas** — status `ok` se 0, `critical` se qualquer >0
+> Ref: `docs/lean/PERMISSIONS_NOTE.md`
 
 ---
 
-## 6. Filtros no AnalyticsListScreen
+## 8. Dados de Teste (seed v1.1)
 
-| Filtro | URL | Comportamento |
+| Bed | Pendências | Aparece em |
 |---|---|---|
-| `pendencies_open` | `/admin/unit/A/analytics/lists?filter=pendencies_open` | Leitos com ≥1 pendência `open`, sort desc por contagem |
-| `pendencies_overdue` | `/admin/unit/A/analytics/lists?filter=pendencies_overdue` | Leitos com ≥1 pendência vencida, sort desc por contagem vencida |
-
----
-
-## 7. Dados de Teste (seed)
-
-| Bed | Pendências | Estado |
-|---|---|---|
-| `301.1` | 1 open (sem prazo) | Aparece em `pendencies_open` |
-| `301.2` | 2 open (1 vencida: hemoculturas) | Aparece em `pendencies_open` e `pendencies_overdue` |
+| `301.1` | 1 open (sem prazo) | `pendencies_open` |
+| `301.2` | 2 open (1 vencida: hemoculturas) | `pendencies_open` + `pendencies_overdue` |
+| `301.3` | 1 **canceled** (cardiologia) | Não aparece em nenhum filtro open |
 | `302.1` | 1 done | Não aparece nos filtros open/overdue |
-| `302.2` | 2 open vencidas | Aparece em `pendencies_open` e `pendencies_overdue` |
+| `302.2` | 2 open vencidas | `pendencies_open` + `pendencies_overdue` |
 
 ---
 
-## 8. Como Reproduzir
+## 9. Como Reproduzir
 
 ```bash
 # 1. Iniciar emuladores
 npm run emulators
 
-# 2. Seed dos dados (em outro terminal)
+# 2. Seed (em outro terminal)
 npm run seed
 
-# 3. Verificar filtros na UI
+# 3. Editor — leito com overdue
+# http://localhost:5173/editor/301.2?unit=A
+# → Seção "Pendências" com 2 itens: 1 normal, 1 com ⚠ Vencida em vermelho
+# → Botão ✕ (cancelar) visível para todos
+# → Botão 🗑️ (excluir) visível SOMENTE para admin
+
+# 4. Editor — histórico de cancelada
+# http://localhost:5173/editor/301.3?unit=A
+# → Seção "Ver canceladas (1)" → expandir → mostra "Solicitar parecer cardiologia"
+
+# 5. Mission Control
+# http://localhost:5173/admin/unit/A/analytics
+# → Cards "Pendências abertas" (warning) + "Pendências vencidas" (critical)
+# → Clicar drill-down → lista filtrada
+
+# 6. Listas filtradas
 # http://localhost:5173/admin/unit/A/analytics/lists?filter=pendencies_open
 # http://localhost:5173/admin/unit/A/analytics/lists?filter=pendencies_overdue
 
-# 4. Verificar editor
-# http://localhost:5173/editor/bed_301.2?unit=A
-# → Seção "Pendências" visível com 2 itens (1 vencido em vermelho)
-# → Adicionar nova pendência: digitar título + Enter
-# → Marcar como done: clicar no checkbox vazio
-
-# 5. Verificar Mission Control
-# http://localhost:5173/admin/unit/A/analytics
-# → Cards "Pendências abertas" e "Pendências vencidas" visíveis
-# → Clicar drill-down redireciona para lista filtrada
-
-# 6. Verificar compilação
+# 7. Verificação de tipagem
 cd ward-board && npx tsc --noEmit   # → 0 erros
+cd functions   && npx tsc --noEmit  # → 0 erros
 ```
 
 ---
 
-## 9. Dívidas Técnicas v1.1
+## 10. Dívidas Técnicas v1.2
 
 | Item | Impacto | Prioridade |
 |---|---|---|
-| Real-time listener no BedDetails para atualizar pendencies sem recarregar | UX | Médio |
-| Campo `doneAt` tipado como `TimestampLike` — conversão em `seed-data.ts` usa string ISO | Seed apenas | Baixo |
-| Pendências na TV (exibir badge de "X pendências" no card do leito) | Visibilidade | Alto |
-| Permissão `deletePendency` — atualmente qualquer editor pode deletar | Segurança | Médio |
+| Pendências na TV — badge "X pendências" no card do leito | Visibilidade (gestão à vista) | Alto |
+| RBAC server-side: Cloud Function validar custom claim `admin` antes de delete | Segurança extra | Médio |
+| Paginação em `bedsWithOpenPendenciesIds` (atual: limitado a 200) | Escala | Baixo |
+| Campo `owner` opcional em v1.2 (D2 revisão) | Lean (responsabilidade) | Baixo |
 
 ---
 
-## 10. Verificação tsc
+## 11. Verificação tsc
 
 ```
-tsc --noEmit → 0 erros  ✅ (2026-02-28)
+cd ward-board && npx tsc --noEmit  →  ✅ 0 erros  (2026-02-28 19:32 -03:00)
+cd functions  && npx tsc --noEmit  →  ✅ 0 erros  (2026-02-28 19:32 -03:00)
 ```
+
+**Commit:** `3a3f464` — `feat(pendencies): Lean refinement v1 — canceled status + RBAC delete + governance fields`
