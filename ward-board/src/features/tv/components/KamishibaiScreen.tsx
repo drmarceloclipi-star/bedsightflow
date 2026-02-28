@@ -8,15 +8,42 @@ import {
 } from '../../../domain/kamishibaiVisualState';
 import { currentShiftKey } from '../../../domain/shiftKey';
 import { DEFAULT_SHIFT_SCHEDULE } from '../../../domain/shiftKey';
+import { computePendencyCounts, formatPendencyBadge } from '../../../domain/pendencies';
 
 interface KamishibaiScreenProps {
     beds: Bed[];
     columns?: number;
     /** Configuração operacional da unidade (v1). Ausente → defaults v0. */
     opsSettings?: UnitOpsSettings | null;
+    /** Referência de tempo para overdue — injetado pelo TvDashboard (state 'now') */
+    now?: Date;
 }
 
-const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, opsSettings }) => {
+/**
+ * Badge de pendências por leito no Kamishibai.
+ * Posicionado na célula do leito (número) para não poluir as colunas de domínio.
+ * Performance: memoizado individualmente — recalcula apenas quando bed ou now mudam.
+ */
+const PendencyBadge: React.FC<{ bed: Bed; now: Date }> = React.memo(({ bed, now }) => {
+    const counts = useMemo(() => computePendencyCounts(bed, now), [bed, now]);
+    const label = formatPendencyBadge(counts);
+    if (!label) return null;
+
+    return (
+        <span
+            className={`tv-badge tv-badge--pendencies${counts.overdue > 0 ? ' tv-badge--overdue' : ''}`}
+            data-pendencies-open={counts.open}
+            data-pendencies-overdue={counts.overdue}
+            aria-label={`Pendências abertas: ${counts.open}${counts.overdue > 0 ? `, vencidas: ${counts.overdue}` : ''}`}
+            title={`${counts.open} pendência(s) aberta(s)${counts.overdue > 0 ? `, ${counts.overdue} vencida(s)` : ''}`}
+        >
+            {label}
+        </span>
+    );
+});
+PendencyBadge.displayName = 'PendencyBadge';
+
+const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, opsSettings, now = new Date() }) => {
 
     /**
      * Calcular currentShiftKey UMA VEZ por render para todo o quadro.
@@ -49,7 +76,11 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, 
             <tbody>
                 {bedsList.map((bed) => (
                     <tr key={bed.id}>
-                        <td><span className="kamishibai-bed-num">{bed.number}</span></td>
+                        <td>
+                            <span className="kamishibai-bed-num">{bed.number}</span>
+                            {/* Badge de pendências na coluna do leito — ação aberta, não domínio */}
+                            <PendencyBadge bed={bed} now={now} />
+                        </td>
                         {KAMISHIBAI_DOMAINS.map(s => {
                             const state = resolveKamishibaiVisualState(bed, s, resolveOpts);
                             const dotClass = visualStateToCssClass(state);
@@ -185,6 +216,7 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, 
                     font-weight: 700;
                     color: var(--text-primary);
                     white-space: nowrap;
+                    margin-right: 0.3rem;
                 }
             `}</style>
         </div>

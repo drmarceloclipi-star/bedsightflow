@@ -11,11 +11,13 @@ interface TvRotationContainerProps {
     unitName?: string;
     /** v1: configuração operacional da unidade (kamishibaiEnabled, huddleSchedule, etc.) */
     opsSettings?: UnitOpsSettings | null;
+    /** v1.5: referência de tempo para calcular overdue nas screens (state do TvDashboard) */
+    now?: Date;
 }
 
 
 
-const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, settings, unitName, opsSettings }) => {
+const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, settings, unitName, opsSettings, now = new Date() }) => {
     const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
     const [progress, setProgress] = useState(0);
 
@@ -59,8 +61,8 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
     }, [settings.screens, settings.kanbanBedsPerPage, settings.kamishibaiBedsPerPage, settings.kanbanColumnsPerPage, settings.kamishibaiColumnsPerPage, beds]);
 
     const metrics: SummaryMetrics = useMemo(() => {
-        return SummaryCalculator.calculateMetrics(beds);
-    }, [beds]);
+        return SummaryCalculator.calculateMetrics(beds, now);
+    }, [beds, now]);
 
     // Ensure valid index if setting changes alter expandedScreens length
     const validScreenIndex = currentScreenIndex >= expandedScreens.length ? 0 : currentScreenIndex;
@@ -98,8 +100,8 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
     return (
         <div className="h-full flex flex-col relative">
             <div className="flex-1 overflow-hidden">
-                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} columns={activeScreen.columns} />}
-                {activeScreen.key === 'kamishibai' && <KamishibaiScreen beds={activeScreen.beds || []} columns={activeScreen.columns} opsSettings={opsSettings} />}
+                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} columns={activeScreen.columns} now={now} />}
+                {activeScreen.key === 'kamishibai' && <KamishibaiScreen beds={activeScreen.beds || []} columns={activeScreen.columns} opsSettings={opsSettings} now={now} />}
                 {activeScreen.key === 'summary' && <SummaryScreen metrics={metrics} unitName={unitName} />}
             </div>
 

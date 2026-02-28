@@ -52,8 +52,8 @@ const TvDashboard: React.FC = () => {
             }
         }
         return { huddlePending: pending, huddleSubtext: subtext };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opsSettings, now]);
+
 
     useEffect(() => {
         const handleError = (err: Error) => {
@@ -224,6 +224,7 @@ const TvDashboard: React.FC = () => {
                         settings={settings}
                         unitName={unit.name}
                         opsSettings={opsSettings}
+                        now={now}
                     />
                 )}
             </main>

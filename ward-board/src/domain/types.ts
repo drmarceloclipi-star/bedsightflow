@@ -325,7 +325,12 @@ export interface SummaryMetrics {
     activePatients: number;
     discharges24h: number;
     withBlockers: number;
+    /** v1.5: contagem de pendências abertas da unidade (somente leitos ativos) */
+    pendenciesOpen: number;
+    /** v1.5: contagem de pendências abertas vencidas (dueAt < now) */
+    pendenciesOverdue: number;
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RBAC

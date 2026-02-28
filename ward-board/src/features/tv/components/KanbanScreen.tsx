@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Bed, SpecialtyKey } from '../../../domain/types';
 import { DischargeEstimateLabel, SpecialtyLabel } from '../../../domain/types';
 import { getShortSpecialty, getVisibleSpecialties } from '../../../domain/specialtyUtils';
+import { computePendencyCounts, formatPendencyBadge } from '../../../domain/pendencies';
 
 interface KanbanScreenProps {
     beds: Bed[];
     columns?: number;
+    /** Referência de tempo para calcular overdue — injetado pelo TvDashboard (state 'now') */
+    now?: Date;
 }
 
 const getDischargeColorClass = (estimate: string) => {
@@ -17,7 +20,33 @@ const getDischargeColorClass = (estimate: string) => {
     }
 };
 
-const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1 }) => {
+/**
+ * Badge de pendências por leito.
+ * Memoizado individualmente para evitar re-render a cada tick do timer de progresso.
+ *
+ * Performance: useMemo(computePendencyCounts) depende de [bed, now].
+ * 'now' é um state atualizado a cada 30s no TvDashboard — re-render controlado.
+ */
+const PendencyBadge: React.FC<{ bed: Bed; now: Date }> = React.memo(({ bed, now }) => {
+    const counts = useMemo(() => computePendencyCounts(bed, now), [bed, now]);
+    const label = formatPendencyBadge(counts);
+    if (!label) return null;
+
+    return (
+        <span
+            className={`tv-badge tv-badge--pendencies${counts.overdue > 0 ? ' tv-badge--overdue' : ''}`}
+            data-pendencies-open={counts.open}
+            data-pendencies-overdue={counts.overdue}
+            aria-label={`Pendências abertas: ${counts.open}${counts.overdue > 0 ? `, vencidas: ${counts.overdue}` : ''}`}
+            title={`${counts.open} pendência(s) aberta(s)${counts.overdue > 0 ? `, ${counts.overdue} vencida(s)` : ''}`}
+        >
+            {label}
+        </span>
+    );
+});
+PendencyBadge.displayName = 'PendencyBadge';
+
+const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1, now = new Date() }) => {
     const sortedBeds = [...beds].sort((a, b) =>
         a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' })
     );
@@ -30,7 +59,8 @@ const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1 }) => {
                     <th style={{ width: '16%' }}>Paciente</th>
                     <th style={{ width: '18%' }}>Especialidades</th>
                     <th style={{ width: '18%' }}>Previsão Alta</th>
-                    <th style={{ width: '38%' }}>Bloqueador Principal</th>
+                    <th style={{ width: '34%' }}>Bloqueador Principal</th>
+                    <th style={{ width: '4%' }} aria-label="Pendências"></th>
                 </tr>
             </thead>
             <tbody>
@@ -72,6 +102,9 @@ const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1 }) => {
                                 <span className="kanban-blocker" title={bed.mainBlocker}>
                                     {bed.mainBlocker || <span style={{ opacity: 0.3 }}>Nenhum</span>}
                                 </span>
+                            </td>
+                            <td className="kanban-pendency-cell">
+                                <PendencyBadge bed={bed} now={now} />
                             </td>
                         </tr>
                     );
@@ -202,6 +235,12 @@ const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1 }) => {
                     flex-wrap: nowrap;
                     gap: 0.2rem;
                     overflow: hidden;
+                }
+
+                .kanban-pendency-cell {
+                    text-align: right;
+                    white-space: nowrap;
+                    min-width: 48px;
                 }
             `}</style>
         </div>

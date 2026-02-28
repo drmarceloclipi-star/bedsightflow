@@ -1752,6 +1752,40 @@ td {
   color: var(--state-danger);
 }
 
+/* ── TV Badge — Pendências por leito (v1.5) ──────────────────────────────────
+   Usado em KanbanScreen e KamishibaiScreen.
+   Regra visual: não usar vermelho gritando; overdue = borda warning sutil.
+   Legibilidade mínima: 12px (garantido para TVs a distância). */
+.tv-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  /* mín 12px para legibilidade em TV */
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.15rem 0.45rem;
+  border-radius: 99px;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-family: var(--font-sans);
+}
+
+/* Pendências abertas: neutro — informa sem alarmar */
+.tv-badge--pendencies {
+  background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-secondary);
+  border-color: var(--border-soft);
+}
+
+/* Overdue: warning sutil — "anormal" mas não gritante como "blocked" */
+.tv-badge--overdue {
+  background-color: color-mix(in srgb, var(--state-warning) 12%, transparent);
+  color: var(--state-warning);
+  border-color: var(--state-warning);
+}
+
+
 /* Badges with background */
 .state-success-bg {
   background-color: var(--state-success-bg);

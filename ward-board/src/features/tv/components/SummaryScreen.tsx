@@ -27,6 +27,26 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({ metrics, unitName }) => {
                     <span className="summary-value">{metrics.withBlockers}</span>
                 </div>
 
+                {/* ── v1.5: Pendências ─────────────────────────────────────────────────
+                    Só renderiza se houver alguma pendência aberta.
+                    Classificação: warning se somente open; danger se houver overdue. */}
+                {metrics.pendenciesOpen > 0 && (
+                    <div className={`summary-card ${metrics.pendenciesOverdue > 0 ? 'highlight-danger' : 'highlight-warning'}`}>
+                        <span className="summary-label">Pendências Abertas</span>
+                        <span className="summary-value" data-pendencies-open={metrics.pendenciesOpen}>
+                            {metrics.pendenciesOpen}
+                        </span>
+                    </div>
+                )}
+
+                {metrics.pendenciesOverdue > 0 && (
+                    <div className="summary-card highlight-danger">
+                        <span className="summary-label">Pendências Vencidas ⚠</span>
+                        <span className="summary-value" data-pendencies-overdue={metrics.pendenciesOverdue}>
+                            {metrics.pendenciesOverdue}
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="mt-16 text-muted text-lg font-serif italic">
