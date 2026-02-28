@@ -73,7 +73,7 @@ export type SpecialtyKey =
 export const SpecialtyLabel: Record<SpecialtyKey, string> = {
     // Clínicas
     cardio: 'Cardiologia',
-    medical: 'Equipe Médica',
+    medical: 'Medicina',
     palliative: 'Cuidados Paliativos',
     gastro: 'Gastroenterologia',
     infecto: 'Infectologia',
