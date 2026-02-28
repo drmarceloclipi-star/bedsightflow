@@ -13,6 +13,45 @@ The SecAgent is responsible for all security concerns in the LEAN system, includ
 ## Technical Stack
 
 - Firebase Authentication (ensure region consistency)
-16: - Firestore Security Rules (`southamerica-east1`)
-17: - Firebase Custom Claims
-18: - TypeScript (auth helpers)
+- Firestore Security Rules (`southamerica-east1`)
+- Firebase Custom Claims
+- TypeScript (auth helpers)
+
+---
+
+## Política de Permissões Atual — Pendências v1.1 (2026-02-28)
+
+Ref: `docs/lean/PERMISSIONS_NOTE.md`
+
+| Ação | Editor autenticado | Admin (`claim.admin=true`) |
+|---|:---:|:---:|
+| Criar pendência (`addPendency`) | ✅ | ✅ |
+| Marcar done (`markPendencyDone`) | ✅ | ✅ |
+| **Cancelar** (`cancelPendency`) | ✅ | ✅ |
+| **Excluir fisicamente** (`deletePendency`) | ❌ | ✅ |
+
+### Princípio: Cancel > Delete
+
+- **Cancelar** preserva evidência (Lean: auditabilidade > conveniência).
+- **Excluir** é operação administrativa que destrói o rastro — restrita a `admin`.
+
+### Enforcement Atual (v1)
+
+- **Client-side**: `useAuthStatus()` → `isAdmin` → condiciona `{isAdmin && <button 🗑️/>}`.
+- **`handleDeletePendency`**: guarda `if (!isAdmin) return` antes de chamar o repository.
+
+### Débito de Segurança v1.2 (registrado)
+
+> O enforcement atual é **somente client-side**. Para produção, implementar validação server-side:
+>
+> - Cloud Function intermediária que verifica `context.auth.token.admin === true` antes de executar o delete físico.
+> - Alternativa: Firestore Rules restritivas no campo `pendencies` (complexo com array embarcado).
+
+### Hook de Autenticação
+
+```typescript
+// src/hooks/useAuthStatus.ts
+const { isAdmin } = useAuthStatus();
+// isAdmin = true se custom claim 'admin' === true
+// ou se email está em HARDCODED_ADMIN_EMAILS (fallback dev)
+```
