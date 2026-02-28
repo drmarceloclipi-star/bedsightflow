@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import type { Bed, SpecialtyKey, KamishibaiStatus, DischargeEstimate, UnitOpsSettings } from '../../../domain/types';
-import { DischargeEstimateLabel } from '../../../domain/types';
+import { DischargeEstimateLabel, SpecialtyLabel } from '../../../domain/types';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import { UnitSettingsRepository } from '../../../repositories/UnitSettingsRepository';
 import { auth } from '../../../infra/firebase/config';
@@ -484,7 +484,7 @@ const BedDetails: React.FC = () => {
                         >
                             <option value="">Domínio (opcional)</option>
                             {(['medical', 'nursing', 'physio', 'nutrition', 'psychology', 'social'] as SpecialtyKey[]).map(d => (
-                                <option key={d} value={d}>{d}</option>
+                                <option key={d} value={d}>{SpecialtyLabel[d]}</option>
                             ))}
                         </select>
                         <input
