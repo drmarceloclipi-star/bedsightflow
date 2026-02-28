@@ -34,7 +34,11 @@ const PendencyBadge: React.FC<{ bed: Bed; now: Date }> = React.memo(({ bed, now 
             className={`tv-badge tv-badge--pendencies${counts.overdue > 0 ? ' tv-badge--overdue' : ''}`}
             data-pendencies-open={counts.open}
             data-pendencies-overdue={counts.overdue}
-            aria-label={`Pendências abertas: ${counts.open}${counts.overdue > 0 ? `, vencidas: ${counts.overdue}` : ''}`}
+            aria-label={
+                counts.overdue > 0
+                    ? `Pendências abertas: ${counts.open}. Pendências vencidas: ${counts.overdue}`
+                    : `Pendências abertas: ${counts.open}`
+            }
             title={`${counts.open} pendência(s) aberta(s)${counts.overdue > 0 ? `, ${counts.overdue} vencida(s)` : ''}`}
         >
             {label}

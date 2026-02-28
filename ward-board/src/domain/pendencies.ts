@@ -40,10 +40,18 @@ function toMs(value: unknown): number | null {
  * Calcula contagens de pendências por leito.
  * Ignora status='done' e status='canceled'.
  *
+ * Regra Lean: leito vazio (patientAlias vazio ou ausente) não entra em KPIs.
+ * Retorna {open:0, overdue:0} para leitos sem patientAlias.
+ *
  * @param bed - Documento do leito
  * @param now - Referência de tempo (default: Date.now() — injetável para testes e useMemo)
  */
 export function computePendencyCounts(bed: Bed, now: Date = new Date()): PendencyCounts {
+    // PZ1: leito vazio não exibe badge na TV nem entra em KPIs
+    if (!bed.patientAlias || bed.patientAlias.trim() === '') {
+        return { open: 0, overdue: 0 };
+    }
+
     const pendencies: Pendency[] = Array.isArray(bed.pendencies) ? bed.pendencies : [];
     const nowMs = now.getTime();
 
@@ -65,16 +73,15 @@ export function computePendencyCounts(bed: Bed, now: Date = new Date()): Pendenc
 }
 
 /**
- * Soma as contagens de pendências de uma lista de beds ativos.
- * Considera apenas beds com patientAlias preenchido (leito ativo).
+ * Soma as contagens de pendências de uma lista de beds.
+ * Reutiliza computePendencyCounts (que já exclui leitos vazios internamente —
+ * retorna zeros quando patientAlias é vazio).
  */
 export function computeUnitPendencyCounts(beds: Bed[], now: Date = new Date()): PendencyCounts {
     let open = 0;
     let overdue = 0;
 
     for (const bed of beds) {
-        // somente leitos ativos contribuem para o resumo da unidade
-        if (!bed.patientAlias || bed.patientAlias.trim() === '') continue;
         const counts = computePendencyCounts(bed, now);
         open += counts.open;
         overdue += counts.overdue;

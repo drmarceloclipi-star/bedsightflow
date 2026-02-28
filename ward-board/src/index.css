@@ -1779,10 +1779,12 @@ td {
 }
 
 /* Overdue: warning sutil — "anormal" mas não gritante como "blocked" */
+/* PZ3: 16% (antes: 12%) + borda 2px (antes: 1.5px) — mais distinguível, mesma paleta */
 .tv-badge--overdue {
-  background-color: color-mix(in srgb, var(--state-warning) 12%, transparent);
+  background-color: color-mix(in srgb, var(--state-warning) 16%, transparent);
   color: var(--state-warning);
   border-color: var(--state-warning);
+  border-width: 2px;
 }
 
 
