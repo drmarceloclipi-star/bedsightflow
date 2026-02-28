@@ -431,7 +431,7 @@ const BedDetails: React.FC = () => {
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {p.domain && (
                                                 <span className="text-[10px] font-bold uppercase tracking-widest bg-accent-primary/10 text-accent-primary px-1.5 py-0.5 rounded">
-                                                    {p.domain}
+                                                    {SpecialtyLabel[p.domain as SpecialtyKey] || p.domain}
                                                 </span>
                                             )}
                                             {p.dueAt && (
@@ -442,22 +442,24 @@ const BedDetails: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                    {/* Cancelar — disponível para qualquer editor */}
-                                    <button
-                                        onClick={() => handleCancelPendency(p.id)}
-                                        className="flex-shrink-0 text-muted hover:text-orange-500 transition-colors text-xs px-1"
-                                        aria-label={`Cancelar pendência: ${p.title}`}
-                                        title="Cancelar (preserva histórico)"
-                                    >✕</button>
-                                    {/* Excluir — somente admin */}
-                                    {isAdmin && (
+                                    <div className="flex flex-col gap-1 ml-auto">
+                                        {/* Cancelar — disponível para qualquer editor */}
                                         <button
-                                            onClick={() => handleDeletePendency(p.id)}
-                                            className="flex-shrink-0 text-muted hover:text-red-600 transition-colors text-xs px-1"
-                                            aria-label={`Excluir permanentemente: ${p.title}`}
-                                            title="Excluir permanentemente (admin)"
-                                        >🗑️</button>
-                                    )}
+                                            onClick={() => handleCancelPendency(p.id)}
+                                            className="text-muted hover:text-orange-500 transition-colors text-xs px-1"
+                                            aria-label={`Cancelar pendência: ${p.title}`}
+                                            title="Cancelar (preserva histórico)"
+                                        >✕</button>
+                                        {/* Excluir — somente admin */}
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleDeletePendency(p.id)}
+                                                className="text-muted hover:text-red-600 transition-colors text-xs px-1"
+                                                aria-label={`Excluir permanentemente: ${p.title}`}
+                                                title="Excluir permanentemente (admin)"
+                                            >🗑️</button>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
