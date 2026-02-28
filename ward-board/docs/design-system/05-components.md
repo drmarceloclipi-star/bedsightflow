@@ -29,3 +29,12 @@ Cards define distinct groups or workspaces without feeling "boxed" in.
 
 - **Overlays**: Soft backdrop blur (`backdrop-blur-sm`) mixed with a semi-transparent, highly diffused dark tint (e.g., `bg-black/40` or `bg-zinc-900/50`).
 - **Dialog Box**: Rounded, continuous corners (`rounded-xl` or `rounded-2xl`) to avoid harsh edges. Modals should appear completely centered and present clear, unambiguous primary and secondary actions separated by space at the bottom right.
+
+## TV Context Exceptions
+
+TV components (e.g., `KanbanScreen`, `KamishibaiScreen`, badges on `/tv`) operate in a fundamentally different viewing context: screens viewed from 2–4m distance in a clinical environment. The following exceptions to standard rules are **officially sanctioned** for TV-only components:
+
+- **`font-weight: 700`** (Bold): Standard UI limits labels to `600` (Semibold). TV badges and status indicators **may use `700`** to remain legible at distance. Do NOT use `700` on desktop/mobile admin UI.
+- **`border-width: 2px`**: Standard UI uses `1px` soft borders. TV status badges (e.g., `.tv-badge--overdue`) **may use `2px`** so the border is perceptible at 3–4m. Do NOT use `2px` borders on standard components.
+- **`font-size: 0.75rem`** as minimum: For TV badges this is still adequate (12px on a large display). On desktop/mobile, prefer `text-xs` only for truly secondary metadata.
+- **No `zoom` property**: Use `font-size` scaling or CSS custom properties instead of the non-semantic `zoom` CSS property, which behaves inconsistently across non-Chromium browsers.

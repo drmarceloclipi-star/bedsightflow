@@ -170,7 +170,9 @@ const KamishibaiScreen: React.FC<KamishibaiScreenProps> = ({ beds, columns = 1, 
 
             <style>{`
                 .kamishibai-container {
-                    zoom: 0.8;
+                    /* anterior: zoom: 0.8 — não semântico e quebra em Firefox/Safari */
+                    /* solução: reduzir font-size do container; filhos com 'em' herdam */
+                    font-size: 80%;
                 }
 
                 .kamishibai-table-wrapper {
