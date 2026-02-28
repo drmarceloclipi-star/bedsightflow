@@ -1,0 +1,113 @@
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import type { Bed, Unit, SpecialtyKey } from '../../../domain/types';
+import { DischargeEstimateLabel } from '../../../domain/types';
+import { getShortSpecialty, getVisibleSpecialties, KAMISHIBAI_DOMAINS as SUPPORT_SPECIALTIES } from '../../../domain/specialtyUtils';
+import { BedsRepository } from '../../../repositories/BedsRepository';
+import { UnitsRepository } from '../../../repositories/UnitsRepository';
+
+const MobileTvDashboard: React.FC = () => {
+    const [searchParams] = useSearchParams();
+    const unitId = searchParams.get('unit') || 'A';
+
+    const [beds, setBeds] = useState<Bed[]>([]);
+    const [unit, setUnit] = useState<Unit | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = BedsRepository.listenToBeds(unitId, (data: Bed[]) => {
+            setBeds(data);
+            setLoading(false);
+        });
+
+        UnitsRepository.getUnit(unitId).then(setUnit);
+
+        return () => unsubscribe();
+    }, [unitId]);
+
+    if (loading) {
+        return (
+            <div className="p-4 mobile-dashboard pb-safe">
+                <header className="mb-6 flex justify-between items-center">
+                    <div className="skeleton h-8 w-32" />
+                    <div className="skeleton h-4 w-16" />
+                </header>
+                <div className="grid gap-4">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="bg-surface-1 p-4 rounded-lg border shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="skeleton h-6 w-12" />
+                                <div className="skeleton h-5 w-20" />
+                            </div>
+                            <div className="skeleton h-6 w-3/4 mb-4" />
+                            <div className="flex justify-between items-end">
+                                <div className="skeleton h-4 w-1/2" />
+                                <div className="flex gap-1">
+                                    {[1, 2, 3].map(j => <div key={j} className="skeleton h-2 w-2 rounded-full" />)}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 mobile-dashboard pb-safe">
+            <header className="mb-6 flex justify-between items-center">
+                <h2 className="text-2xl font-serif">TV {unit?.name || unitId}</h2>
+                <div className="text-sm text-muted">{beds.length} leitos ativos</div>
+            </header>
+
+            <div className="grid gap-4">
+                {beds.map(bed => (
+                    <div
+                        key={bed.id}
+                        className="bg-surface-1 p-4 rounded-lg border shadow-sm"
+                    >
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-xl font-bold">{bed.number}</span>
+                            <span className={`unit-badge text-xs ${getDischargeColorClass(bed.expectedDischarge)}`}>
+                                {DischargeEstimateLabel[bed.expectedDischarge]}
+                            </span>
+                        </div>
+                        <div className="text-lg mb-2 flex justify-between items-center">
+                            <span>{bed.patientAlias || '--'}</span>
+                            <div className="flex gap-1">
+                                {getVisibleSpecialties(bed.involvedSpecialties || []).map(s => (
+                                    <span key={s} className="px-1 h-5 rounded bg-surface-2 text-[8px] font-bold border flex items-center justify-center text-secondary" title={s}>
+                                        {getShortSpecialty(s)}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-end">
+                            <div className="text-sm text-secondary truncate max-w-200">
+                                {bed.mainBlocker || 'Sem bloqueador'}
+                            </div>
+                            <div className="flex gap-1">
+                                {SUPPORT_SPECIALTIES.map((s, i) => {
+                                    const h = bed.kamishibai[s as SpecialtyKey];
+                                    if (!h) return null;
+                                    return <div key={i} className={`w-2 h-2 rounded-full ${h.status}`} />;
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const getDischargeColorClass = (estimate: string) => {
+    switch (estimate) {
+        case '24h': return 'state-success-bg';
+        case '2-3_days': return 'state-warning-bg';
+        case '>3_days': return 'state-danger-bg';
+        default: return '';
+    }
+};
+
+export default MobileTvDashboard;

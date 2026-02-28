@@ -12,6 +12,7 @@ const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
 const MobileAdminRouter = lazy(() => import('./features/mobile-admin/MobileAdminRouter'));
+const MobileTvDashboard = lazy(() => import('./features/tv/pages/MobileTvDashboard'));
 
 const FallbackLoader = () => (
   <div className="h-screen flex items-center justify-center bg-app">
@@ -70,7 +71,7 @@ function App() {
               path="/tv"
               element={user ? <TvLayout /> : <Navigate to="/login" replace />}
             >
-              <Route index element={<TvDashboard />} />
+              <Route index element={isMobileDevice() ? <MobileTvDashboard /> : <TvDashboard />} />
             </Route>
 
             <Route path="/" element={<Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/editor"} replace />} />
