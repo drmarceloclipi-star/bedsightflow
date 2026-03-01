@@ -80,6 +80,18 @@ Estados derivados para renderização (em ordem de precedência):
 - **Cards de Pendências:** "Pendências abertas" (warning se > 0) + "Pendências vencidas" (critical se qualquer > 0)
 - **Drill-down:** clique no card → `/analytics/lists?filter=pendencies_open` ou `pendencies_overdue`
 
-### Dívida v1.2
+### LSW e Escalonamentos v1.8 (Etapas 1.5 a 1.8.1)
 
-- Badge de pendências na TV: card do leito deve exibir "X pendências" se `pendencies.filter(p => p.status==='open').length > 0`
+- **TV Dashboard (`TvDashboard.tsx`):**
+  - Banners de LSW dinâmicos adicionados (Huddle pendente, Top 3 Ações, e Review do turno anterior).
+  - Badge de pendências agora filtra por leitos ativos (patientAlias not-empty).
+  - `computeEscalations` do `src/domain/escalation.ts` é chamado passando os `beds` para retornar `overdueCritical` e `blockerCritical`.
+
+- **Admin Mission Control (`MissionControlTab.tsx`):**
+  - Adicionado o cartão "🔥 Escalonamentos" totalizando os atrasos críticos.
+
+- **Console LSW (`OpsScreen.tsx`):**
+  - Implementada UI completa para gerenciamento do Leader Standard Work.
+  - Huddle checklist renderizado iterativamente.
+  - Seção de Top 3 Ações permite adicionar (máx 3), cancelar e concluir.
+  - Card de Review exibe status real de conclusão do turno alvo.

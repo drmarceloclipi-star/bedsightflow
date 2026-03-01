@@ -147,11 +147,12 @@ const makePendency = (
         id: `seed_pend_${Math.random().toString(36).slice(2, 9)}`,
         title,
         status,
-        domain: opts.domain,
-        note: opts.note,
-        dueAt: opts.dueAt,
         createdAt: hoursAgo(24),
         createdBy: SEED_ACTOR,
+        // campos opcionais: só incluir se definidos (Firestore rejeita undefined)
+        ...(opts.domain !== undefined && { domain: opts.domain }),
+        ...(opts.note !== undefined && { note: opts.note }),
+        ...(opts.dueAt !== undefined && { dueAt: opts.dueAt }),
     };
     if (status === 'done' && opts.doneAt) {
         doc.doneAt = opts.doneAt;
@@ -326,10 +327,9 @@ async function seed() {
         kanbanMode: 'ACTIVE_LITE',
         kamishibaiEnabled: true,
         huddleSchedule: { amStart: '07:00', pmStart: '19:00' },
-        // lastHuddle* omitido intencionalmente → mostrará HUDDLE_PENDING na UI
+        // lastHuddle* omitido aqui, será atualizado no bloco do Huddle
     }, { merge: true });
     console.log('  ✅ Ops settings created (kamishibaiEnabled=true, huddleSchedule=07:00/19:00)');
-    console.log('  ℹ️  lastHuddleShiftKey omitido → HUDDLE_PENDING visível (para testar badge futuro)');
 
     // 3.2. Seed Mission Control thresholds (v1) — configuráveis por unidade
     // Ref: docs/lean/MISSION_CONTROL_V1_ACCEPTANCE_2026-02-28.md
@@ -507,6 +507,14 @@ async function seed() {
                 }),
             ],
         },
+        '302.3': {
+            // Leito VAZIO GARANTIDO: para teste visual INACTIVE e ocultar dots
+            patientAlias: '',
+            mainBlocker: '',
+            applicableDomains: ['medical', 'nursing', 'physio', 'nutrition', 'psychology', 'social'],
+            kamishibai: {},
+            pendencies: [],
+        },
     };
 
     for (const data of SEED_BEDS) {
@@ -559,6 +567,161 @@ async function seed() {
         const tag = profile ? (data.number === '302.2' ? '🦕 LEGADO v0' : '✅ v1') : '🔄 auto-v1';
         console.log(`  ${tag} Bed ${data.number} — ${alias} | blocker: ${blocker} | shiftKey: ${CURRENT_SHIFT_KEY}`);
     }
+
+    // 5. Seed Huddles (LSW v1)
+    console.log('\n🗣️  Creating Huddles (LSW)...');
+
+    // Calcula turno anterior para ter actions pendentes (aparece na TV como Review)
+    const PREV_SHIFT_KEY = seedComputeShiftKey(new Date(Date.now() - 12 * 3600_000));
+
+    const prevHuddleCmd = db.collection('units').doc('A').collection('huddles').doc(PREV_SHIFT_KEY);
+    await prevHuddleCmd.set({
+        id: PREV_SHIFT_KEY,
+        unitId: 'A',
+        shiftKey: PREV_SHIFT_KEY,
+        createdAt: hoursAgo(12),
+        createdBy: SEED_ACTOR,
+        startedAt: hoursAgo(12),
+        startedBy: SEED_ACTOR,
+        endedAt: hoursAgo(11.5),
+        endedBy: SEED_ACTOR,
+        checklist: [
+            { id: '1', label: '1. Equipe completa para o Huddle?', checked: true },
+            { id: '2', label: '2. Escalonamentos críticos revisados na TV?', checked: true },
+        ],
+        topActions: [
+            { id: 'act1', text: 'Alinhar com CCIH sobre leitos de isolamento', status: 'open', owner: 'Enf. Maria', createdAt: hoursAgo(12), createdBy: SEED_ACTOR },
+            { id: 'act2', text: 'Cobrar manutenção da maca do quarto 305', status: 'done', owner: 'Admin', createdAt: hoursAgo(12), createdBy: SEED_ACTOR, completedAt: hoursAgo(11), completedBy: SEED_ACTOR }
+        ],
+        startSummary: {
+            generatedAt: hoursAgo(12),
+            shiftKey: PREV_SHIFT_KEY,
+            source: 'seed',
+            blockedBedsCount: 3,
+            maxBlockedAgingHours: 140,
+            dischargeNext24hCount: 2,
+            unreviewedBedsCount: 5,
+            escalationsOverdueCritical: 4,
+            overduePendenciesCount: 10
+        },
+        endSummary: {
+            generatedAt: hoursAgo(11.5),
+            shiftKey: PREV_SHIFT_KEY,
+            source: 'seed',
+            blockedBedsCount: 2,           // melhorou de 3 para 2
+            maxBlockedAgingHours: 140,
+            dischargeNext24hCount: 3,         // melhorou de 2 para 3
+            unreviewedBedsCount: 0,        // melhorou de 5 para 0
+            escalationsOverdueCritical: 2, // melhorou de 4 para 2
+            overduePendenciesCount: 8      // melhorou de 10 para 8
+        }
+    });
+    console.log(`  ✅ Previous Huddle seeded (${PREV_SHIFT_KEY}) with 1 open action`);
+
+    await db.collection('units').doc('A').collection('settings').doc('ops').update({
+        lastHuddleShiftKey: PREV_SHIFT_KEY
+    });
+    console.log(`  ✅ Ops settings updated with lastHuddleShiftKey = ${PREV_SHIFT_KEY}`);
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CASOS FIXOS PARA TESTE DA V1.8.1 (ESCALONAMENTOS CANÔNICOS E PENDÊNCIAS)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('Seeding fixed cases for Escalations and Pendencies V1...');
+
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    // Leito 1: Escalonamento Critico (Pendência Overdue > 12h)
+    const overdueLimitH = 12; // default
+    const overdueMs = nowMs - (overdueLimitH + 2) * 3600000;
+
+    await db.collection('units').doc('A').collection('beds').doc('ESCALATION-01').set({
+        id: 'ESCALATION-01',
+        number: 'ESC-01',
+        patientAlias: 'P. Overdue',
+        unitId: 'A',
+        expectedDischarge: 'later',
+        applicableDomains: KAMISHIBAI_DOMAINS,
+        kamishibai: {
+            medical: makeKamishibaiEntry('ok', hoursAgo(0)),
+            nursing: makeKamishibaiEntry('ok', hoursAgo(0)),
+            physio: makeKamishibaiEntry('ok', hoursAgo(0)),
+            nutrition: makeKamishibaiEntry('ok', hoursAgo(0)),
+            psychology: makeKamishibaiEntry('ok', hoursAgo(0)),
+            social: makeKamishibaiEntry('ok', hoursAgo(0)),
+        },
+        pendencies: [
+            makePendency('TC Tórax com contraste urgente', 'open', {
+                dueAt: new Date(overdueMs).toISOString(),
+                domain: 'medical',
+                note: 'Agendado mas desmarcou por falta de jeijum.',
+            })
+        ],
+        updatedAt: hoursAgo(0),
+        updatedBy: SEED_ACTOR
+    });
+
+    // Leito 2: Escalonamento Critico (Main Blocker > 24h)
+    const blockerLimitH = 24; // default
+    const blockerMs = nowMs - (blockerLimitH + 5) * 3600000;
+
+    await db.collection('units').doc('A').collection('beds').doc('ESCALATION-02').set({
+        id: 'ESCALATION-02',
+        number: 'ESC-02',
+        patientAlias: 'P. Blocker',
+        unitId: 'A',
+        expectedDischarge: 'later',
+        mainBlocker: 'Aguardando CTI',
+        mainBlockerBlockedAt: new Date(blockerMs).toISOString(),
+        applicableDomains: KAMISHIBAI_DOMAINS,
+        kamishibai: {
+            medical: makeKamishibaiEntry('blocked', hoursAgo(0)),
+            nursing: makeKamishibaiEntry('ok', hoursAgo(0)),
+            physio: makeKamishibaiEntry('ok', hoursAgo(0)),
+            nutrition: makeKamishibaiEntry('ok', hoursAgo(0)),
+            psychology: makeKamishibaiEntry('ok', hoursAgo(0)),
+            social: makeKamishibaiEntry('ok', hoursAgo(0)),
+        },
+        pendencies: [],
+        updatedAt: hoursAgo(0),
+        updatedBy: SEED_ACTOR
+    });
+
+    // Leito 3: Warning, quase escalonamento - Bloqueio 20h (<24h limit) e Pendência Atrasada 8h (<12h limit)
+    const almostOverdueH = 8;
+    const almostOverdueMs = nowMs - almostOverdueH * 3600000;
+    const almostBlockerH = 20;
+    const almostBlockerMs = nowMs - almostBlockerH * 3600000;
+
+    await db.collection('units').doc('A').collection('beds').doc('ESCALATION-03').set({
+        id: 'ESCALATION-03',
+        number: 'ESC-03',
+        patientAlias: 'P. Warning',
+        unitId: 'A',
+        expectedDischarge: 'later',
+        mainBlocker: 'Social pendente',
+        mainBlockerBlockedAt: new Date(almostBlockerMs).toISOString(),
+        applicableDomains: KAMISHIBAI_DOMAINS,
+        kamishibai: {
+            medical: makeKamishibaiEntry('ok', hoursAgo(0)),
+            nursing: makeKamishibaiEntry('ok', hoursAgo(0)),
+            physio: makeKamishibaiEntry('ok', hoursAgo(0)),
+            nutrition: makeKamishibaiEntry('ok', hoursAgo(0)),
+            psychology: makeKamishibaiEntry('ok', hoursAgo(0)),
+            social: makeKamishibaiEntry('blocked', hoursAgo(0)),
+        },
+        pendencies: [
+            makePendency('Contatar familia responsavel', 'open', {
+                dueAt: new Date(almostOverdueMs).toISOString(),
+                domain: 'social',
+            })
+        ],
+        updatedAt: hoursAgo(0),
+        updatedBy: SEED_ACTOR
+    });
+
+    console.log('Done fixed cases.');
+    // ─────────────────────────────────────────────────────────────────────────────
 
     console.log('\n✨ Seed finished successfully!');
     console.log('📋 Open http://localhost:4000 to see the data in the Emulator UI');

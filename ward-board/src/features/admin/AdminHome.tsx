@@ -7,6 +7,7 @@ import { authorizedUsersRepository, type AuthorizedUser } from '../../repositori
 import ConfirmModal from '../../shared/components/ConfirmModal';
 import type { Unit, SpecialtyKey } from '../../domain/types';
 import { SpecialtyLabel } from '../../domain/types';
+import '../../styles/edu.css';
 
 const AdminHome: React.FC = () => {
     const navigate = useNavigate();
@@ -119,7 +120,7 @@ const AdminHome: React.FC = () => {
             <header className="admin-header">
                 <div className="admin-header-top relative">
                     <div className="admin-header-left">
-                        <span className="unit-badge text-sm px-3 py-1 bg-surface-2">Admin</span>
+                        <span className="unit-badge">Admin</span>
                     </div>
                     <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
                         <img
@@ -129,7 +130,7 @@ const AdminHome: React.FC = () => {
                             style={{ height: '24px', maxWidth: 'calc(100vw - 160px)' }}
                         />
                     </span>
-                    <div className="admin-header-right">
+                    <div className="admin-header-right flex items-center gap-4">
                         <button
                             onClick={handleLogout}
                             className="admin-back-btn"

@@ -21,7 +21,7 @@ const MobileDashboard: React.FC = () => {
             setLoading(false);
         });
 
-        UnitsRepository.getUnit(unitId).then(setUnit);
+        UnitsRepository.getUnit(unitId).then(setUnit).catch(console.error);
 
         return () => unsubscribe();
     }, [unitId]);

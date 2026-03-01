@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 import { isGlobalAdmin } from '../config/admins';
 
@@ -60,7 +61,7 @@ export const setUnitUserRole = functions.region('southamerica-east1').https.onCa
     const targetUserDoc = await targetUserRef.get();
     const beforeData = targetUserDoc.exists ? targetUserDoc.data() : null;
 
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
     const updatedBy = { uid: adminUid, email: adminEmail };
 
     // Strip any undefined values from Firestore reads — JSON.parse/stringify only safe for plain objects

@@ -14,14 +14,20 @@ const AuditScreen: React.FC<AuditScreenProps> = ({ unitId }) => {
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
     useEffect(() => {
-        setErrorMsg(null);
-        setSelectedLog(null); // Clear selected when filters change
+        // Reset state via a transition to avoid cascading renders inside the effect body
+        let firstLoad = true;
 
         const unsubscribe = AuditRepository.listenToAuditLogs(unitId, filters, (fetchedLogs) => {
+            if (firstLoad) {
+                // Clear selection and any stale error on the first emission of the new subscription
+                setSelectedLog(null);
+                setErrorMsg(null);
+                firstLoad = false;
+            }
             setLogs(fetchedLogs);
             setLoading(false);
-            setErrorMsg(null);
         }, (err) => {
+            firstLoad = false;
             if (err.message.includes('FAILED_PRECONDITION') && err.message.includes('index')) {
                 setErrorMsg('O Firestore exige a criação de um índice (Composite Index) para esta combinação de filtros. Por favor, crie no console do Firebase e tente novamente mais tarde.');
             } else {

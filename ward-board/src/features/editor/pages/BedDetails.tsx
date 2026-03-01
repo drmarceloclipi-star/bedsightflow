@@ -137,25 +137,29 @@ const BedDetails: React.FC = () => {
             const shiftKey = currentShiftKey(schedule);
 
             const existing = bed.kamishibai?.[specialty];
-            const newEntry = {
+            const newEntry: Record<string, any> = {
                 ...existing,
                 status,
                 updatedAt: now,
                 // ── v1: campos de turno ──────────────────────────────────
                 reviewedShiftKey: shiftKey,
                 reviewedAt: now,
-                // ── v1: histórico de bloqueio ─────────────────────────────
-                // blockedAt: gravado apenas na PRIMEIRA vez que vira blocked
-                blockedAt:
-                    status === 'blocked'
-                        ? (existing?.blockedAt ?? now)  // preserva blockedAt original se já existia
-                        : existing?.blockedAt,           // mantém para histórico mesmo após resolver
-                // resolvedAt: gravado quando sai de blocked para ok
-                resolvedAt:
-                    status === 'ok' && existing?.status === 'blocked'
-                        ? now
-                        : existing?.resolvedAt,
             };
+
+            // ── v1: histórico de bloqueio ─────────────────────────────
+            // blockedAt: gravado apenas na PRIMEIRA vez que vira blocked
+            if (status === 'blocked') {
+                newEntry.blockedAt = existing?.blockedAt ?? now;
+            } else if (existing?.blockedAt) {
+                newEntry.blockedAt = existing.blockedAt;
+            }
+
+            // resolvedAt: gravado quando sai de blocked para ok
+            if (status === 'ok' && existing?.status === 'blocked') {
+                newEntry.resolvedAt = now;
+            } else if (existing?.resolvedAt) {
+                newEntry.resolvedAt = existing.resolvedAt;
+            }
 
             const newKamishibai = { ...bed.kamishibai, [specialty]: newEntry };
             await BedsRepository.updateBed(unitId, id, { kamishibai: newKamishibai }, getActor());
@@ -230,8 +234,17 @@ const BedDetails: React.FC = () => {
     // Admin-only: remove fisicamente do array
     const handleDeletePendency = async (pendencyId: string) => {
         if (!id || !isAdmin) return;
-        try { await BedsRepository.deletePendency(unitId, id, pendencyId, buildActorRef()); }
-        catch (e) { console.error('deletePendency error:', e); }
+        if (!window.confirm('Excluir permanentemente esta pendência? (Ação irreversível)')) {
+            return;
+        }
+        try {
+            await BedsRepository.deletePendency(unitId, id, pendencyId, buildActorRef());
+            setErrorMsg(null);
+        } catch (error) {
+            const e = error as Error;
+            console.error('deletePendency error:', e);
+            setErrorMsg(e.message || 'Erro ao excluir pendência.');
+        }
     };
 
     if (!bed) {

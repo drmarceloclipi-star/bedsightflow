@@ -196,8 +196,8 @@ export const BedsRepository = {
 
     /**
      * Remove fisicamente uma pendência do array.
-     * RESTRIÇÃO: exclusivo de admin — a UI não deve expor este botão para editor.
-     * Para auditoria, prefira cancelPendency.
+     * RESTRIÇÃO: exclusivo de admin — a UI não expõe este botão para editor.
+     * Utiliza Cloud Function 'deletePendency' para garantir segurança server-side.
      */
     async deletePendency(
         unitId: string,
@@ -205,16 +205,15 @@ export const BedsRepository = {
         pendencyId: string,
         actor: import('../domain/types').ActorRef
     ): Promise<void> {
-        const { runTransaction } = await import('firebase/firestore');
-        const bedRef = doc(db, 'units', unitId, 'beds', bedId);
-        await runTransaction(db, async (tx) => {
-            const snap = await tx.get(bedRef);
-            if (!snap.exists()) throw new Error(`Bed ${bedId} not found`);
-            const bed = snap.data() as import('../domain/types').Bed;
-            const pendencies = (bed.pendencies ?? []).filter(p => p.id !== pendencyId);
-            // Log de auditoria (não gravado no Firestore, mas disponível em console)
-            console.info('[deletePendency] admin delete by', actor.id, 'pendencyId:', pendencyId);
-            tx.update(bedRef, { pendencies, updatedAt: serverTimestamp() });
+        const { getFunctions, httpsCallable } = await import('firebase/functions');
+        const functions = getFunctions(db.app, 'southamerica-east1');
+        const deleteCb = httpsCallable(functions, 'deletePendency');
+
+        await deleteCb({
+            unitId,
+            bedId,
+            pendencyId,
+            reason: `Deleted by admin ${actor.name} via client UI`,
         });
     },
 };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, BookOpen } from 'lucide-react';
 import { UnitsRepository } from '../../repositories/UnitsRepository';
 import type { Unit, AdminTab } from '../../domain/types';
 import { IconTv, IconBeds, IconUsers, IconOps, IconAudit, IconStats } from '../../components/icons/MobileBottomNavIcons';
+import { EduCenterHome } from '../education/components/EduCenterHome';
 
 const TvSettingsScreen = lazy(() => import('./screens/TvSettingsScreen'));
 const BedsAdminScreen = lazy(() => import('./screens/BedsAdminScreen'));
@@ -19,6 +20,7 @@ const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: 'ops', label: 'Ops', icon: <IconOps size={18} /> },
     { key: 'audit', label: 'Auditoria', icon: <IconAudit size={18} /> },
     { key: 'analytics', label: 'Analytics', icon: <IconStats size={18} /> },
+    { key: 'education', label: 'Educativo', icon: <BookOpen size={18} /> },
 ];
 
 const AdminUnitShell: React.FC = () => {
@@ -156,6 +158,7 @@ const AdminUnitShell: React.FC = () => {
                     {activeTab === 'ops' && <OpsScreen unitId={unitId} />}
                     {activeTab === 'audit' && <AuditScreen unitId={unitId} />}
                     {activeTab === 'analytics' && <AnalyticsScreen unitId={unitId} />}
+                    {activeTab === 'education' && <EduCenterHome unitId={unitId} embedded />}
                 </Suspense>
             </main>
         </div>

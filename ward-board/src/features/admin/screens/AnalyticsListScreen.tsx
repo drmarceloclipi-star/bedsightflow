@@ -4,6 +4,7 @@ import { useAuthStatus } from '../../../hooks/useAuthStatus';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db } from '../../../infra/firebase/config';
 import type { Bed, Pendency } from '../../../domain/types';
+import { computeEscalations, DEFAULT_ESCALATION_THRESHOLDS } from '../../../domain/escalation';
 
 type FilterKey =
     | 'blocked_now'
@@ -15,7 +16,9 @@ type FilterKey =
     | 'unreviewed_shift'   // v1: UNREVIEWED_THIS_SHIFT (shiftKey)
     | 'blocked_aging'     // v1: sort por mainBlockerBlockedAt real
     | 'pendencies_open'   // v1: leitos com pendência aberta
-    | 'pendencies_overdue'; // v1: leitos com pendência vencida
+    | 'pendencies_overdue' // v1: leitos com pendência vencida
+    | 'escalations_overdue'
+    | 'escalations_blocker';
 
 const FILTER_META: Record<FilterKey, { title: string; description: string; icon: string }> = {
     blocked_now: {
@@ -67,6 +70,16 @@ const FILTER_META: Record<FilterKey, { title: string; description: string; icon:
         title: 'Leitos com Pendências Vencidas',
         description: 'Leitos com pelo menos 1 pendência cujo prazo (dueAt) já passou e status=open.',
         icon: '⚠️',
+    },
+    escalations_overdue: {
+        title: '🔥 Escalonamento: Pendência de Longo Atraso',
+        description: 'Pendências operacionais vencidas que excederam o tempo crítico configurado. Exige ação imediata.',
+        icon: '🔥',
+    },
+    escalations_blocker: {
+        title: '🔥 Escalonamento: Bloqueio Grave',
+        description: 'Leitos bloqueados há tempo excessivo excedendo limite crítico configurado.',
+        icon: '🔥',
     },
 };
 
@@ -246,6 +259,18 @@ const AnalyticsListScreen: React.FC = () => {
                         }).length;
                         return overdue(b.pendencies) - overdue(a.pendencies);
                     });
+                    break;
+                }
+
+                case 'escalations_overdue': {
+                    const esc = computeEscalations(rows, DEFAULT_ESCALATION_THRESHOLDS, new Date(now));
+                    rows = rows.filter(b => esc.overdueCriticalBedIds.includes(b.id));
+                    break;
+                }
+
+                case 'escalations_blocker': {
+                    const esc = computeEscalations(rows, DEFAULT_ESCALATION_THRESHOLDS, new Date(now));
+                    rows = rows.filter(b => esc.blockerCriticalBedIds.includes(b.id));
                     break;
                 }
 

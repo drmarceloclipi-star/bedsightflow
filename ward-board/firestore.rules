@@ -68,6 +68,12 @@ service cloud.firestore {
       allow write: if isUnitAdmin(unitId);
     }
 
+    // ── Huddles ───────────────────────────────────────────────
+    match /units/{unitId}/huddles/{huddleId} {
+      allow read: if isUnitMember(unitId);
+      allow write: if isUnitEditorOrAdmin(unitId);
+    }
+
     // ── Audit Logs ────────────────────────────────────────────
     match /units/{unitId}/audit_logs/{logId} {
       allow read: if isUnitAdmin(unitId);

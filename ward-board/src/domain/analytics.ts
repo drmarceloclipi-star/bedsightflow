@@ -64,6 +64,14 @@ export type TopBlockerNow = {
     share: number // 0-100
 }
 
+export type EscalationCounts = {
+    total: number
+    overdueCritical: number
+    blockerCritical: number
+    overdueCriticalBedIds: string[]
+    blockerCriticalBedIds: string[]
+}
+
 export type MissionControlSnapshot = {
     generatedAt: string
     source: string
@@ -112,6 +120,8 @@ export type MissionControlSnapshot = {
     /** Quantidade de leitos com pelo menos 1 pendência aberta */
     bedsWithOpenPendenciesCount?: number
     bedsWithOpenPendenciesIds?: string[]
+    // ── Escalonamento v1 ──────────────────────────────────────────────────────
+    escalations?: EscalationCounts
 }
 
 export type DailyDischarge = {

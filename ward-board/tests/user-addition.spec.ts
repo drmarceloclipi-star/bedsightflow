@@ -93,8 +93,7 @@ test.describe('Admin – User Addition Flow', () => {
         // Read current count
         const countBadge = page.locator('span.font-bold', { hasText: /Acesso na Unidade/ });
         await expect(countBadge).toBeVisible({ timeout: 8000 });
-        const beforeText = await countBadge.textContent() ?? '';
-        const beforeCount = parseInt(beforeText.match(/\d+/)?.[0] ?? '0', 10);
+
 
         // Remove test user if already in the list (from a previous failed run)
         const alreadyInList = await page.locator(`text="${TEST_EMAIL}"`).isVisible({ timeout: 1500 }).catch(() => false);

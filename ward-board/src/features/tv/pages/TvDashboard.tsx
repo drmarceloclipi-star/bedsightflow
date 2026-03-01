@@ -10,10 +10,16 @@ import TvRotationContainer from '../components/TvRotationContainer';
 import ThemeToggle from '../../../shared/theme/ThemeToggle';
 import { useAuthStatus } from '../../../hooks/useAuthStatus';
 import { currentShiftKey, DEFAULT_SHIFT_SCHEDULE } from '../../../domain/shiftKey';
+import { getReviewOfShiftKey } from '../../../domain/huddle';
+import type { HuddleDoc } from '../../../domain/huddle';
+import { HuddleRepository } from '../../../repositories/HuddleRepository';
+import { computeEscalations, DEFAULT_ESCALATION_THRESHOLDS } from '../../../domain/escalation';
+import { CheckSquare, Flame } from 'lucide-react';
 
 const TvDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
     const unitId = searchParams.get('unit') || 'A';
+    const forceScreen = searchParams.get('screen') || undefined;
     const navigate = useNavigate();
     const { isAdmin } = useAuthStatus();
 
@@ -25,6 +31,10 @@ const TvDashboard: React.FC = () => {
     const [now, setNow] = useState(new Date());
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [opsSettings, setOpsSettings] = useState<UnitOpsSettings | null>(null);
+
+    // Huddle Docs
+    const [currentHuddle, setCurrentHuddle] = useState<HuddleDoc | null>(null);
+    const [previousHuddle, setPreviousHuddle] = useState<HuddleDoc | null>(null);
 
     // Relógio atualizado a cada 30 segundos
     useEffect(() => {
@@ -89,6 +99,36 @@ const TvDashboard: React.FC = () => {
         };
     }, [unitId]);
 
+    // Huddles Listener (amarrado ao opSettings e data/hora atual)
+    useEffect(() => {
+        if (!opsSettings) return;
+        const schedule = opsSettings.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE;
+        const currentKey = currentShiftKey(schedule);
+        const prevKey = getReviewOfShiftKey(currentKey);
+
+        const unsubCurrent = HuddleRepository.listenToHuddle(unitId, currentKey, setCurrentHuddle);
+
+        // Previous might not be changing fast, but could be updated by the current shift reviewing it
+        const unsubPrev = HuddleRepository.listenToHuddle(unitId, prevKey, setPreviousHuddle);
+
+        return () => {
+            unsubCurrent();
+            unsubPrev();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unitId, opsSettings, now.getHours()]);
+
+    // ── Escalation (v1 runtime) ──────────────────────────────────────────────────
+    const escalationsTotal = useMemo(() => {
+        if (!beds) return 0;
+        const esc = computeEscalations(beds, DEFAULT_ESCALATION_THRESHOLDS, now);
+        return esc.total;
+    }, [beds, now]);
+
+    // Banners state
+    const currentActionsOpen = (currentHuddle?.topActions || []).filter(a => a.status === 'open').length;
+    const previousActionsOpen = (previousHuddle?.topActions || []).filter(a => a.status === 'open').length;
+
     if (loading) {
         return (
             <div className="h-screen flex flex-col bg-app overflow-hidden p-8">
@@ -135,7 +175,7 @@ const TvDashboard: React.FC = () => {
         <div className="tv-dashboard h-screen flex flex-col">
             <header className="tv-header flex justify-between items-center relative">
                 <div className="tv-header-left">
-                    <span className="unit-badge text-lg px-4 py-1">{unit.name}</span>
+                    <span className="unit-badge">{unit.name}</span>
                 </div>
                 <h1 className="tv-title absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
                     <img
@@ -217,14 +257,39 @@ const TvDashboard: React.FC = () => {
                 </div>
             )}
 
+            {/* ── Banners LSW v1 ───────────────────────────────────── */}
+            {(currentActionsOpen > 0 || previousActionsOpen > 0 || escalationsTotal > 0) && (
+                <div className="flex bg-surface-2 border-b border-divider divide-x divide-divider">
+                    {currentActionsOpen > 0 && (
+                        <div className="flex-1 px-4 py-2 flex items-center justify-center gap-2 text-warning animate-pulse" style={{ fontWeight: 700 }}>
+                            <CheckSquare size={18} />
+                            <span className="text-sm tracking-widest uppercase">Top 3 Ações: <span className="text-foreground">{currentActionsOpen} Aberta{currentActionsOpen > 1 ? 's' : ''}</span></span>
+                        </div>
+                    )}
+                    {previousActionsOpen > 0 && (
+                        <div className="flex-1 px-4 py-2 flex items-center justify-center gap-2 text-primary" style={{ fontWeight: 700 }}>
+                            <CheckSquare size={18} />
+                            <span className="text-sm tracking-widest uppercase">Review Pendente: <span className="text-foreground">{previousActionsOpen} Ação{previousActionsOpen > 1 ? 'ões' : ''}</span></span>
+                        </div>
+                    )}
+                    {escalationsTotal > 0 && (
+                        <div className="flex-1 px-4 py-2 flex items-center justify-center gap-2 text-danger animate-pulse bg-danger/10" style={{ fontWeight: 700 }}>
+                            <Flame size={18} />
+                            <span className="text-sm tracking-widest uppercase">Escalonamentos: <span className="text-foreground">{escalationsTotal} Crítico{escalationsTotal > 1 ? 's' : ''}</span></span>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <main className="tv-main flex-1 overflow-hidden">
                 {settings && (
                     <TvRotationContainer
                         beds={beds}
                         settings={settings}
-                        unitName={unit.name}
                         opsSettings={opsSettings}
+                        unitName={unit?.name}
                         now={now}
+                        forceScreen={forceScreen}
                     />
                 )}
             </main>

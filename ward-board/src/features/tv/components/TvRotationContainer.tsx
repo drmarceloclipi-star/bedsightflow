@@ -13,11 +13,13 @@ interface TvRotationContainerProps {
     opsSettings?: UnitOpsSettings | null;
     /** v1.5: referência de tempo para calcular overdue nas screens (state do TvDashboard) */
     now?: Date;
+    /** For testing/debugging: forces a specific screen key */
+    forceScreen?: string;
 }
 
 
 
-const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, settings, unitName, opsSettings, now = new Date() }) => {
+const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, settings, unitName, opsSettings, now = new Date(), forceScreen }) => {
     const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
     const [progress, setProgress] = useState(0);
 
@@ -31,7 +33,7 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
 
     const expandedScreens = useMemo(() => {
         const screens: { key: string; label: string; duration: number; beds?: Bed[]; metrics?: SummaryMetrics; columns?: number }[] = [];
-        const enabled = settings.screens.filter(s => s.enabled);
+        const enabled = settings.screens.filter(s => forceScreen ? s.key === forceScreen : s.enabled);
 
         enabled.forEach(screen => {
             if (screen.key === 'kanban' || screen.key === 'kamishibai') {
@@ -58,7 +60,7 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
             }
         });
         return screens;
-    }, [settings.screens, settings.kanbanBedsPerPage, settings.kamishibaiBedsPerPage, settings.kanbanColumnsPerPage, settings.kamishibaiColumnsPerPage, beds]);
+    }, [settings.screens, settings.kanbanBedsPerPage, settings.kamishibaiBedsPerPage, settings.kanbanColumnsPerPage, settings.kamishibaiColumnsPerPage, beds, forceScreen]);
 
     const metrics: SummaryMetrics = useMemo(() => {
         return SummaryCalculator.calculateMetrics(beds, now);

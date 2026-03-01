@@ -19,7 +19,7 @@ export const auth = getAuth(app);
 export const functions = getFunctions(app, 'southamerica-east1');
 
 // Connect to emulators if running locally
-if (window.location.hostname === 'localhost') {
+if (import.meta.env.DEV) {
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099');
     connectFunctionsEmulator(functions, 'localhost', 5001);

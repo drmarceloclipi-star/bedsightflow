@@ -13,6 +13,7 @@ import {
 import type { MissionControlThresholds } from '../../../../domain/missionControl';
 import MissionControlCard from './MissionControlCard';
 import { AnalyticsEmptyState } from './AnalyticsEmptyState';
+import { escalationStatus } from '../../../../domain/escalation';
 
 interface MissionControlTabProps {
     unitId: string;
@@ -315,6 +316,37 @@ const MissionControlTab: React.FC<MissionControlTabProps> = ({ unitId, refreshTr
                                 contractMetric="Pendências com dueAt passado e status=open"
                                 contractUniverse={`N = ${snapshot?.openPendenciesCount ?? 0} pendências abertas`}
                                 contractWindow="turno atual"
+                                loading={loadingSnapshot}
+                            />
+                        </div>
+
+                        {/* ── ESCALONAMENTOS (V1) ── */}
+                        <div className="mc-cards-row" style={{ marginTop: '1.5rem' }}>
+                            <MissionControlCard
+                                id="escalations_total"
+                                title="🔥 Escalonamentos"
+                                scope="AGORA"
+                                value={snapshot?.escalations?.total ?? 0}
+                                unit="pacientes escalonados"
+                                status={escalationStatus(snapshot?.escalations?.total ?? 0)}
+                                countermeasure="Intervenção imediata da coordenação."
+                                drilldowns={
+                                    snapshot?.escalations?.total && snapshot?.escalations.total > 0
+                                        ? [
+                                            {
+                                                label: `Ver ${snapshot.escalations.overdueCriticalBedIds.length} pendências de longo atraso`,
+                                                onClick: () => drilldown('escalations_overdue')
+                                            },
+                                            {
+                                                label: `Ver ${snapshot.escalations.blockerCriticalBedIds.length} bloqueios graves`,
+                                                onClick: () => drilldown('escalations_blocker')
+                                            }
+                                        ]
+                                        : undefined
+                                }
+                                contractMetric="Unique leitos com overdue crítico OU blocker crítico"
+                                contractUniverse={`N = ${snapshot?.activeBedsCount ?? 0} leitos ativos`}
+                                contractWindow="agora"
                                 loading={loadingSnapshot}
                             />
                         </div>

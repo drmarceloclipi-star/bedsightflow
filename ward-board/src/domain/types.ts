@@ -353,7 +353,7 @@ export interface UnitUserRole {
     };
 }
 
-export type AdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'analytics';
+export type AdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'analytics' | 'education';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Operational Settings — settings/ops

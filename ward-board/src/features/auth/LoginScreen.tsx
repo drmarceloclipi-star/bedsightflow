@@ -5,12 +5,32 @@ import { useNavigate } from 'react-router-dom';
 import { authorizedUsersRepository } from '../../repositories/authorizedUsersRepository';
 import { ADMIN_EMAILS } from '../../config/admins';
 
-const isLocalhost = window.location.hostname === 'localhost';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const LoginScreen: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    // Auto-redirect if already logged in (e.g. page refresh)
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+            if (currentUser && currentUser.email) {
+                // Don't auto-redirect if we are in the middle of a redirect result flow
+                if (loading) return;
+
+                try {
+                    const isAuthorized = await authorizedUsersRepository.isAuthorized(currentUser.email);
+                    if (isAuthorized) {
+                        navigate(ADMIN_EMAILS.includes(currentUser.email.toLowerCase()) ? '/admin' : '/editor', { replace: true });
+                    }
+                } catch (err) {
+                    console.error('Auth verification error:', err);
+                }
+            }
+        });
+        return unsubscribe;
+    }, [navigate, loading]);
 
     // Handle redirect result after returning from Google sign-in
     useEffect(() => {

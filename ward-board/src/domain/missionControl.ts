@@ -27,6 +27,11 @@ export interface MissionControlThresholds {
     /** Não revisados neste turno — count de leitos */
     unreviewedShiftWarningCount: number;
     unreviewedShiftCriticalCount: number;
+    /** Escalonamento v1 (horas) */
+    escalationOverdueHoursWarning: number;
+    escalationOverdueHoursCritical: number;
+    escalationMainBlockerHoursWarning: number;
+    escalationMainBlockerHoursCritical: number;
 }
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
@@ -44,6 +49,11 @@ export const DEFAULT_MISSION_CONTROL_THRESHOLDS: MissionControlThresholds = {
     freshness48hCriticalCount: 1,
     unreviewedShiftWarningCount: 3,
     unreviewedShiftCriticalCount: 6,
+    // Escalonamento v1
+    escalationOverdueHoursWarning: 6,
+    escalationOverdueHoursCritical: 12,
+    escalationMainBlockerHoursWarning: 8,
+    escalationMainBlockerHoursCritical: 24,
 };
 
 // ── Parser Firestore doc → thresholds (merge seguro com defaults) ─────────────
@@ -67,6 +77,10 @@ export function parseMissionControlThresholds(raw: unknown): MissionControlThres
         freshness48hCriticalCount: num('freshness48hCriticalCount'),
         unreviewedShiftWarningCount: num('unreviewedShiftWarningCount'),
         unreviewedShiftCriticalCount: num('unreviewedShiftCriticalCount'),
+        escalationOverdueHoursWarning: num('escalationOverdueHoursWarning'),
+        escalationOverdueHoursCritical: num('escalationOverdueHoursCritical'),
+        escalationMainBlockerHoursWarning: num('escalationMainBlockerHoursWarning'),
+        escalationMainBlockerHoursCritical: num('escalationMainBlockerHoursCritical'),
     };
 }
 

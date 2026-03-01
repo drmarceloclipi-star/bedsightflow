@@ -35,7 +35,7 @@ function App() {
       <Router>
         <Suspense fallback={<FallbackLoader />}>
           <Routes>
-            <Route path="/login" element={user ? <Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/editor"} replace /> : <LoginScreen />} />
+            <Route path="/login" element={<LoginScreen />} />
 
             {/* Admin Routes — global with unit selector */}
             {/* On mobile devices, redirect to the mobile-optimised admin */}

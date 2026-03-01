@@ -73,15 +73,15 @@ const MobileAdminHome: React.FC = () => {
             {/* Sticky header */}
             <header className="madmin-header">
                 <div className="madmin-header-inner relative">
-                    <div className="madmin-header-brand">
-                        <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2">Admin</span>
-                    </div>
+                    <div className="madmin-header-left" />
                     <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
                         <img src="/bedsight-flow-logo.png" alt="BedSight Flow" style={{ height: '24px', width: 'auto', maxWidth: 'calc(100vw - 140px)' }} />
                     </span>
-                    <button onClick={handleLogout} className="madmin-logout-btn">
-                        Sair
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={handleLogout} className="madmin-logout-btn">
+                            Sair
+                        </button>
+                    </div>
                 </div>
             </header>
 

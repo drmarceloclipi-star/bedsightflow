@@ -8,6 +8,7 @@ import ConfirmModal from '../../../shared/components/ConfirmModal';
 import { UnitSettingsRepository } from '../../../repositories/UnitSettingsRepository';
 import { useAuthStatus } from '../../../hooks/useAuthStatus';
 import type { UnitOpsSettings, KanbanMode } from '../../../domain/types';
+import HuddleConsole from '../components/ops/HuddleConsole';
 
 interface Props {
     unitId: string;
@@ -28,7 +29,6 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
     const [msgType, setMsgType] = useState<'success' | 'error'>('success');
     const [savingMode, setSavingMode] = useState(false);
     const [runningAction, setRunningAction] = useState(false);
-    const [savingHuddle, setSavingHuddle] = useState<'AM' | 'PM' | null>(null);
     const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
     const [opsSettings, setOpsSettings] = useState<UnitOpsSettings | null>(null);
     const flashTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,28 +86,26 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
         }
     };
 
-    // ── v1: Registrar Huddle ──────────────────────────────────────────────────
-    const handleRegisterHuddle = async (huddleType: 'AM' | 'PM') => {
-        if (!user) return;
-        setSavingHuddle(huddleType);
+    const handleKamishibaiChange = async (enabled: boolean) => {
+        if (!user || opsSettings?.kamishibaiEnabled === enabled) return;
+        setSavingMode(true);
         try {
-            const schedule = opsSettings?.huddleSchedule;
-            await UnitSettingsRepository.registerHuddle(
-                unitId,
-                huddleType,
-                { id: user.uid, name: user.displayName || user.email || user.uid },
-                schedule
-            );
-            const now = new Date();
-            const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
-            flash(`✓ Huddle ${huddleType} registrado às ${hhmm}`, 'success');
+            await UnitSettingsRepository.setKamishibaiEnabled(unitId, enabled, {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || '',
+            });
+            flash(`Kamishibai ${enabled ? 'ativado' : 'desativado'} com sucesso.`, 'success');
         } catch (err) {
-            console.error('Falha ao registrar huddle:', err);
-            flash('Falha ao registrar huddle.', 'error');
+            console.error('Falha ao alterar Kamishibai:', err);
+            flash('Falha ao salvar Kamishibai. Alteração revertida.', 'error');
         } finally {
-            setSavingHuddle(null);
+            setSavingMode(false);
         }
     };
+
+    // ── v1: Registrar Huddle ──────────────────────────────────────────────────
+    // Substituído pelo novo HuddleConsole (LSW v1)
 
     const handleSoftReset = () => {
         openModal({
@@ -242,48 +240,47 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                                 <p className="text-muted">Carregando...</p>
                             )}
                         </div>
+
+                        {/* Kamishibai Toggle */}
+                        <div className="flex items-center justify-between pt-4 border-t mt-2">
+                            <div>
+                                <h3 className="text-sm font-semibold text-primary mb-1">Quadro Kamishibai</h3>
+                                <p className="text-sm text-muted">
+                                    Habilita a gestão visual de processos diretamente nos cards e telas de TV.
+                                </p>
+                            </div>
+                            {opsSettings ? (
+                                <label className="flex items-center cursor-pointer">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={opsSettings.kamishibaiEnabled !== false}
+                                            disabled={savingMode}
+                                            onChange={(e) => handleKamishibaiChange(e.target.checked)}
+                                        />
+                                        <div className={`block w-10 h-6 rounded-full transition-colors ${opsSettings.kamishibaiEnabled !== false ? 'bg-primary-600' : 'bg-surface-3 border border-border-strong'}`}></div>
+                                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${opsSettings.kamishibaiEnabled !== false ? 'transform translate-x-4' : ''}`}></div>
+                                    </div>
+                                    <span className="ml-3 text-sm font-medium text-primary">
+                                        {opsSettings.kamishibaiEnabled !== false ? 'Ativado' : 'Desativado'}
+                                    </span>
+                                </label>
+                            ) : (
+                                <div className="skeleton h-6 w-24 rounded-lg" />
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* ── v1: Cadência Huddle ────────────────────────────────────────────── */}
-                <div className="mb-6 bg-surface-1 border rounded-lg p-6 shadow-sm">
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <h3 className="text-sm font-semibold text-primary mb-1">Cadência Huddle (Lean)</h3>
-                            <p className="text-sm text-muted">
-                                Registra que o huddle do turno atual foi realizado.
-                                O painel TV exibe alerta caso o huddle ainda não tenha sido registrado.
-                            </p>
-                        </div>
-
-                        {/* Info do último huddle */}
-                        {opsSettings?.lastHuddleAt && (
-                            <div className="text-xs text-muted bg-surface-2 border rounded px-3 py-2">
-                                Último: <strong>{opsSettings.lastHuddleType}</strong>
-                                {' '}— turno{' '}
-                                <code className="font-mono">{opsSettings.lastHuddleShiftKey ?? '—'}</code>
-                                {opsSettings.lastHuddleRegisteredBy && (
-                                    <> por <strong>{opsSettings.lastHuddleRegisteredBy.name}</strong></>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            {(['AM', 'PM'] as const).map(type => (
-                                <button
-                                    key={type}
-                                    id={`btn-register-huddle-${type.toLowerCase()}`}
-                                    onClick={() => handleRegisterHuddle(type)}
-                                    disabled={savingHuddle !== null}
-                                    aria-busy={savingHuddle === type}
-                                    className={`btn ${savingHuddle === type ? 'btn-disabled' : 'btn-primary'
-                                        } flex items-center gap-2`}
-                                >
-                                    {savingHuddle === type ? '...' : `Registrar Huddle ${type}`}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                {/* ── v1: Cadência Huddle & Console LSW ────────────────────────────── */}
+                <div className="mb-6">
+                    <HuddleConsole
+                        unitId={unitId}
+                        opsSettings={opsSettings}
+                        user={user}
+                        flash={flash}
+                    />
                 </div>
 
                 {/* Flash */}

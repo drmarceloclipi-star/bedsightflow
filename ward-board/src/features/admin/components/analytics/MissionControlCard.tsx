@@ -26,6 +26,7 @@ interface MissionControlCardProps {
     comparison?: ComparisonConfig;
     countermeasure?: string;
     drilldown?: DrilldownConfig;
+    drilldowns?: DrilldownConfig[];
     // Analytics contract
     contractMetric: string;
     contractUniverse: string;
@@ -51,6 +52,7 @@ function getDeltaClass(delta: number): string {
 }
 
 const MissionControlCard: React.FC<MissionControlCardProps> = ({
+    id,
     title,
     scope,
     value,
@@ -61,6 +63,7 @@ const MissionControlCard: React.FC<MissionControlCardProps> = ({
     comparison,
     countermeasure,
     drilldown,
+    drilldowns,
     contractMetric,
     contractUniverse,
     contractWindow,
@@ -69,14 +72,14 @@ const MissionControlCard: React.FC<MissionControlCardProps> = ({
 }) => {
     if (loading) {
         return (
-            <div className="mc-card mc-card--loading">
+            <div id={id} className="mc-card mc-card--loading">
                 <div className="mc-card-skeleton" />
             </div>
         );
     }
 
     return (
-        <div className={`mc-card ${getStatusClass(status)}`}>
+        <div id={id} className={`mc-card ${getStatusClass(status)}`}>
             {/* Header */}
             <div className="mc-card-header">
                 <span className="mc-card-scope">{scope}</span>
@@ -133,6 +136,21 @@ const MissionControlCard: React.FC<MissionControlCardProps> = ({
                 >
                     {drilldown.label} →
                 </button>
+            )}
+            {drilldowns && drilldowns.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+                    {drilldowns.map((d, i) => (
+                        <button
+                            key={i}
+                            className="mc-card-drilldown-btn"
+                            style={{ marginTop: 0, borderTop: 'none', paddingTop: 0 }}
+                            onClick={d.onClick}
+                            type="button"
+                        >
+                            {d.label} →
+                        </button>
+                    ))}
+                </div>
             )}
 
             {/* Semantic contract */}

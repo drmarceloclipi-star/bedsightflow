@@ -5,7 +5,7 @@ The Maestro is the central intelligence of the LEAN project. It holds the high-l
 ## Core Responsibilities
 
 - **Architectural Integrity**: Ensure all changes align with the overall project structure.
-- **Agent Coordination**: Delegate tasks to specialized subagents (Database, Frontend, Backend, Emulator, Testing, Mobile, UX, UI, Stitch, SecAgent, BQAgent, OpsAgent, SeedAgent, **PMAgent**).
+- **Agent Coordination**: Delegate tasks to specialized subagents (Database, Frontend, Backend, Emulator, Testing, Mobile, UX, UI, Stitch, SecAgent, BQAgent, OpsAgent, SeedAgent, PMAgent, ScribeAgent, **AntiSamdAgent**).
 - **Global Context**: Maintain an up-to-date understanding of the entire codebase and project goals.
 - **Review & Alignment**: Verify that subagent outputs are consistent and meet the project's premium aesthetic and technical standards (e.g., ensuring all regional services use `southamerica-east1`).
 
@@ -184,10 +184,43 @@ interface Pendency {
 
 ---
 
-## Estado Atual do Sistema (2026-02-28 19:37 -03:00)
+---
+
+### ETAPA 1.9 — Seed Determinístico Lean (2026-03-01)
+
+**Missão:** Eliminar flakiness de E2E eliminando `Math.random()` e `Date.now()` do processo de seed de testes.
+
+**Arquivos criados/alterados:**
+
+| Arquivo | Mudança |
+| :--- | :--- |
+| `scripts/seed-lean-tests.ts` | NOVO — seed com clock fixo; zero random; IDs legíveis |
+| `package.json` | NOVO script `"seed:lean": "tsx scripts/seed-lean-tests.ts"` |
+| `docs/lean/SEED_LEAN_CONTRACT_2026-02-28.md` | NOVO — contrato e IDs fixos |
+| `docs/lean/SEED_LEAN_ACCEPTANCE_2026-02-28.md` | NOVO — gate de aceite e output esperado |
+| `agents/SeedAgent.md` | Atualizado — nova seção `seed:lean v1.0` |
+
+**Clock fixo:**
+
+```typescript
+const MOCK_NOW_ISO = '2026-03-01T01:00:00.000Z'; // 2026-02-28T22:00:00 BRT
+const CURRENT_SHIFT_KEY = '2026-02-28-PM';
+```
+
+**Beds criados (IDs fixos):** `bed_EMPTY`, `bed_UNREVIEWED`, `bed_BLOCKED`, `bed_NOT_APPLICABLE`, `bed_PENDENCIES`, `ESCALATION-01`, `ESCALATION-02`, `ESCALATION-03`
+
+**Pendências fixas:** `PEND_A1` (open), `PEND_A2_OVERDUE`, `PEND_A3_DONE`, `PEND_A4_CANCELED`, `PEND_B1`, `PEND_ESC01_OVERDUE`, `PEND_ESC03_OVERDUE`
+
+**Huddles fixos:** `HUDDLE_2026-02-27-PM`, `HUDDLE_2026-02-28-AM` (com `startSummary`+`endSummary` para delta)
+
+**Regra de uso:** `npm run seed` = dev/demo (random). `npm run seed:lean` = E2E/CI (determinístico).
+
+---
+
+## Estado Atual do Sistema (2026-03-01 09:31 -03:00)
 
 | Etapa | Status |
-|---|:---:|
+| :--- | :---: |
 | 0 — Auditoria 360 | ✅ |
 | 0 — Contrato Lean | ✅ |
 | 0.1 — State Machine + ShiftKey + Migration Map | ✅ |
@@ -196,12 +229,56 @@ interface Pendency {
 | 1.2 — Huddle AM/PM | ✅ |
 | 1.3 — Mission Control v1 | ✅ |
 | 1.4 — Pendências v1 Lean Refinement | ✅ |
+| 1.5 — TV Pendencies & Polish | ✅ |
+| 1.6 — Escalonamento v1 | ✅ |
+| 1.7 — Leader Standard Work v1 (Huddle) | ✅ |
+| 1.8.1 — Escalonamento Canônico (Single Source of Truth) | ✅ |
+| 1.9 — Seed Determinístico Lean (`seed:lean`) | ✅ |
+| 1.10 — Testes, UX e Hardening | ✅ |
 
-## Dívidas Técnicas v1.2 (próximas etapas)
+### Resumo das Etapas Recentes (1.5 a 1.9)
+
+#### 1.5 — TV Pendencies & Polish
+
+- **Core:** Distinção visual e regras para a Gestão à Vista. O badge da TV não é mais atrelado indiscriminadamente.
+- **Regra Forte:** Pendência de leito *vazio* não sobe na TV (filtro `patientAlias not-empty`).
+- **Design System:** Oficializadas regras para a TV (`font-weight: 700`, bordas mais grossas).
+
+#### 1.6 — Escalonamento v1 (Visual + Governança)
+
+- **Core:** Introdução do conceito "🔥 Escalonamentos" usando cálculo puramente visual (sem BQ, sem CRON, computation em runtime).
+- **Thresholds:** Pendências > 12h = Escalonamento Crítico. Bloqueio principal > 24h = Main Blocker Critical.
+- **UI:** Card novo no *Mission Control* do Admin + Drilldown clicável para o *AnalyticsListScreen*.
+
+#### 1.7 — Leader Standard Work v1 (LSW)
+
+- **Core:** Checklists semanais/diários de Huddle AM/PM (Review turno > Kanban <24h > Kamishibai > Pendências > Não Revisados > Escalonamentos > Top Ações).
+- **UI:** `OpsScreen.tsx` foi atualizado para hospedar o Console LSW para gestão dos turnos. Novo Repository e Domain construídos explicitamente.
+- **Ações:** Registo "Top 3 Ações" do turno com dono e status. Review cruza de AM para PM, e vice-versa.
+- **TV Banners:** TV agora conta com 3 banners: (1) Último Huddle foi conduzido? (2) Quais as top ações do momento? (3) Feedback de status contínuo.
+
+#### 1.8.1 — Hardening: Escalonamento Canônico Único
+
+- **Core:** Eliminação do risco de divergência (TV vs Mission Control list screen vs Snapshot).
+- **Implementação:** Construído um módulo puramente funcional (`domain/escalation.ts`) e consumido por Cloud Functions (`shared/escalation.ts`) e Frontend.
+- **Qualidade:** Dados seed hardcodados simulando *Perfeito Encaixe* para Escalonamentos Críticos para evitar métricas vazias sem proof-of-concept.
+
+#### 1.9 — Seed Determinístico Lean
+
+- **Core:** Novo script `seed:lean` com clock fixo `2026-02-28T22:00:00 BRT`, zero `Math.random()`, IDs fixos e legíveis.
+- **Cobertura:** 8 beds cobrindo todos os estados Lean (INACTIVE, UNREVIEWED, BLOCKED, NOT_APPLICABLE, OK, PENDENCIES, ESCALATIONS).
+- **Huddles:** 2 huddles com `startSummary`+`endSummary` para validar delta entre início e fim de turno.
+- **Regra:** `npm run seed` = dev/demo. `npm run seed:lean` = E2E/CI determinístico.
+
+#### 1.10 — Testes, UX e Hardening
+
+- **Testes Mission Control:** E2E completo para Aging KPI, Freshness (Max ReviewedAt) e Alarmes. Testes Unitários de Functions (P0).
+- **UX Admin (Mobile & Desktop):** Cabeçalho expandido p/ as extremidades, Menu EduCenter simplificado para botões de interrogação (?), Layout do Kanban App dividido entre Mission Control e Analytics List.
+- **Bugfixes:** Erros de CORS/COOP e Permissão Insuficiente ao logar localmente com editores varridos da navegação React.
+
+## Dívidas Técnicas Restantes
 
 | Item | Impacto | Responsável |
-|---|---|---|
-| Badge de pendências na TV (gestão à vista) | Alto — visibilidade | FrontendAgent |
+| :--- | :--- | :--- |
 | RBAC server-side para `deletePendency` (CF + custom claim) | Médio — segurança | SecAgent + BackendAgent |
-| Playwright E2E cobrindo pendências (add, cancel, done, admin-delete) | Médio — qualidade | TestingAgent |
-| `totalBedsCount` verificar contagem canônica (seed mostra 33, não 36) | Baixo — KPI | SeedAgent + DatabaseAgent |
+| Integrar `npm run seed:lean` no CI antes de `npm run test:e2e` | Alto — estabilidade | OpsAgent + TestingAgent |

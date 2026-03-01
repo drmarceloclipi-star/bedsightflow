@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 import { buildAuditDiff } from '../lib/buildAuditDiff';
 
@@ -26,7 +26,7 @@ export const resetBedKamishibai = functions.region('southamerica-east1').https.o
     if (!bedDoc.exists) throw new functions.https.HttpsError('not-found', 'Bed not found.');
 
     const beforeData = bedDoc.data() || {};
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
     const updatedBy = { uid, email };
 
     const resetKamishibai: Record<string, any> = {};

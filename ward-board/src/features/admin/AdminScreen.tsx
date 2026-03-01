@@ -78,7 +78,7 @@ const AdminScreen: React.FC = () => {
             <header className="admin-header">
                 <div className="admin-header-top relative">
                     <div className="admin-header-left">
-                        <span className="unit-badge text-sm px-3 py-1 bg-surface-2">Admin</span>
+                        <span className="unit-badge">Admin</span>
                     </div>
                     <span className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
                         <img

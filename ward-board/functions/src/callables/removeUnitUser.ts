@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 
 export const removeUnitUser = functions.region('southamerica-east1').https.onCall(async (data, context) => {
@@ -29,7 +29,7 @@ export const removeUnitUser = functions.region('southamerica-east1').https.onCal
     if (!targetUserDoc.exists) return { success: true }; // already removed
 
     const beforeData = targetUserDoc.data();
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
 
     const batch = db.batch();
     batch.delete(targetUserRef);

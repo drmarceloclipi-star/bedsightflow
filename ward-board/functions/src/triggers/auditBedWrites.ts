@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 import { buildAuditDiff } from '../lib/buildAuditDiff';
 
@@ -33,7 +33,7 @@ export const auditBedWrites = functions.region('southamerica-east1').firestore
             role: 'system'
         };
 
-        const now = admin.firestore.FieldValue.serverTimestamp();
+        const now = FieldValue.serverTimestamp();
 
         let action = 'UPDATE_BED';
         if (!beforeData && afterData) action = 'CREATE_BED';

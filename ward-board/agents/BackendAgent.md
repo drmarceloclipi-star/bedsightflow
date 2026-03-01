@@ -63,11 +63,19 @@ const openPendencies = rawPendencies.filter(
   "openPendenciesCount": 5,
   "overduePendenciesCount": 3,
   "bedsWithOpenPendenciesCount": 3,
-  "bedsWithOpenPendenciesIds": ["301.1", "301.2", "302.2"]
+  "bedsWithOpenPendenciesIds": ["301.1", "301.2", "302.2"],
+  "escalations_overdue": 2,
+  "escalations_blocker": 1,
+  "overdueCriticalBedIds": ["101.1"],
+  "blockerCriticalBedIds": ["102.2"]
 }
 ```
 
-### Dívida v1.2
+### LSW e Escalonamentos (Etapas 1.6 a 1.8.1)
+
+- **Escalonamento Canônico:** Toda a lógica pesada de escalonamento baseada no tempo está centralizada em `src/domain/escalation.ts`. `computeEscalations(beds)` retorna os IDs e os totais de leitos com pendências ou bloqueios críticos.
+- **Shared Functions:** O código de escalonamento foi duplicado (devido a restrições de build do functions V2) em `functions/src/shared/escalation.ts` e é usado na Cloud Function `getAdminMissionControlSnapshot.ts` para manter um Single Source of Truth para Mission Control, relatórios e TV.
+
+### Dívida Técnica
 
 - **RBAC server-side para `deletePendency`**: criar CF intermediária que valida `context.auth.token.admin === true` antes de executar remoção física.
-- **`totalBedsCount` = 33, não 36**: verificar se seed ou filtro exclui leitos sem `patientAlias`.

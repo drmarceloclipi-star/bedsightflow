@@ -8,6 +8,7 @@ export { removeUnitUser } from './callables/removeUnitUser';
 export { softResetUnit } from './callables/softResetUnit';
 export { auditBedWrites } from './triggers/auditBedWrites';
 export { setGlobalAdminClaim } from './callables/setGlobalAdminClaim';
+export { deletePendency } from './callables/pendencies/deletePendency';
 
 // Analytics (BigQuery integration callables)
 export { getAdminOverviewBQ } from './callables/analytics/getAdminOverviewBQ';

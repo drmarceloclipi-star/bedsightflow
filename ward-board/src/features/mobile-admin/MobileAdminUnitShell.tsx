@@ -9,6 +9,7 @@ const MobileBedsAdminScreen = lazy(() => import('./screens/MobileBedsAdminScreen
 const MobileUsersAdminScreen = lazy(() => import('./screens/MobileUsersAdminScreen'));
 const MobileOpsScreen = lazy(() => import('./screens/MobileOpsScreen'));
 const MobileAuditScreen = lazy(() => import('./screens/MobileAuditScreen'));
+const MobileMissionControlScreen = lazy(() => import('./screens/MobileMissionControlScreen'));
 const MobileAnalyticsScreen = lazy(() => import('./screens/MobileAnalyticsScreen'));
 
 import {
@@ -17,13 +18,14 @@ import {
     IconUsers,
     IconOps,
     IconAudit,
+    IconMissionControl,
     IconStats,
     type NavIconProps
 } from '../../components/icons/MobileBottomNavIcons';
 
 // ... other imports
 
-type MobileAdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'analytics';
+type MobileAdminTab = 'tv' | 'beds' | 'users' | 'ops' | 'audit' | 'mission-control' | 'analytics';
 
 const TABS: { key: MobileAdminTab; label: string; Icon: React.FC<NavIconProps> }[] = [
     { key: 'tv', label: 'TV', Icon: IconTv },
@@ -31,7 +33,8 @@ const TABS: { key: MobileAdminTab; label: string; Icon: React.FC<NavIconProps> }
     { key: 'users', label: 'Equipe', Icon: IconUsers },
     { key: 'ops', label: 'Ops', Icon: IconOps },
     { key: 'audit', label: 'Audit', Icon: IconAudit },
-    { key: 'analytics', label: 'Stats', Icon: IconStats },
+    { key: 'mission-control', label: 'M. Control', Icon: IconMissionControl },
+    { key: 'analytics', label: 'Analytics', Icon: IconStats },
 ];
 
 const MobileAdminUnitShell: React.FC = () => {
@@ -153,6 +156,7 @@ const MobileAdminUnitShell: React.FC = () => {
                     {activeTab === 'users' && <MobileUsersAdminScreen unitId={unitId} />}
                     {activeTab === 'ops' && <MobileOpsScreen unitId={unitId} />}
                     {activeTab === 'audit' && <MobileAuditScreen unitId={unitId} />}
+                    {activeTab === 'mission-control' && <MobileMissionControlScreen unitId={unitId} />}
                     {activeTab === 'analytics' && <MobileAnalyticsScreen unitId={unitId} />}
                 </Suspense>
             </main>

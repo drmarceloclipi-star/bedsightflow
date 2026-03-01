@@ -18,11 +18,7 @@ export default function EditorLayout() {
             <header className="mobile-header">
                 <div className="header-content relative py-2">
                     <div className="flex items-center gap-2 min-w-[60px] z-10">
-                        {isRoot ? (
-                            <span className="unit-badge text-xs px-2 py-0.5 bg-surface-2 mt-1 whitespace-nowrap">
-                                Unidade {unitId}
-                            </span>
-                        ) : (
+                        {!isRoot && (
                             <button
                                 onClick={() => navigate(-1)}
                                 className="flex items-center text-secondary hover:text-primary p-1 -ml-2 rounded-full hover:bg-surface-2 transition-colors mt-1"

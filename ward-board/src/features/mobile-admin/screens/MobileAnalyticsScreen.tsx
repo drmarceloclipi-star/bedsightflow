@@ -8,8 +8,6 @@ import TopBlockersTable from '../../admin/components/analytics/TopBlockersTable'
 import FreshnessCards from '../../admin/components/analytics/FreshnessCards';
 import TrendComparisonPanel from '../../admin/components/analytics/TrendComparisonPanel';
 
-import MissionControlTab from '../../admin/components/analytics/MissionControlTab';
-
 interface Props {
     unitId: string;
 }
@@ -19,10 +17,6 @@ const MobileAnalyticsScreen: React.FC<Props> = ({ unitId }) => {
 
     return (
         <div className="analytics-dashboard-container madmin-screen-pad">
-            {/* OPERATIONAL ALERTS (Top priority) */}
-            <MissionControlTab unitId={unitId} />
-
-            {/* EXPLORATION (Context and Trends) */}
             <div className="analytics-exploration-content">
                 <div className="analytics-section-title">
                     <span>🔍 Exploração e Tendências</span>
