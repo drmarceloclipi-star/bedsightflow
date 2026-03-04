@@ -8,39 +8,39 @@ service cloud.firestore {
     }
 
     function isGlobalAdmin() {
-      // Autorização baseada em Custom Claims (admin: true)
-      // Manteve o e-mail como fallback seguro durante a migração
-      return isAuthed() &&
-        (request.auth.token.admin == true ||
-         request.auth.token.email == 'drmarceloclipi@gmail.com' || 
-         request.auth.token.email == 'admin@lean.com');
+      // Claim-only. No email fallback. See docs/RBAC_CONTRACT.md.
+      return isAuthed() && request.auth.token.admin == true;
     }
 
-    // Unit role helpers (looks up units/{unitId}/users/{uid} doc)
-    function unitUserDoc(unitId) {
-      return get(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid));
+    // Central authz: /users/{uid}/authz/authz
+    // Structure: { units: { unitId: { role: 'editor'|'admin'|'viewer' } } }
+    function userAuthzDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)/authz/authz);
     }
 
     function isUnitMember(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid))
+        (userAuthzDoc().data != null &&
+         unitId in userAuthzDoc().data.get('units', {}))
       );
     }
 
     function isUnitEditorOrAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
-         unitUserDoc(unitId).data.role in ['editor', 'admin'])
+        (userAuthzDoc().data != null &&
+         unitId in userAuthzDoc().data.get('units', {}) &&
+         userAuthzDoc().data.units[unitId].role in ['editor', 'admin'])
       );
     }
 
     function isUnitAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
-         unitUserDoc(unitId).data.role == 'admin')
+        (userAuthzDoc().data != null &&
+         unitId in userAuthzDoc().data.get('units', {}) &&
+         userAuthzDoc().data.units[unitId].role == 'admin')
       );
     }
 
@@ -89,10 +89,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── Unit Users / RBAC ─────────────────────────────────────
+    // ── Unit Users / RBAC (legacy data — not used by rules) ───
     match /units/{unitId}/users/{uid} {
       allow read: if isUnitAdmin(unitId);
       allow write: if isUnitAdmin(unitId);
+    }
+
+    // ── Central authz ─────────────────────────────────────────
+    match /users/{uid}/authz/{doc} {
+      allow read: if isAuthed() && (request.auth.uid == uid || isGlobalAdmin());
+      allow write: if isGlobalAdmin();
     }
 
     // ── Default lock ──────────────────────────────────────────

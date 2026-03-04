@@ -21,9 +21,10 @@ const LoginScreen: React.FC = () => {
                 try {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(currentUser.email);
                     if (isAuthorized) {
-                        // Route to /editor — role-based navigation happens inside the app via claims.
+                        // Route to /tv — unit-neutral entry point for all authenticated users.
+                        // Role-based navigation happens inside the app via claims.
                         // See docs/RBAC_CONTRACT.md.
-                        navigate('/editor', { replace: true });
+                        navigate('/tv', { replace: true });
                     }
                 } catch (err) {
                     console.error('Auth verification error:', err);
@@ -44,7 +45,7 @@ const LoginScreen: React.FC = () => {
                 if (user.email) {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
                     if (isAuthorized) {
-                        navigate('/editor');
+                        navigate('/tv');
                     } else {
                         await signOut(auth);
                         setError('Acesso não autorizado. Entre em contato com o administrador.');
@@ -76,7 +77,7 @@ const LoginScreen: React.FC = () => {
                 const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
 
                 if (isAuthorized) {
-                    navigate('/editor');
+                    navigate('/tv');
                 } else {
                     await signOut(auth);
                     setError('Acesso não autorizado. Entre em contato com o administrador.');
