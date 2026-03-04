@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../infra/firebase/config';
-import { ADMIN_EMAILS } from '../config/admins';
 
 export const useAuthStatus = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -14,10 +13,9 @@ export const useAuthStatus = () => {
             if (currentUser) {
                 try {
                     const token = await currentUser.getIdTokenResult();
-                    const hasAdminClaim = token.claims.admin === true;
-                    const isLegacyAdmin = ADMIN_EMAILS.includes(currentUser.email?.toLowerCase() || '');
-
-                    setIsAdmin(hasAdminClaim || isLegacyAdmin);
+                    // isAdmin is determined solely by the custom claim set via setGlobalAdminClaim.
+                    // ADMIN_EMAILS is not used here — see docs/RBAC_CONTRACT.md.
+                    setIsAdmin(token.claims.admin === true);
                 } catch (error) {
                     console.error("Error fetching token claims", error);
                     setIsAdmin(false);

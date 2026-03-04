@@ -69,9 +69,18 @@ service cloud.firestore {
     }
 
     // ── Huddles ───────────────────────────────────────────────
+    // Completion policy (P0): only global admin can set completionState = 'COMPLETED'.
+    // Editors can create and update huddles in any other state.
+    // See docs/RBAC_CONTRACT.md — "Política de Huddles".
     match /units/{unitId}/huddles/{huddleId} {
       allow read: if isUnitMember(unitId);
-      allow write: if isUnitEditorOrAdmin(unitId);
+      allow create: if isUnitEditorOrAdmin(unitId) &&
+        request.resource.data.completionState != 'COMPLETED';
+      allow update: if isUnitEditorOrAdmin(unitId) && (
+        request.resource.data.completionState != 'COMPLETED' ||
+        isGlobalAdmin()
+      );
+      allow delete: if isGlobalAdmin();
     }
 
     // ── Audit Logs ────────────────────────────────────────────

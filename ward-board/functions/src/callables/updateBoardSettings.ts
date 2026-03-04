@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { db } from '../config';
 import { buildAuditDiff } from '../lib/buildAuditDiff';
+import { isGlobalAdmin } from '../lib/authz';
 
 export const updateBoardSettings = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
@@ -17,15 +18,15 @@ export const updateBoardSettings = functions.region('southamerica-east1').https.
         throw new functions.https.HttpsError('invalid-argument', 'A valid reason is required for updating board settings (min 3 chars).');
     }
 
-    const userSnapshot = await db.collection('units').doc(unitId).collection('users').doc(uid).get();
-    const userData = userSnapshot.data();
-    const role = userData?.role;
+    // P0 governance: only global admins (custom claim admin:true) may update board settings.
+    // The legacy /units/{unitId}/users/{uid} role check has been removed.
+    // See docs/RBAC_CONTRACT.md — "Política de Board Settings".
+    if (!isGlobalAdmin(context)) {
+        throw new functions.https.HttpsError('permission-denied', 'Only global admins can perform this action.');
+    }
+
     const email = context.auth.token.email || '';
     const displayName = context.auth.token.name || email;
-
-    if (role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
-    }
 
     try {
         const settingsRef = db.collection('units').doc(unitId).collection('settings').doc('board');

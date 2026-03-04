@@ -21,7 +21,9 @@ const COLLECTION_NAME = 'authorized_users';
 
 export const authorizedUsersRepository = {
     async isAuthorized(email: string): Promise<boolean> {
-        // The admins are always authorized
+        // LEGACY bootstrap only: treat ADMIN_EMAILS as pre-authorized during migration.
+        // These emails should be added to authorized_users in Firestore and this shortcut
+        // removed in P1. Do NOT use ADMIN_EMAILS for permissions or routing. See docs/RBAC_CONTRACT.md.
         if (ADMIN_EMAILS.includes(email.toLowerCase())) return true;
 
         const q = query(collection(db, COLLECTION_NAME), where('email', '==', email.toLowerCase()));

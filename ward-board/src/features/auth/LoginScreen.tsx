@@ -3,7 +3,6 @@ import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectRes
 import { auth } from '../../infra/firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { authorizedUsersRepository } from '../../repositories/authorizedUsersRepository';
-import { ADMIN_EMAILS } from '../../config/admins';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -22,7 +21,9 @@ const LoginScreen: React.FC = () => {
                 try {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(currentUser.email);
                     if (isAuthorized) {
-                        navigate(ADMIN_EMAILS.includes(currentUser.email.toLowerCase()) ? '/admin' : '/editor', { replace: true });
+                        // Route to /editor — role-based navigation happens inside the app via claims.
+                        // See docs/RBAC_CONTRACT.md.
+                        navigate('/editor', { replace: true });
                     }
                 } catch (err) {
                     console.error('Auth verification error:', err);
@@ -43,7 +44,7 @@ const LoginScreen: React.FC = () => {
                 if (user.email) {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
                     if (isAuthorized) {
-                        navigate(ADMIN_EMAILS.includes(user.email.toLowerCase()) ? '/admin' : '/editor');
+                        navigate('/editor');
                     } else {
                         await signOut(auth);
                         setError('Acesso não autorizado. Entre em contato com o administrador.');
@@ -75,11 +76,7 @@ const LoginScreen: React.FC = () => {
                 const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
 
                 if (isAuthorized) {
-                    if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-                        navigate('/admin');
-                    } else {
-                        navigate('/editor');
-                    }
+                    navigate('/editor');
                 } else {
                     await signOut(auth);
                     setError('Acesso não autorizado. Entre em contato com o administrador.');
