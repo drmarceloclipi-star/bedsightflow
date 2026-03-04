@@ -8,39 +8,44 @@ service cloud.firestore {
     }
 
     function isGlobalAdmin() {
-      // Autorização baseada em Custom Claims (admin: true)
-      // Manteve o e-mail como fallback seguro durante a migração
-      return isAuthed() &&
-        (request.auth.token.admin == true ||
-         request.auth.token.email == 'drmarceloclipi@gmail.com' || 
-         request.auth.token.email == 'admin@lean.com');
+      // Claim-only. No email fallback. See docs/RBAC_CONTRACT.md.
+      return isAuthed() && request.auth.token.admin == true;
     }
 
-    // Unit role helpers (looks up units/{unitId}/users/{uid} doc)
-    function unitUserDoc(unitId) {
-      return get(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid));
+    // Central authz: /users/{uid}/authz/authz
+    // Structure: { units: { unitId: { role: 'editor'|'admin'|'viewer' } } }
+    // No doc = no unit access. exists() is explicit and short-circuits before get().
+    function hasAuthzDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)/authz/authz);
+    }
+
+    function userAuthzDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)/authz/authz);
     }
 
     function isUnitMember(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid))
+        (hasAuthzDoc() &&
+         unitId in userAuthzDoc().data.get('units', {}))
       );
     }
 
     function isUnitEditorOrAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
-         unitUserDoc(unitId).data.role in ['editor', 'admin'])
+        (hasAuthzDoc() &&
+         unitId in userAuthzDoc().data.get('units', {}) &&
+         userAuthzDoc().data.units[unitId].role in ['editor', 'admin'])
       );
     }
 
     function isUnitAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (exists(/databases/$(database)/documents/units/$(unitId)/users/$(request.auth.uid)) &&
-         unitUserDoc(unitId).data.role == 'admin')
+        (hasAuthzDoc() &&
+         unitId in userAuthzDoc().data.get('units', {}) &&
+         userAuthzDoc().data.units[unitId].role == 'admin')
       );
     }
 
@@ -69,9 +74,18 @@ service cloud.firestore {
     }
 
     // ── Huddles ───────────────────────────────────────────────
+    // Completion policy (P0): only global admin can set completionState = 'COMPLETED'.
+    // Editors can create and update huddles in any other state.
+    // See docs/RBAC_CONTRACT.md — "Política de Huddles".
     match /units/{unitId}/huddles/{huddleId} {
       allow read: if isUnitMember(unitId);
-      allow write: if isUnitEditorOrAdmin(unitId);
+      allow create: if isUnitEditorOrAdmin(unitId) &&
+        request.resource.data.completionState != 'COMPLETED';
+      allow update: if isUnitEditorOrAdmin(unitId) && (
+        request.resource.data.completionState != 'COMPLETED' ||
+        isGlobalAdmin()
+      );
+      allow delete: if isGlobalAdmin();
     }
 
     // ── Audit Logs ────────────────────────────────────────────
@@ -80,10 +94,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── Unit Users / RBAC ─────────────────────────────────────
+    // ── Unit Users / RBAC (legacy data — not used by rules) ───
     match /units/{unitId}/users/{uid} {
       allow read: if isUnitAdmin(unitId);
       allow write: if isUnitAdmin(unitId);
+    }
+
+    // ── Central authz ─────────────────────────────────────────
+    match /users/{uid}/authz/{doc} {
+      allow read: if isAuthed() && (request.auth.uid == uid || isGlobalAdmin());
+      allow write: if isGlobalAdmin();
     }
 
     // ── Default lock ──────────────────────────────────────────

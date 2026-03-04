@@ -1,15 +1,15 @@
-// Centralized Configuration for Admin Emails
-// IMPORTANTE: Este arquivo agora serve apenas como uma lista "semente" (seed)
-// e fallback temporário para migração para Custom Claims (firebase auth JWT).
-// Para dar acesso de admin a um novo usuário, use a nova Cloud Function setGlobalAdminClaim
-// que gravará a claim real { admin: true } no token do usuário.
+// ── SEED / BOOTSTRAP ONLY ────────────────────────────────────────────────────
+// ADMIN_EMAILS exists solely to ensure these addresses can log in during the
+// migration to Firebase Custom Claims. It MUST NOT be used for:
+//   • permission checks (use token.claims.admin === true)
+//   • routing decisions (use useAuthStatus().isAdmin from the claim)
+//
+// To grant admin access to a user, call the Cloud Function setGlobalAdminClaim.
+// Once all admin users have the custom claim set, remove this list in P1.
+// See: docs/RBAC_CONTRACT.md
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const ADMIN_EMAILS = [
     'drmarceloclipi@gmail.com',
     'admin@lean.com',
 ];
-
-export const isGlobalAdmin = (email: string | null | undefined): boolean => {
-    if (!email) return false;
-    return ADMIN_EMAILS.includes(email.toLowerCase());
-};
