@@ -217,7 +217,7 @@ const CURRENT_SHIFT_KEY = '2026-02-28-PM';
 
 ---
 
-## Estado Atual do Sistema (2026-03-01 09:31 -03:00)
+## Estado Atual do Sistema (2026-03-03 23:55 -03:00)
 
 | Etapa | Status |
 | :--- | :---: |
@@ -235,6 +235,17 @@ const CURRENT_SHIFT_KEY = '2026-02-28-PM';
 | 1.8.1 — Escalonamento Canônico (Single Source of Truth) | ✅ |
 | 1.9 — Seed Determinístico Lean (`seed:lean`) | ✅ |
 | 1.10 — Testes, UX e Hardening | ✅ |
+| 2.x — Full Rollback (Restauração do Unit Admin) | ✅ |
+
+### ETAPA 2.x — Full Rollback de Emergência (2026-03-03)
+
+**Decisão Arquitetural:** O sistema passou por um rollback completo (código e banco de dados) retornando ao último commit da Etapa 1.10 (`27148ee`), devido à necessidade de negócios de restaurar a figura central do **Unit Admin**.
+
+**Impacto:**
+
+- As etapas experimentais de UX Mobile, unificação de ícones, e simplificação RBAC (remoção de Unit Admin) foram **desfeitas** e guardadas na branch `backup-hoje`.
+- A autorização de `unitAdmin` foi **reinjetada forçosamente via banco de dados** para os 8 usuários de produção via script ad-hoc.
+- O Maestro e os Subagentes (Backend, SecAgent) voltaram a considerar o `Unit Admin` como cargo oficial da plataforma e com permissões operacionais completas na unidade.
 
 ### Resumo das Etapas Recentes (1.5 a 1.9)
 

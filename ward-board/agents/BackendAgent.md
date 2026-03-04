@@ -26,7 +26,7 @@ Arquivo: `functions/src/callables/analytics/getAdminMissionControlSnapshot.ts`
 ### Mudanças da Etapa 1.3 (Mission Control v1)
 
 | Mudança | Detalhe |
-|---|---|
+| --- | --- |
 | Aging real KPI1 | Usa `mainBlockerBlockedAt` (não mais `updatedAt`) |
 | Freshness por domínio | `max(reviewedAt)` por leito dentre domínios aplicáveis |
 | Thresholds configuráveis | `unitSettings.thresholds` com fallback para defaults hardcoded |
@@ -79,3 +79,10 @@ const openPendencies = rawPendencies.filter(
 ### Dívida Técnica
 
 - **RBAC server-side para `deletePendency`**: criar CF intermediária que valida `context.auth.token.admin === true` antes de executar remoção física.
+
+---
+
+## Incidente e Rollback (2026-03-03)
+
+**Decisão:** Retornamos ao estado da aplicação anterior ao deploy da Etapa 2.2 que suprimiu os unitAdmins.
+O script em `functions/restore-unit-admins.js` foi rodado como intervenção de emergência para restaurar via Admin SDK o vínculo `unitAdmin` aos 8 uids em `authz` e `units/*/users/*`. O perfil administrativo local está de volta em operação total.

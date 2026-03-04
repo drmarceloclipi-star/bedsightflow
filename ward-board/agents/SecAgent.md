@@ -55,3 +55,10 @@ const { isAdmin } = useAuthStatus();
 // isAdmin = true se custom claim 'admin' === true
 // ou se email está em HARDCODED_ADMIN_EMAILS (fallback dev)
 ```
+
+---
+
+## Incidente e Rollback (2026-03-03)
+
+**Decisão:** O sistema sofreu um rollback de versão via git e Firestore para restaurar a gestão e os papéis de `unitAdmin`. Devido a uma decisão de negócios urgente, as "Simplificações de RBAC" desenvolvidas hoje (Etapa 2.2) que eliminavam o papel de admin da unidade foram descartadas em prol da segurança e funcionalidades da versão anterior (commit `27148ee` - Etapa 1.10).
+Ocorreu também a execução do script `functions/restore-unit-admins.js` para recriar as entradas de `role: "unitAdmin"` manualmente no banco de dados para os 8 perfis do comitê.
