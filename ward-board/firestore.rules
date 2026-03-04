@@ -14,6 +14,11 @@ service cloud.firestore {
 
     // Central authz: /users/{uid}/authz/authz
     // Structure: { units: { unitId: { role: 'editor'|'admin'|'viewer' } } }
+    // No doc = no unit access. exists() is explicit and short-circuits before get().
+    function hasAuthzDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)/authz/authz);
+    }
+
     function userAuthzDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)/authz/authz);
     }
@@ -21,7 +26,7 @@ service cloud.firestore {
     function isUnitMember(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (userAuthzDoc().data != null &&
+        (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}))
       );
     }
@@ -29,7 +34,7 @@ service cloud.firestore {
     function isUnitEditorOrAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (userAuthzDoc().data != null &&
+        (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}) &&
          userAuthzDoc().data.units[unitId].role in ['editor', 'admin'])
       );
@@ -38,7 +43,7 @@ service cloud.firestore {
     function isUnitAdmin(unitId) {
       return isAuthed() && (
         isGlobalAdmin() ||
-        (userAuthzDoc().data != null &&
+        (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}) &&
          userAuthzDoc().data.units[unitId].role == 'admin')
       );

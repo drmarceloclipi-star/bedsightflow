@@ -69,7 +69,7 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 | `/admin` | `token.claims.admin === true` |
 | `/mobile-admin` | `token.claims.admin === true` |
 
-Pós-login bem-sucedido, o usuário é redirecionado para `/editor` (ponto de entrada padrão). O admin pode navegar para `/admin` via botão ou diretamente pela URL.
+Pós-login bem-sucedido, o usuário é redirecionado para `/tv` (ponto de entrada neutro, acessível a todos os papéis). O admin pode navegar para `/admin` via botão ou diretamente pela URL.
 
 ---
 
@@ -100,16 +100,17 @@ Pós-login bem-sucedido, o usuário é redirecionado para `/editor` (ponto de en
 - **Não usada** para roteamento, permissão ou autorização em runtime.
 - Remover no P1 após confirmar que todos os admins têm custom claim setada.
 
-### `/units/{unitId}/users/{uid}` (legacy RBAC)
-- Ainda usado pelas Firestore Rules para papéis de unidade (editor/viewer).
-- Cloud Functions migradas no P0 (`updateBoardSettings`) **não dependem mais** desse caminho.
-- Migração completa para `/users/{uid}/authz/authz` fica para P1.
+### `/units/{unitId}/users/{uid}` (legacy data — não é enforcement)
+- **Firestore Rules já não usa este caminho** para verificar papéis de unidade (migrado no P0.1).
+- Cloud Functions (`updateBoardSettings`) também não dependem mais deste caminho.
+- Os dados podem ainda existir no Firestore como legado; a coleção tem regras de leitura/escrita restritas ao global admin para eventuais migrações.
+- Limpeza dos documentos residuais fica para P1.
 
 ---
 
 ## P1 — O que NÃO está implementado ainda
 
 - [ ] Unit Admin UI (`/unit-admin`) e role explícito.
-- [ ] Migração completa de `/units/{unitId}/users/*` → `/users/{uid}/authz/authz`.
+- [ ] Limpeza de dados legados em `/units/{unitId}/users/*` (rules já migradas no P0.1).
 - [ ] Whitelist `authorized_users` com docId=email (para consistência nas rules).
 - [ ] Papéis Platform/Institution separados.
