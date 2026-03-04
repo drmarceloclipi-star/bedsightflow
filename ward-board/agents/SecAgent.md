@@ -24,7 +24,7 @@ The SecAgent is responsible for all security concerns in the LEAN system, includ
 Ref: `docs/lean/PERMISSIONS_NOTE.md`
 
 | Ação | Editor autenticado | Admin (`claim.admin=true`) |
-|---|:---:|:---:|
+| --- | :---: | :---: |
 | Criar pendência (`addPendency`) | ✅ | ✅ |
 | Marcar done (`markPendencyDone`) | ✅ | ✅ |
 | **Cancelar** (`cancelPendency`) | ✅ | ✅ |

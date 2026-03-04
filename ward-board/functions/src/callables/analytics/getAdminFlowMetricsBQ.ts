@@ -110,6 +110,9 @@ export const getAdminFlowMetricsBQ = functions
 
             return points
         } catch (error: any) {
+            if (error instanceof functions.https.HttpsError) {
+                throw error
+            }
             throw new functions.https.HttpsError('internal', error.message || 'Unknown error', error.stack);
         }
     })

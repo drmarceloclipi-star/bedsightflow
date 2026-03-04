@@ -236,6 +236,20 @@ const SPECIAL_BEDS: Record<string, unknown> = {
         updatedAt: msAgo(1), updatedBy: SEED_ACTOR,
     },
 
+    // ── 305.1 → DATA QUALITY WARNING (missing blockedAt) ────────────────────
+    // bed with mainBlocker but no mainBlockerBlockedAt
+    '305.1': {
+        id: 'bed_305.1', number: '305.1', unitId: 'A',
+        patientAlias: 'D.Q. (seed)',
+        mainBlocker: 'Pendente avaliar (seed)',
+        // OMIT mainBlockerBlockedAt intentionally
+        expectedDischarge: 'later',
+        applicableDomains: ALL_DOMAINS,
+        kamishibai: makeKamishibaiAllOk(CURRENT_SHIFT_KEY),
+        pendencies: [],
+        updatedAt: msAgo(1), updatedBy: SEED_ACTOR,
+    },
+
     // ── 308 → EMPTY ─────────────────────────────────────────────────────────
     // patientAlias='' → INACTIVE (sem badges, sem dots)
     '308': {
@@ -442,15 +456,29 @@ async function seed() {
     for (const user of SEED_USERS) {
         try {
             const rec = await auth.createUser({ email: user.email, password: user.password, displayName: user.name });
+            if (user.role === 'admin') {
+                await auth.setCustomUserClaims(rec.uid, { admin: true });
+            }
             await db.collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: user.role, name: user.name, createdAt: msAgo(0) });
             await db.collection('authorized_users').doc(rec.uid).set({ email: user.email, addedAt: msAgo(0) });
+            await db.collection('users').doc(rec.uid).collection('authz').doc('authz').set({
+                units: { 'A': { role: user.role, assignedAt: msAgo(0), assignedBy: 'seed' } },
+                updatedAt: msAgo(0)
+            });
             console.log(`  ✅ Created: ${user.email} (${user.role})`);
         } catch (e: unknown) {
             const err = e as { code?: string; message?: string };
             if (err.code === 'auth/email-already-exists') {
                 const existing = await auth.getUserByEmail(user.email);
+                if (user.role === 'admin') {
+                    await auth.setCustomUserClaims(existing.uid, { admin: true });
+                }
                 await db.collection('users').doc(existing.uid).set({ uid: existing.uid, email: user.email, role: user.role, name: user.name, createdAt: msAgo(0) }, { merge: true });
                 await db.collection('authorized_users').doc(existing.uid).set({ email: user.email, addedAt: msAgo(0) }, { merge: true });
+                await db.collection('users').doc(existing.uid).collection('authz').doc('authz').set({
+                    units: { 'A': { role: user.role, assignedAt: msAgo(0), assignedBy: 'seed' } },
+                    updatedAt: msAgo(0)
+                }, { merge: true });
                 console.log(`  ℹ️  Already exists (updated): ${user.email}`);
             } else {
                 console.error(`  ❌ Error: ${user.email}`, err.message);

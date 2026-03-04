@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function isGlobalAdmin() {
       // Claim-only. No email fallback. See docs/RBAC_CONTRACT.md.
-      return isAuthed() && request.auth.token.admin == true;
+      return isAuthed() && ('admin' in request.auth.token) && request.auth.token.admin == true;
     }
 
     // Central authz: /users/{uid}/authz/authz

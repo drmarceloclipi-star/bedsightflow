@@ -1,0 +1,1 @@
+import{j as t}from"./index-u7YQAPVq.js";import{O as e}from"./vendor-react-DqENHa3F.js";import"./vendor-firebase-ph30_qBm.js";function s(){return t.jsx("div",{className:"tv-layout h-screen w-full flex flex-col",children:t.jsx(e,{})})}export{s as default};

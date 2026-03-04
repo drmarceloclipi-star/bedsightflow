@@ -5,8 +5,7 @@
  *
  * ── Key design decisions ──────────────────────────────────────────────────
  *  1. The setUnitUserRole Cloud Function calls admin.auth().getUserByEmail(),
- *     so the target user MUST already exist in Firebase Auth.
- *     This suite pre-creates the test user via the Auth Emulator REST API.
+ *     and if the user is not found, it creates a new user in Firebase Auth.
  *
  *  2. The audit reason is now collected via a React modal (ReasonModal),
  *     NOT window.prompt. The helper `fillReasonModal` handles this interaction.
@@ -127,32 +126,6 @@ test.describe('Admin – User Addition Flow', () => {
         await page.screenshot({ path: 'playwright-report/user-addition-success.png', fullPage: true });
     });
 
-    // ── 2. Error path: non-existent Firebase Auth account ───────────────────
-
-    test('Adding an email with no Firebase Auth account does not increment the count', async ({ page }) => {
-        await goToAdminTab(page, 'users');
-
-        const countBadge = page.locator('span.font-bold', { hasText: /Acesso na Unidade/ });
-        await expect(countBadge).toBeVisible({ timeout: 8000 });
-        const beforeText = await countBadge.textContent() ?? '';
-        const beforeCount = parseInt(beforeText.match(/\d+/)?.[0] ?? '0', 10);
-
-        const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-        await emailInput.fill('nobody-xyz-9999@nowhere.invalid');
-        await page.locator('select').first().selectOption({ label: 'Editor' });
-        await page.locator('button[type="submit"]', { hasText: 'Adicionar' }).click();
-
-        // Fill the modal reason
-        await fillConfirmModal(page, AUDIT_REASON);
-
-        // Wait for function response
-        await page.waitForTimeout(10000);
-
-        const afterText = await countBadge.textContent() ?? '';
-        const afterCount = parseInt(afterText.match(/\d+/)?.[0] ?? '0', 10);
-
-        expect(afterCount).toBeLessThanOrEqual(beforeCount);
-    });
 
     // ── 3. Cleanup: remove the user we added ─────────────────────────────────
 

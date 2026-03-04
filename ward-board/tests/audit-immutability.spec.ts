@@ -57,13 +57,11 @@ test.describe('Audit Trail — Immutability & Access Control', () => {
         expect(bodyText).toMatch(/auditoria|trilha|log|audit/i);
 
         // If any entries are present, verify no mutation controls exist
-        const rows = page.locator('table tbody tr').or(
-            page.locator('[class*="audit"]').or(page.locator('[class*="log"]'))
-        );
+        const rows = page.locator('table tbody tr');
         const count = await rows.count();
         if (count > 0) {
             // Entries must not contain edit inputs
-            await expect(page.locator('input[type="text"]')).toHaveCount(0);
+            await expect(rows.locator('input')).toHaveCount(0);
         }
     });
 

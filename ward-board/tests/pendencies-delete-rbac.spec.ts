@@ -32,14 +32,12 @@ test.describe('Pendency Deletion RBAC', () => {
         // Go to a specific unit editor
         await page.goto('/editor?unit=A');
 
-        // Click the first bed card
-        // Based on MobileDashboard.tsx: div class bg-surface-1 inside grid
-        const firstBed = page.locator('.mobile-dashboard .grid > div').first();
+        // Click the first bed card that is not a skeleton
+        const firstBed = page.locator('.mobile-dashboard .grid > div:has(.unit-badge)').first();
         await firstBed.waitFor({ state: 'visible', timeout: 15000 });
         await firstBed.click();
 
         // Ensure we are in the bed details view
-        // Based on BedDetails.tsx: h2 class text-2xl font-serif
         await expect(page.locator('h2', { hasText: /Leito/ })).toBeVisible({ timeout: 15000 });
 
         // Add a pendency
@@ -66,8 +64,8 @@ test.describe('Pendency Deletion RBAC', () => {
         // Go to a specific unit editor
         await page.goto('/editor?unit=A');
 
-        // Click the first bed card
-        const firstBed = page.locator('.mobile-dashboard .grid > div').first();
+        // Click the first bed card that is not a skeleton
+        const firstBed = page.locator('.mobile-dashboard .grid > div:has(.unit-badge)').first();
         await firstBed.waitFor({ state: 'visible', timeout: 15000 });
         await firstBed.click();
 

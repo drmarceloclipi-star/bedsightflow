@@ -13,7 +13,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "deploy": "echo '❌ Erro: Deploys locais estão desativados. Faça push para a branch main no GitHub para deploy via Actions.' && exit 1",
+    "deploy:hosting": "echo '❌ Erro: Deploys locais estão desativados. Faça push para a branch main no GitHub para deploy via Actions.' && exit 1",
+    "deploy:functions": "echo '❌ Erro: Deploys locais estão desativados. Faça push para a branch main no GitHub para deploy via Actions.' && exit 1",
+    "deploy:all": "echo '❌ Erro: Deploys locais estão desativados. Faça push para a branch main no GitHub para deploy via Actions.' && exit 1"
   },
   "dependencies": {
     "@capacitor/core": "^8.1.0",

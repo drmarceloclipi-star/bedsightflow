@@ -52,12 +52,12 @@ export async function signInViaEmulator(
     } else {
         await page.click('button:has-text("Add new account")');
         await page.fill('input[id="email-input"]', email);
-        await page.fill('input[id="display-name-input"]', displayName);
+        await page.fill('input[id="display-name-input"]', displayName ?? '');
         await page.click('button:has-text("Sign In")');
     }
 
-    // Wait until login completes and app redirects us to either admin or editor
-    await page.waitForURL(/\/admin|\/mobile-admin|\/editor/, { timeout: 15000 });
+    // Wait until login completes and app redirects us to either admin, editor, or tv
+    await page.waitForURL(/\/admin|\/mobile-admin|\/editor|\/tv/, { timeout: 15000 });
 }
 
 export const signInAsAdmin = (page: Page) =>

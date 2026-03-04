@@ -32,7 +32,7 @@ LEAN / BedSight is a high-performance, modern ward management system for HRHDS, 
 Analisou o estado completo do sistema contra princípios Lean do HRHDS. Outputs:
 
 | Artefato | Conteúdo |
-|---|---|
+| --- | --- |
 | `docs/audits/AUDIT_LeanAlignment_2026-02-28.md` | Gaps vs Lean: Kamishibai, Kanban, Huddle, Mission Control |
 | `docs/audits/AUDIT_Kamishibai_States_2026-02-28.md` | Estados, cores, semântica — achados críticos |
 | `docs/audits/AUDIT_Firestore_Model_2026-02-28.md` | Schema legado v0: `na`, sem `reviewedShiftKey`, sem `blockedAt` |
@@ -58,7 +58,7 @@ Criou o documento canônico que serve de fonte de verdade para toda refatoraçã
 Criou 3 artefatos operacionais derivados do contrato:
 
 | Artefato | Conteúdo |
-|---|---|
+| --- | --- |
 | `docs/lean/LEAN_STATE_MACHINE_HRHDS.md` | Máquina de estados: Kamishibai (6 domínios), Kanban (4 cat.), Huddle AM/PM — incluindo `entry === undefined` ≠ N/A (só N/A se `domain ∉ applicableDomains`) |
 | `docs/lean/LEAN_SHIFTKEY_SPEC_HRHDS.md` | Spec de `shiftKey` = `'YYYY-MM-DD_AM'\|'YYYY-MM-DD_PM'`; lógica de turno (antes das 14h = AM); TTL verde expira ao virar turno |
 | `docs/lean/LEAN_MIGRATION_MAP_v0_to_v1.md` | Mapa conservador: `ok` sem `reviewedShiftKey` → UNREVIEWED_THIS_SHIFT (sem cor); `na` → NOT_APPLICABLE (sem dot) |
@@ -91,7 +91,7 @@ mainBlockerBlockedAt?: TimestampLike    // aging do bloqueio principal
 **Arquivo alterado:** componente renderer do Kamishibai  
 **Lógica canônica derivada:**
 
-```
+```text
 domain ∉ applicableDomains         → NOT_APPLICABLE (sem dot)
 entry === undefined                → UNREVIEWED_THIS_SHIFT (sem cor)
 entry.reviewedShiftKey !== current → UNREVIEWED_THIS_SHIFT (sem cor)  // TTL expirou
@@ -120,7 +120,7 @@ entry.status === 'na'              → NOT_APPLICABLE (sem dot)  // legado
 **Correções críticas:**
 
 | Gap (Audit) | Correção implementada |
-|---|---|
+| --- | --- |
 | `blockedAt` inexistente | Agora usa `mainBlockerBlockedAt` para aging KPI1 |
 | Freshness fake (via `updatedAt`) | Freshness por domínio via `max(reviewedAt)` |
 | "Não revisados neste turno" ausente | `unreviewedBedIds[]` baseado em `reviewedShiftKey !== current` |
@@ -149,7 +149,7 @@ entry.status === 'na'              → NOT_APPLICABLE (sem dot)  // legado
 **Arquivos alterados:**
 
 | Arquivo | Mudança |
-|---|---|
+| --- | --- |
 | `src/domain/types.ts` | `PendencyStatus += 'canceled'`; `Pendency += updatedAt/updatedBy/canceledAt/canceledBy/note` |
 | `src/repositories/BedsRepository.ts` | `cancelPendency()` NOVO via `runTransaction`; `markPendencyDone` → `runTransaction`; `deletePendency` → `runTransaction` + `actor` |
 | `src/features/editor/pages/BedDetails.tsx` | Botão cancelar (todos); delete (admin-only via `isAdmin`); lista canceladas colapsada; `data-status`; `aria-label` |
@@ -174,7 +174,7 @@ interface Pendency {
 **RBAC:**
 
 | Ação | Editor | Admin |
-|---|:---:|:---:|
+| --- | :---: | :---: |
 | Criar / Done / Cancelar | ✅ | ✅ |
 | Excluir fisicamente | ❌ | ✅ |
 

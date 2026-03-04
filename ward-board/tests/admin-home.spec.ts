@@ -4,6 +4,7 @@ import { signInAsAdmin, autoAcceptDialogs } from './helpers';
 test.describe('Admin Home Screen', () => {
     test.beforeEach(async ({ page }) => {
         await signInAsAdmin(page);
+        await page.goto('/admin');
     });
 
     test('shows units list and can navigate to a unit', async ({ page }) => {

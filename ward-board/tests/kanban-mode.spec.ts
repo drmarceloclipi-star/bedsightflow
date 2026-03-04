@@ -99,6 +99,9 @@ test.describe('Kanban Mode - Missões 1 e 2', () => {
 
         await mobilePage.goto('/mobile-admin/unit/A');
 
+        // Go to Ops tab to see Kanban Mode toggles
+        await mobilePage.click('button[role="tab"]:has-text("Ops")');
+
         const togglePassive = mobilePage.locator('button:has-text("PASSIVE")').first();
         const toggleActiveLite = mobilePage.locator('button:has-text("ACTIVE_LITE")').first();
 
