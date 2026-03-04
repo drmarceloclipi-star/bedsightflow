@@ -64,8 +64,8 @@ function makeDocMock(getImpl: () => any): any {
     return {
         get: jest.fn().mockImplementation(getImpl),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        collection: (subCol: string): any => ({
-            doc: (_docId: string) => makeDocMock(() => Promise.resolve({
+        collection: (): any => ({
+            doc: () => makeDocMock(() => Promise.resolve({
                 exists: mockRoleDocExists,
                 data: () => mockRoleDocData,
             })),
@@ -75,8 +75,8 @@ function makeDocMock(getImpl: () => any): any {
 
 // Top-level collection mock: returns a doc that supports subcollection chaining
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockCollection = jest.fn((_collectionPath: string): any => ({
-    doc: (_docId: string) => makeDocMock(() => Promise.resolve({
+const mockCollection = jest.fn((): any => ({
+    doc: () => makeDocMock(() => Promise.resolve({
         exists: mockRoleDocExists,
         data: () => mockRoleDocData,
     })),
@@ -94,7 +94,7 @@ jest.mock('../../../config', () => ({
 
 let mockIsGlobal = false
 jest.mock('../../../config/admins', () => ({
-    isGlobalAdmin: (_email: string) => mockIsGlobal,
+    isGlobalAdmin: () => mockIsGlobal,
 }))
 
 // ── Load the function AFTER mocks are in place ────────────────────────────────

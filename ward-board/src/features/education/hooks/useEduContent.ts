@@ -31,17 +31,25 @@ export function useEduContent(unitId?: string): UseEduContentResult {
     const [playbooks, setPlaybooks] = useState<Playbook[]>(PLAYBOOKS);
     const [microlessons, setMicrolessons] = useState<Microlesson[]>(MICROLESSONS);
     const [tutorials] = useState<AppTutorial[]>(APP_TUTORIALS); // Estático por enquanto
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(!!unitId);
     const [error, setError] = useState<string | null>(null);
     const [fromFirestore, setFromFirestore] = useState<boolean>(false);
+
+    // Sync loading state when unitId changes manually if needed, 
+    // though the effect and initial value usually handle it.
+    const [prevUnitId, setPrevUnitId] = useState(unitId);
+    if (unitId !== prevUnitId) {
+        setPrevUnitId(unitId);
+        setLoading(true);
+        setError(null);
+    }
 
     useEffect(() => {
         // Sem unitId → conteúdo estático já no estado inicial, nada a fazer
         if (!unitId) return;
 
         let cancelled = false;
-        setLoading(true);
-        setError(null);
+        // set-state-in-effect handled via render-sync pattern above
 
         EduContentRepository.fetchEduContent(unitId)
             .then((snapshot) => {

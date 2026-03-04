@@ -1,9 +1,9 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, BookOpen } from 'lucide-react';
 import { UnitsRepository } from '../../repositories/UnitsRepository';
 import type { Unit, AdminTab } from '../../domain/types';
-import { IconTv, IconBeds, IconUsers, IconOps, IconAudit, IconStats } from '../../components/icons/MobileBottomNavIcons';
+import { IconTv, IconBeds, IconUsers, IconOps, IconAudit, IconStats, IconMissionControl } from '../../components/icons/MobileBottomNavIcons';
 import { EduCenterHome } from '../education/components/EduCenterHome';
 
 const TvSettingsScreen = lazy(() => import('./screens/TvSettingsScreen'));
@@ -11,25 +11,34 @@ const BedsAdminScreen = lazy(() => import('./screens/BedsAdminScreen'));
 const UsersAdminScreen = lazy(() => import('./screens/UsersAdminScreen'));
 const OpsScreen = lazy(() => import('./screens/OpsScreen'));
 const AuditScreen = lazy(() => import('./screens/AuditScreen'));
+const MissionControlScreen = lazy(() => import('./screens/MissionControlScreen'));
 const AnalyticsScreen = lazy(() => import('./screens/AnalyticsScreen'));
 
-const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
-    { key: 'tv', label: 'TV', icon: <IconTv size={18} /> },
-    { key: 'beds', label: 'Leitos', icon: <IconBeds size={18} /> },
-    { key: 'users', label: 'Acesso na Unidade', icon: <IconUsers size={18} /> },
-    { key: 'ops', label: 'Ops', icon: <IconOps size={18} /> },
-    { key: 'audit', label: 'Auditoria', icon: <IconAudit size={18} /> },
-    { key: 'analytics', label: 'Analytics', icon: <IconStats size={18} /> },
-    { key: 'education', label: 'Educativo', icon: <BookOpen size={18} /> },
+const TABS: { key: AdminTab; label: string; icon: React.ReactNode; category: 'control' | 'explore' }[] = [
+    { key: 'mission-control', label: 'M. Control', icon: <IconMissionControl size={18} />, category: 'control' },
+    { key: 'tv', label: 'TV', icon: <IconTv size={18} />, category: 'control' },
+    { key: 'beds', label: 'Leitos', icon: <IconBeds size={18} />, category: 'control' },
+    { key: 'users', label: 'Acesso', icon: <IconUsers size={18} />, category: 'control' },
+    { key: 'ops', label: 'Operações', icon: <IconOps size={18} />, category: 'control' },
+    { key: 'analytics', label: 'Analytics', icon: <IconStats size={18} />, category: 'explore' },
+    { key: 'audit', label: 'Auditoria', icon: <IconAudit size={18} />, category: 'explore' },
+    { key: 'education', label: 'Educativo', icon: <BookOpen size={18} />, category: 'explore' },
 ];
 
 const AdminUnitShell: React.FC = () => {
     const { unitId } = useParams<{ unitId: string }>();
     const navigate = useNavigate();
     const [unit, setUnit] = useState<Unit | null>(null);
-    const [activeTab, setActiveTab] = useState<AdminTab>('tv');
+    const [activeTab, setActiveTab] = useState<AdminTab>('mission-control');
+    const [activeCategory, setActiveCategory] = useState<'control' | 'explore'>('control');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const handleCategoryChange = useCallback((cat: 'control' | 'explore') => {
+        setActiveCategory(cat);
+        const firstInCategory = TABS.find(t => t.category === cat);
+        if (firstInCategory) setActiveTab(firstInCategory.key);
+    }, []);
 
     useEffect(() => {
         if (!unitId) return;
@@ -132,11 +141,28 @@ const AdminUnitShell: React.FC = () => {
                     </div>
                 </div>
 
-                {/* TabBar */}
+                {/* Category switcher (sanduíche) */}
+                <div className="admin-tabs-category" role="group" aria-label="Categoria de painéis">
+                    <button
+                        onClick={() => handleCategoryChange('control')}
+                        className={`admin-category-btn${activeCategory === 'control' ? ' admin-category-btn--active' : ''}`}
+                    >
+                        Controle
+                    </button>
+                    <button
+                        onClick={() => handleCategoryChange('explore')}
+                        className={`admin-category-btn${activeCategory === 'explore' ? ' admin-category-btn--active' : ''}`}
+                    >
+                        Explorar
+                    </button>
+                </div>
+
+                {/* TabBar — filtered by active category */}
                 <nav className="admin-tabs" role="tablist" aria-label="Painéis de administração">
-                    {TABS.map(tab => (
+                    {TABS.filter(tab => tab.category === activeCategory).map(tab => (
                         <button
                             key={tab.key}
+                            id={`tour-tab-${tab.key}`}
                             role="tab"
                             aria-selected={activeTab === tab.key}
                             onClick={() => setActiveTab(tab.key)}
@@ -152,6 +178,7 @@ const AdminUnitShell: React.FC = () => {
             {/* Content */}
             <main className="admin-main">
                 <Suspense fallback={<div className="p-8 text-center animate-pulse text-muted">Carregando painel...</div>}>
+                    {activeTab === 'mission-control' && <MissionControlScreen unitId={unitId} />}
                     {activeTab === 'tv' && <TvSettingsScreen unitId={unitId} />}
                     {activeTab === 'beds' && <BedsAdminScreen unitId={unitId} />}
                     {activeTab === 'users' && <UsersAdminScreen unitId={unitId} />}

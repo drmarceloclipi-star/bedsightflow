@@ -44,7 +44,11 @@ jobs:
           projectId: lean-841e5
 
       # For functions deployment since action-hosting-deploy only does hosting.
+      - name: Write Service Account Key
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LEAN_841E5 }}' > /tmp/sa-key.json
+
       - name: Deploy Firebase Functions
         run: npx firebase-tools deploy --only functions --non-interactive --project lean-841e5
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LEAN_841E5 }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa-key.json
