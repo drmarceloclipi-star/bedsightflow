@@ -10,21 +10,10 @@ import {
     hoursFromNow,
     bedEmpty,
     bedOkReviewedCurrentShift,
-    CURRENT_SHIFT_KEY,
-    PREV_SHIFT_KEY,
 } from './fixtures';
-import type { Bed, DischargeChecklistItem } from './types';
-import { DISCHARGE_CHECKLIST_KEYS } from './types';
+import type { Bed } from './types';
 
 const actor = { id: 'seed', name: 'System Seed' } as const;
-
-function makeFullChecklist(): DischargeChecklistItem[] {
-    return DISCHARGE_CHECKLIST_KEYS.map(key => ({ key, done: true, doneAt: hoursAgo(1), doneBy: actor }));
-}
-
-function makeEmptyChecklist(): DischargeChecklistItem[] {
-    return DISCHARGE_CHECKLIST_KEYS.map(key => ({ key, done: false }));
-}
 
 function activeBed(id: string, overrides: Partial<Bed> = {}): Bed {
     return {
@@ -45,7 +34,6 @@ describe('SummaryCalculator.calculateMetrics', () => {
         expect(result.withBlockers).toBe(0);
         expect(result.pendenciesOpen).toBe(0);
         expect(result.pendenciesOverdue).toBe(0);
-        expect(result.dischargeReadyCount).toBe(0);
     });
 
     it('counts only beds with non-empty patientAlias as activePatients', () => {
@@ -100,7 +88,7 @@ describe('SummaryCalculator.calculateMetrics', () => {
         const beds = [
             activeBed('b1', {
                 pendencies: [
-                    { id: 'p1', title: 'Pendência A', domain: 'medical', dueAt, status: 'open', createdAt: hoursAgo(1), updatedAt: hoursAgo(1), updatedBy: actor },
+                    { id: 'p1', title: 'Pendência A', domain: 'medical', dueAt, status: 'open', createdAt: hoursAgo(1), updatedAt: hoursAgo(1), updatedBy: actor, createdBy: actor },
                 ],
             }),
             activeBed('b2', { pendencies: [] }),
@@ -115,7 +103,7 @@ describe('SummaryCalculator.calculateMetrics', () => {
         const beds = [
             activeBed('b1', {
                 pendencies: [
-                    { id: 'p1', title: 'Overdue', domain: 'nursing', dueAt: overdueAt, status: 'open', createdAt: hoursAgo(5), updatedAt: hoursAgo(5), updatedBy: actor },
+                    { id: 'p1', title: 'Overdue', domain: 'nursing', dueAt: overdueAt, status: 'open', createdAt: hoursAgo(5), updatedAt: hoursAgo(5), updatedBy: actor, createdBy: actor },
                 ],
             }),
         ];
@@ -124,15 +112,15 @@ describe('SummaryCalculator.calculateMetrics', () => {
         expect(result.pendenciesOverdue).toBe(1);
     });
 
-    it('counts dischargeReadyCount only for 24h beds with full checklist', () => {
+    it('counts discharges24h for mixed expectedDischarge values', () => {
         const beds = [
-            activeBed('b1', { expectedDischarge: '24h', dischargeChecklist: makeFullChecklist() }),
-            activeBed('b2', { expectedDischarge: '24h', dischargeChecklist: makeEmptyChecklist() }),
-            activeBed('b3', { expectedDischarge: '24h' }), // no checklist
-            activeBed('b4', { expectedDischarge: '2-3_days', dischargeChecklist: makeFullChecklist() }),
+            activeBed('b1', { expectedDischarge: '24h' }),
+            activeBed('b2', { expectedDischarge: '24h' }),
+            activeBed('b3', { expectedDischarge: '2-3_days' }),
+            activeBed('b4', { expectedDischarge: '2-3_days' }),
         ];
         const result = SummaryCalculator.calculateMetrics(beds, MOCK_NOW);
-        expect(result.dischargeReadyCount).toBe(1);
+        expect(result.discharges24h).toBe(2);
     });
 
     it('returns all zero metrics for beds with only inactive patients', () => {
@@ -144,7 +132,6 @@ describe('SummaryCalculator.calculateMetrics', () => {
             withBlockers: 0,
             pendenciesOpen: 0,
             pendenciesOverdue: 0,
-            dischargeReadyCount: 0,
         });
     });
 
@@ -154,9 +141,8 @@ describe('SummaryCalculator.calculateMetrics', () => {
             activeBed('b1', {
                 mainBlocker: 'Lab',
                 expectedDischarge: '24h',
-                dischargeChecklist: makeFullChecklist(),
                 pendencies: [
-                    { id: 'p1', title: 'Overdue', domain: 'medical', dueAt: overdueAt, status: 'open', createdAt: hoursAgo(5), updatedAt: hoursAgo(5), updatedBy: actor },
+                    { id: 'p1', title: 'Overdue', domain: 'medical', dueAt: overdueAt, status: 'open', createdAt: hoursAgo(5), updatedAt: hoursAgo(5), updatedBy: actor, createdBy: actor },
                 ],
             }),
             activeBed('b2', { expectedDischarge: '24h' }),
@@ -166,7 +152,6 @@ describe('SummaryCalculator.calculateMetrics', () => {
         expect(result.activePatients).toBe(2);
         expect(result.withBlockers).toBe(1);
         expect(result.discharges24h).toBe(2);
-        expect(result.dischargeReadyCount).toBe(1);
         expect(result.pendenciesOpen).toBe(1);
         expect(result.pendenciesOverdue).toBe(1);
     });
