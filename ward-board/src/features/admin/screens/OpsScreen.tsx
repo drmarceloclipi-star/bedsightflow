@@ -11,6 +11,7 @@ import type { UnitOpsSettings, KanbanMode } from '../../../domain/types';
 import HuddleConsole from '../components/ops/HuddleConsole';
 import HuddleAdherenceReport from '../components/ops/HuddleAdherenceReport';
 import PushNotificationToggle from '../components/ops/PushNotificationToggle';
+import ThresholdsEditor from '../components/ops/ThresholdsEditor';
 
 interface Props {
     unitId: string;
@@ -304,6 +305,19 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                         </div>
                     </div>
                 )}
+
+                {/* ── P2-05: Mission Control — Editor de Thresholds ─────────────── */}
+                <div className="mb-6 bg-surface-1 border rounded-lg p-6 shadow-sm">
+                    <div className="mb-4">
+                        <h3 className="text-sm font-semibold text-primary mb-1">Mission Control — Thresholds</h3>
+                        <p className="text-sm text-muted">
+                            Configure os limites de aviso e crítico para cada KPI monitorado no Mission Control.
+                            Alterações tomam efeito imediatamente na próxima consulta ao snapshot.
+                        </p>
+                    </div>
+                    <ThresholdsEditor unitId={unitId} />
+                </div>
+
 
                 {/* Flash */}
                 {msg && (
