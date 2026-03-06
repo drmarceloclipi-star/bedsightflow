@@ -19,9 +19,17 @@ export const removeUnitUser = functions.region('southamerica-east1').https.onCal
         throw new functions.https.HttpsError('invalid-argument', 'You cannot remove yourself from the unit.');
     }
 
-    const roleDoc = await db.collection('units').doc(unitId).collection('users').doc(adminUid).get();
-    if (!roleDoc.exists || roleDoc.data()?.role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
+    // Check 1: global admin token claim (super-admin bypasses unit-level check)
+    const isGlobalAdmin = context.auth.token.admin === true;
+
+    if (!isGlobalAdmin) {
+        // Check 2: centralized authz document (new RBAC model)
+        const authzDoc = await db.collection('users').doc(adminUid).collection('authz').doc('authz').get();
+        const unitRole = authzDoc.exists ? authzDoc.data()?.units?.[unitId]?.role : undefined;
+
+        if (unitRole !== 'admin') {
+            throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
+        }
     }
 
     const targetUserRef = db.collection('units').doc(unitId).collection('users').doc(userUid);

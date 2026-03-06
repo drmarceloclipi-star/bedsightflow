@@ -81,7 +81,7 @@ const mockBedsGet = jest.fn().mockImplementation(() =>
     Promise.resolve({ docs: mockExistingBedDocs })
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock('../config', () => {
     const docFn = (docId?: string): any => {
         if (!docId) {
@@ -99,7 +99,7 @@ jest.mock('../config', () => {
         if (path === 'units') {
             return {
                 doc: () => ({
-                    collection: (sub: string) => ({
+                    collection: () => ({
                         doc: docFn,
                         get: mockBedsGet,
                     }),

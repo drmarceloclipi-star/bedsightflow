@@ -84,7 +84,7 @@ const mockBatch = { set: mockBatchSet, commit: mockBatchCommit };
 
 const mockAuditLogDocRef = { id: 'audit-set-role-1' };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock('../config', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const collectionFn = (rootPath: string): any => {

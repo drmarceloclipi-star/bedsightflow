@@ -11,7 +11,7 @@ function makeTicket(status: EscalationTicket['status']): EscalationTicket {
         id: 'ticket-1',
         unitId: 'unit-a',
         bedId: 'bed-1',
-        type: 'BLOCKED_BED',
+        type: 'MAIN_BLOCKER_CRITICAL',
         status,
         triggeredAt: '2026-03-01T00:00:00.000Z',
         triggeredBySystem: true,

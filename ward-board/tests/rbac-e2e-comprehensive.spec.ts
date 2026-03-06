@@ -44,12 +44,12 @@ const FS_BASE = `${FS_HOST}/v1/projects/${PROJECT_ID}/databases/(default)/docume
 // ─── Seed users ───────────────────────────────────────────────────────────────
 
 const USERS = {
-    admin:     { email: 'admin@lean.com',      password: 'password123', name: 'Admin User',      isAdmin: true,  unitRole: 'admin'  },
-    editor:    { email: 'editor@lean.com',     password: 'password123', name: 'Editor User',     isAdmin: false, unitRole: 'editor' },
-    viewer:    { email: 'viewer@lean.com',     password: 'password123', name: 'Viewer User',     isAdmin: false, unitRole: 'viewer' },
+    admin: { email: 'admin@lean.com', password: 'password123', name: 'Admin User', isAdmin: true, unitRole: 'admin' },
+    editor: { email: 'editor@lean.com', password: 'password123', name: 'Editor User', isAdmin: false, unitRole: 'editor' },
+    viewer: { email: 'viewer@lean.com', password: 'password123', name: 'Viewer User', isAdmin: false, unitRole: 'viewer' },
     // Unit Admin: role='admin' no authz doc mas SEM JWT custom claim global.
     // Deve ter permissões Firestore elevadas (settings, audit_logs) mas ser bloqueado na rota /admin da UI.
-    unitAdmin: { email: 'unit-admin@lean.com', password: 'password123', name: 'Unit Admin User', isAdmin: false, unitRole: 'admin'  },
+    unitAdmin: { email: 'unit-admin@lean.com', password: 'password123', name: 'Unit Admin User', isAdmin: false, unitRole: 'admin' },
 } as const;
 
 type UserKey = keyof typeof USERS;
@@ -166,7 +166,8 @@ async function fsWrite(
 }
 
 /** Firestore admin write (bypass rules) via firebase-admin initialized in beforeAll */
-async function fsAdminEnsureDoc(
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function _bypassRules(
     collPath: string,
     docId: string,
     data: Record<string, unknown>,
@@ -551,7 +552,7 @@ test.describe('§1 — Controle de acesso a rotas', () => {
         try {
             await page.goto('/admin', { waitUntil: 'load' });
             // React auth state check happens after load; wait for redirect
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -571,7 +572,7 @@ test.describe('§1 — Controle de acesso a rotas', () => {
         const page = await ctx.newPage();
         try {
             await page.goto('/tv', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -590,7 +591,7 @@ test.describe('§1 — Controle de acesso a rotas', () => {
         const page = await ctx.newPage();
         try {
             await page.goto('/editor', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -666,7 +667,7 @@ test.describe('§2 — Visibilidade de ações de UI', () => {
             await page.waitForFunction(
                 () => !document.querySelector('.animate-pulse'),
                 { timeout: 10_000 },
-            ).catch(() => {});
+            ).catch(() => { });
 
             // EditorLayout.tsx: {isAdmin && <button aria-label="Acessar painel de administração">}
             const adminBtn = page.locator('button[aria-label="Acessar painel de administração"]');
@@ -701,7 +702,7 @@ test.describe('§2 — Visibilidade de ações de UI', () => {
             await page.waitForFunction(
                 () => !document.querySelector('.animate-pulse'),
                 { timeout: 10_000 },
-            ).catch(() => {});
+            ).catch(() => { });
 
             // AdminScreen.tsx renders: <input type="email" /> for adding users (in UsersAdminScreen)
             const emailInput = page.locator('input[type="email"]');
@@ -1290,7 +1291,7 @@ test.describe('§4 — Sessão e troca de unidade', () => {
             // Try direct URL hack to admin unit panel
             await page.goto('/admin/unit/A', { waitUntil: 'load' });
             // React auth redirect happens after load; wait for it
-            await page.waitForURL(/\/login/, { timeout: 8_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 8_000 }).catch(() => { });
             const url = page.url();
             const blocked = !url.includes('/admin/unit/A') && !url.includes('/admin');
 
@@ -1309,7 +1310,7 @@ test.describe('§4 — Sessão e troca de unidade', () => {
         const { page, ctx } = await openAs(browser, 'editor');
         try {
             await page.goto('/admin/unit/B', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 8_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 8_000 }).catch(() => { });
             const url = page.url();
             const blocked = !url.includes('/admin/unit/B') && !url.includes('/admin/unit');
 
@@ -1346,7 +1347,7 @@ test.describe('§4 — Sessão e troca de unidade', () => {
 
             // Try to navigate to /editor after clearing session
             await page.goto('/editor', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -1389,7 +1390,8 @@ test.describe('§4 — Sessão e troca de unidade', () => {
         try {
             // Navigate to /editor (accessible)
             await page.goto('/editor', { waitUntil: 'load' });
-            const editorUrl = page.url();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const _editorUrl = page.url();
 
             // Try to navigate to /admin (blocked, redirected to /login)
             await page.goto('/admin', { waitUntil: 'load' });
@@ -1530,14 +1532,14 @@ test.describe('§5 — Enforcement real no backend (não só esconder botão)', 
             await page.waitForFunction(
                 () => !document.querySelector('.animate-pulse'),
                 { timeout: 10_000 },
-            ).catch(() => {});
+            ).catch(() => { });
 
             const url = page.url();
             const onAdmin = url.includes('/admin');
 
             // Check for "TV" tab (AdminUnitShell has TV tab)
             const tvTab = page.locator('[role="tab"]:has-text("TV"), button.admin-tab:has-text("TV")');
-            await tvTab.first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+            await tvTab.first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => { });
             const tabVisible = await tvTab.first().isVisible({ timeout: 2_000 }).catch(() => false);
 
             const shot = await snap(page, 'E-enforce-admin-happy-path');
@@ -1607,7 +1609,7 @@ test.describe('§6 — Limite de privilégio: Unit Admin sem claim global', () =
         const { page, ctx } = await openAs(browser, 'unitAdmin');
         try {
             await page.goto('/admin', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -1627,7 +1629,7 @@ test.describe('§6 — Limite de privilégio: Unit Admin sem claim global', () =
         const { page, ctx } = await openAs(browser, 'unitAdmin');
         try {
             await page.goto('/admin/unit/A', { waitUntil: 'load' });
-            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => { });
             const url = page.url();
             const blocked = url.includes('/login');
 
@@ -1780,7 +1782,7 @@ test.describe('§6 — Limite de privilégio: Unit Admin sem claim global', () =
             await page.waitForFunction(
                 () => !document.querySelector('.animate-pulse'),
                 { timeout: 10_000 },
-            ).catch(() => {});
+            ).catch(() => { });
 
             // Botão admin só aparece quando isAdmin=true (JWT claim) — EditorLayout.tsx
             const adminBtn = page.locator('button[aria-label="Acessar painel de administração"]');

@@ -142,7 +142,7 @@ describe('UnitSettingsRepository', () => {
 
     describe('subscribeUnitOpsSettings', () => {
         it('calls callback with defaults when doc does not exist', () => {
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({ exists: () => false })
                 return () => {}
             })
@@ -156,7 +156,7 @@ describe('UnitSettingsRepository', () => {
         })
 
         it('calls callback with parsed settings when doc exists', () => {
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({
                     exists: () => true,
                     data: () => ({ kanbanMode: 'ACTIVE_LITE', kamishibaiEnabled: false }),
@@ -173,7 +173,7 @@ describe('UnitSettingsRepository', () => {
         })
 
         it('calls callback with defaults on Firestore error', () => {
-            mockOnSnapshot.mockImplementation((_ref, _onNext: Function, onError: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, _onNext: (...args: any[]) => any, onError: (...args: any[]) => any) => {
                 onError(new Error('unavailable'))
                 return () => {}
             })

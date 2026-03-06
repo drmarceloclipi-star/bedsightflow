@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 vi.mock('../infra/firebase/config', () => ({ db: {} }))
 
 const mockCollection = vi.fn()
-const mockQuery = vi.fn()
+
 const mockWhere = vi.fn()
 const mockOrderBy = vi.fn()
 const mockGetDocs = vi.fn()
@@ -148,9 +148,9 @@ describe('AuditRepository', () => {
             const snapshotDocs = [
                 { id: 'l1', data: () => ({ action: 'RESET', entityType: 'bed' }) },
             ]
-            mockOnSnapshot.mockImplementation((_q, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_q, onNext: (...args: any[]) => any) => {
                 onNext({ docs: snapshotDocs })
-                return () => {}
+                return () => { }
             })
 
             const callback = vi.fn()
@@ -163,9 +163,9 @@ describe('AuditRepository', () => {
 
         it('calls onError callback on Firestore error', () => {
             const fakeError = new Error('permission-denied')
-            mockOnSnapshot.mockImplementation((_q, _onNext: Function, onError: Function) => {
+            mockOnSnapshot.mockImplementation((_q, _onNext: (...args: any[]) => any, onError: (...args: any[]) => any) => {
                 onError(fakeError)
-                return () => {}
+                return () => { }
             })
 
             const callback = vi.fn()
@@ -178,9 +178,9 @@ describe('AuditRepository', () => {
 
         it('does not throw if onError is not provided', () => {
             const fakeError = new Error('network-error')
-            mockOnSnapshot.mockImplementation((_q, _onNext: Function, onError: Function) => {
+            mockOnSnapshot.mockImplementation((_q, _onNext: (...args: any[]) => any, onError: (...args: any[]) => any) => {
                 onError(fakeError)
-                return () => {}
+                return () => { }
             })
 
             expect(() => repo.listenToAuditLogs('unit1', undefined, vi.fn())).not.toThrow()

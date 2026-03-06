@@ -21,10 +21,9 @@ const LoginScreen: React.FC = () => {
                 try {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(currentUser.email);
                     if (isAuthorized) {
-                        // Route to /tv — unit-neutral entry point for all authenticated users.
-                        // Role-based navigation happens inside the app via claims.
-                        // See docs/RBAC_CONTRACT.md.
-                        navigate('/tv', { replace: true });
+                        // Route to /portal — unified entry point for all authenticated users.
+                        // Role-based navigation is handled inside the portal component.
+                        navigate('/portal', { replace: true });
                     }
                 } catch (err) {
                     console.error('Auth verification error:', err);
@@ -45,7 +44,7 @@ const LoginScreen: React.FC = () => {
                 if (user.email) {
                     const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
                     if (isAuthorized) {
-                        navigate('/tv');
+                        navigate('/portal');
                     } else {
                         await signOut(auth);
                         setError('Acesso não autorizado. Entre em contato com o administrador.');
@@ -77,7 +76,7 @@ const LoginScreen: React.FC = () => {
                 const isAuthorized = await authorizedUsersRepository.isAuthorized(user.email);
 
                 if (isAuthorized) {
-                    navigate('/tv');
+                    navigate('/portal');
                 } else {
                     await signOut(auth);
                     setError('Acesso não autorizado. Entre em contato com o administrador.');

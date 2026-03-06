@@ -103,9 +103,9 @@ describe('HuddleRepository', () => {
 
     describe('listenToHuddle', () => {
         it('calls onUpdate with null when huddle does not exist', () => {
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({ exists: () => false })
-                return () => {}
+                return () => { }
             })
             const onUpdate = vi.fn()
             repo.listenToHuddle('unit1', '2026-03-01-AM', onUpdate)
@@ -114,9 +114,9 @@ describe('HuddleRepository', () => {
 
         it('calls onUpdate with huddle data when document exists', () => {
             const huddleData = { id: '2026-03-01-AM', topActions: [], checklist: [] }
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({ exists: () => true, data: () => huddleData })
-                return () => {}
+                return () => { }
             })
             const onUpdate = vi.fn()
             repo.listenToHuddle('unit1', '2026-03-01-AM', onUpdate)
@@ -185,8 +185,7 @@ describe('HuddleRepository', () => {
             // Two setDoc calls: one for the huddle, one for the ops settings
             expect(mockSetDoc).toHaveBeenCalledTimes(2)
             const opsCall = mockSetDoc.mock.calls.find(
-                ([_ref, data]: [unknown, Record<string, unknown>]) =>
-                    'lastHuddleShiftKey' in data
+                (call: unknown[]) => call[1] && typeof call[1] === 'object' && 'lastHuddleShiftKey' in call[1]
             )
             expect(opsCall).toBeDefined()
         })
@@ -229,7 +228,7 @@ describe('HuddleRepository', () => {
 
             await repo.addTopAction('unit1', '2026-03-01-AM', actionDraft, actor as any)
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             expect(updateData.topActions).toHaveLength(2)
             const newAction = updateData.topActions[1]
             expect(newAction.title).toBe('Fix linen shortage')
@@ -281,7 +280,7 @@ describe('HuddleRepository', () => {
 
             await repo.updateTopActionStatus('unit1', '2026-03-01-AM', 'a1', 'done', actor as any)
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             const updated = updateData.topActions.find((a: any) => a.id === 'a1')
             expect(updated.status).toBe('done')
             expect(updated.doneAt).toBeDefined()
@@ -296,7 +295,7 @@ describe('HuddleRepository', () => {
 
             await repo.updateTopActionStatus('unit1', '2026-03-01-AM', 'a1', 'canceled', actor as any)
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             const updated = updateData.topActions.find((a: any) => a.id === 'a1')
             expect(updated.status).toBe('canceled')
             expect(updated.canceledAt).toBeDefined()
@@ -312,7 +311,7 @@ describe('HuddleRepository', () => {
 
             await repo.updateTopActionStatus('unit1', '2026-03-01-AM', 'a1', 'done', actor as any)
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             const updated = updateData.topActions.find((a: any) => a.id === 'a1')
             // Should be the same unchanged action
             expect(updated.doneAt).toBeUndefined()
@@ -340,7 +339,7 @@ describe('HuddleRepository', () => {
 
             await repo.updateChecklistItem('unit1', '2026-03-01-AM', 'review_kanban', 'done')
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             const updated = updateData.checklist.find((i: any) => i.key === 'review_kanban')
             expect(updated.status).toBe('done')
         })
@@ -354,7 +353,7 @@ describe('HuddleRepository', () => {
 
             await repo.updateChecklistItem('unit1', 'h1', 'item1', 'done', 'Completed at 07:30')
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             const updated = updateData.checklist.find((i: any) => i.key === 'item1')
             expect(updated.note).toBe('Completed at 07:30')
         })
@@ -410,7 +409,7 @@ describe('HuddleRepository', () => {
 
             await repo.setHuddleEnded('unit1', '2026-03-01-AM')
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             expect(updateData.endSummary).toBeDefined()
         })
 
@@ -420,7 +419,7 @@ describe('HuddleRepository', () => {
 
             await repo.setHuddleEnded('unit1', '2026-03-01-AM')
 
-            const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
+            const [, updateData] = mockUpdateDoc.mock.calls[0]
             expect(updateData.endSummary).toBeUndefined()
         })
 

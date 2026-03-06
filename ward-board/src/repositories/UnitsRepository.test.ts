@@ -85,7 +85,7 @@ describe('UnitsRepository', () => {
                 { id: 'u1', data: () => ({ name: 'ICU' }) },
                 { id: 'u2', data: () => ({ name: 'Surgery' }) },
             ]
-            mockOnSnapshot.mockImplementation((_q, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_q, onNext: (...args: any[]) => any) => {
                 onNext({ docs })
                 return () => {}
             })
@@ -100,7 +100,7 @@ describe('UnitsRepository', () => {
         })
 
         it('calls callback with empty array when no units exist', () => {
-            mockOnSnapshot.mockImplementation((_q, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_q, onNext: (...args: any[]) => any) => {
                 onNext({ docs: [] })
                 return () => {}
             })

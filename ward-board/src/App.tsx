@@ -12,6 +12,7 @@ const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
 const MobileAdminRouter = lazy(() => import('./features/mobile-admin/MobileAdminRouter'));
+const PortalScreen = lazy(() => import('./components/PortalScreen'));
 
 const FallbackLoader = () => (
   <div className="h-screen flex items-center justify-center bg-app">
@@ -73,7 +74,13 @@ function App() {
               <Route index element={<TvDashboard />} />
             </Route>
 
-            <Route path="/" element={<Navigate to={isAdmin ? (isMobileDevice() ? "/mobile-admin" : "/admin") : "/editor"} replace />} />
+            {/* Portal - Role selection entry point */}
+            <Route
+              path="/portal"
+              element={user ? <PortalScreen /> : <Navigate to="/login" replace />}
+            />
+
+            <Route path="/" element={<Navigate to={user ? "/portal" : "/login"} replace />} />
           </Routes>
         </Suspense>
       </Router>

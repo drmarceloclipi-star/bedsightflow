@@ -55,7 +55,7 @@ let mockExistingBedDocs: FakeBedDoc[] = [];
 
 const mockAuditLogDocRef = { id: 'audit-soft-reset-1' };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 jest.mock('../config', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docFn = (docId?: string): any => {
@@ -72,7 +72,7 @@ jest.mock('../config', () => {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const collectionFn = (_path: string): any => ({
+    const collectionFn = (): any => ({
         doc: () => ({
             collection: () => ({
                 doc: docFn,

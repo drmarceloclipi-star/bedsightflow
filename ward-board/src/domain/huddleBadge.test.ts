@@ -31,7 +31,7 @@ describe('huddlePending badge logic (G3 fix)', () => {
         huddleType: 'AM',
         shiftKey: '2026-03-06-AM',
         startedAt: new Date().toISOString(),
-        recordedBy: { uid: 'u1', email: 'nurse@hospital.com', displayName: 'Nurse' },
+        recordedBy: { id: 'u1', name: 'Nurse' },
         checklist: [],
         topActions: [],
         createdAt: new Date().toISOString(),

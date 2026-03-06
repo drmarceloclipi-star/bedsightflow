@@ -48,7 +48,7 @@ describe('UnitUsersRepository', () => {
                 { id: 'uid1', data: () => ({ email: 'nurse@h.com', role: 'editor' }) },
                 { id: 'uid2', data: () => ({ email: 'admin@h.com', role: 'admin' }) },
             ]
-            mockOnSnapshot.mockImplementation((_col, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_col, onNext: (...args: any[]) => any) => {
                 onNext({ docs })
                 return () => {}
             })
@@ -63,7 +63,7 @@ describe('UnitUsersRepository', () => {
         })
 
         it('calls callback with empty array when collection is empty', () => {
-            mockOnSnapshot.mockImplementation((_col, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_col, onNext: (...args: any[]) => any) => {
                 onNext({ docs: [] })
                 return () => {}
             })

@@ -150,7 +150,7 @@ describe('lógica de tab — EduCenterHome (estado simulado)', () => {
 
 describe('lógica de expand/collapse — MicrolessonList (estado simulado)', () => {
     it('expandedId inicia como null (tudo recolhido)', () => {
-        let expandedId: string | null = null;
+        const expandedId: string | null = null;
         expect(expandedId).toBeNull();
     });
 

@@ -10,7 +10,7 @@
 // Point Admin SDK at the local emulator BEFORE any firebase imports
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080'
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const functionsTest = require('firebase-functions-test')
 
 const testEnv = functionsTest({

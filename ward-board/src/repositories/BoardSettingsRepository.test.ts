@@ -79,7 +79,7 @@ describe('BoardSettingsRepository', () => {
 
     describe('listenToSettings', () => {
         it('calls callback with default settings when doc does not exist', () => {
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({ exists: () => false })
                 return () => {}
             })
@@ -102,7 +102,7 @@ describe('BoardSettingsRepository', () => {
                 kanbanColumnsPerPage: 3,
                 kamishibaiColumnsPerPage: 3,
             }
-            mockOnSnapshot.mockImplementation((_ref, onNext: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, onNext: (...args: any[]) => any) => {
                 onNext({ exists: () => true, data: () => stored })
                 return () => {}
             })
@@ -115,7 +115,7 @@ describe('BoardSettingsRepository', () => {
 
         it('calls onError when Firestore emits an error', () => {
             const fakeError = new Error('unavailable')
-            mockOnSnapshot.mockImplementation((_ref, _onNext: Function, onError: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, _onNext: (...args: any[]) => any, onError: (...args: any[]) => any) => {
                 onError(fakeError)
                 return () => {}
             })
@@ -129,7 +129,7 @@ describe('BoardSettingsRepository', () => {
         })
 
         it('does not throw when onError is not provided', () => {
-            mockOnSnapshot.mockImplementation((_ref, _onNext: Function, onError: Function) => {
+            mockOnSnapshot.mockImplementation((_ref, _onNext: (...args: any[]) => any, onError: (...args: any[]) => any) => {
                 onError(new Error('oops'))
                 return () => {}
             })
@@ -140,7 +140,7 @@ describe('BoardSettingsRepository', () => {
     // ── updateSettings ───────────────────────────────────────────────────────
 
     describe('updateSettings', () => {
-        it('calls the Cloud Function with unitId, settings, and reason', async () => {
+        it('calls the Cloud (...args: any[]) => any with unitId, settings, and reason', async () => {
             const mockFn = vi.fn().mockResolvedValue({})
             mockHttpsCallable.mockReturnValue(mockFn)
 

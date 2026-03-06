@@ -11,7 +11,7 @@
 
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080'
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const functionsTest = require('firebase-functions-test')
 
 const testEnv = functionsTest({ projectId: 'lean-841e5' })
