@@ -23,5 +23,11 @@ if (import.meta.env.DEV) {
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099');
     connectFunctionsEmulator(functions, 'localhost', 5001);
+    // E2E test helper — signs in with a custom token without going through OAuth redirect
+    (window as unknown as Record<string, unknown>)['__testSignIn'] =
+        async (token: string) => {
+            const { signInWithCustomToken } = await import('firebase/auth');
+            return signInWithCustomToken(auth, token);
+        };
 }
 
