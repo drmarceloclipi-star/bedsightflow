@@ -6,7 +6,7 @@
 
 ## 1. Mapa de coleções
 
-```
+```text
 /authorized_users/{uid}          ← whitelist global de usuários autorizados
 /units/{unitId}                  ← documento raiz da unidade
 /units/{unitId}/beds/{bedId}     ← leito (dado operacional principal)
@@ -196,7 +196,7 @@ interface AuditLog {
 ## 3. Tabela "Conceito → Campo → Valores → Origem → UI"
 
 | Conceito | Campo Firestore | Valores possíveis | Origem do cálculo | Onde renderiza |
-|----------|-----------------|-------------------|-------------------|----------------|
+| ---------- | ----------------- | ------------------- | ------------------- | ---------------- |
 | Leito ativo | `patientAlias.trim() !== ''` | boolean derivado | Frontend + Backend | Kanban, Kamishibai, Mission Control |
 | Cor/badge Kanban alta | `expectedDischarge` | `'24h'` (verde), `'2-3_days'` (amarelo), `'>3_days'` (vermelho), `'later'` (sem cor/dashed) | Frontend (CSS class) | TV KanbanScreen |
 | Status Kamishibai por domínio | `kamishibai.{domain}.status` | `'ok'`, `'blocked'`, `'na'` | Frontend direto | TV KamishibaiScreen |
@@ -214,7 +214,7 @@ interface AuditLog {
 **Evidência:** [`firestore.rules`](../../../firestore.rules)
 
 | Coleção | Quem lê | Quem escreve |
-|---------|---------|--------------|
+| --------- | --------- | -------------- |
 | `authorized_users` | qualquer autenticado | global admin |
 | `units/{unitId}` | qualquer autenticado | global admin |
 | `units/{unitId}/beds/{bedId}` | unit member | unit editor ou admin |
@@ -230,7 +230,7 @@ interface AuditLog {
 
 36 leitos com padrão `{quartoNúmero}.{subLeito}`:
 
-```
+```text
 301.1, 301.2, 301.3, 301.4
 302.1, 302.2, 302.3
 303
@@ -251,7 +251,7 @@ interface AuditLog {
 ## 6. Casos problemáticos observados no modelo
 
 | # | Problema | Evidência | Risco |
-|---|---------- |-----------|-------|
+| --- | ---------- | ----------- | ------- |
 | P1 | `updatedAt` do leito não distingue "usuário atualizou kanban" de "usuário atualizou kamishibai" — aging é calculado com esse único timestamp | `getAdminMissionControlSnapshot.ts:95-109` | Aging de bloqueador pode ser subestimado/superestimado |
 | P2 | Não existe `blockedAt` dedicado — aging de bloqueador usa `updatedAt` como proxy | `snapshot.ts:95` comentário: "best we have without a dedicated blockedAt" | KPI de aging é impreciso se o leito foi atualizado por outro motivo após o bloqueio |
 | P3 | Leito vazio tem kamishibai com status `'na'` — indistinguível de "especialidade não aplicável em leito com paciente" | `seed-data.ts` e `KamishibaiScreen.tsx:30` | Lean: leito sem paciente não deveria ter card kamishibai com cor |

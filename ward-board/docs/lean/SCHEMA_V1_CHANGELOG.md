@@ -9,7 +9,7 @@
 ## 1. Arquivos alterados
 
 | Arquivo | Tipo | Resumo |
-|---------|------|--------|
+| --------- | ------ | -------- |
 | `src/domain/shiftKey.ts` | **NOVO** | `computeShiftKey()`, `currentShiftKey()`, helpers Intl timezone-safe |
 | `src/domain/types.ts` | **MODIFY** | Schema v1 completo (ver §2 abaixo) |
 | `src/repositories/UnitSettingsRepository.ts` | **MODIFY** | Defaults v1, `setKamishibaiEnabled()`, `registerHuddle()` |
@@ -25,7 +25,7 @@
 #### Tipos novos
 
 | Tipo | Definição | Propósito |
-|------|-----------|-----------|
+| ------ | ----------- | ----------- |
 | `TimestampLike` | `string \| Timestamp` | Alias unificado para campos de data |
 | `KamishibaiStatus` | `'ok' \| 'blocked'` | Status v1 — sem `'na'` |
 | `LegacyKamishibaiStatus` | `'ok' \| 'blocked' \| 'na'` | Leitura de docs v0 (não usar em writes) |
@@ -34,7 +34,7 @@
 #### `KamishibaiEntry` — campos adicionados
 
 | Campo | Tipo | Obrigatório? | Default/Fallback | Propósito |
-|-------|------|-------------|-----------------|-----------|
+| ------- | ------ | ------------- | ----------------- | ----------- |
 | `reviewedShiftKey` | `string?` | Não | ausente → `UNREVIEWED_THIS_SHIFT` | TTL do verde: turno da revisão |
 | `reviewedAt` | `TimestampLike?` | Não | ausente → sem info | Timestamp da revisão no turno |
 | `blockedAt` | `TimestampLike?` | Não | ausente → proxy `updatedAt` ⚠️ | Início do bloqueio (aging) |
@@ -46,7 +46,7 @@
 #### `Bed` — campos adicionados
 
 | Campo | Tipo | Obrigatório? | Default/Fallback | Propósito |
-|-------|------|-------------|-----------------|-----------|
+| ------- | ------ | ------------- | ----------------- | ----------- |
 | `applicableDomains` | `SpecialtyKey[]?` | Não | ausente → todos os 6 domínios aplicáveis | N/A Variante A (OD-2) |
 | `mainBlockerBlockedAt` | `TimestampLike?` | Não | ausente → proxy `updatedAt` ⚠️ | Aging do mainBlocker (KPI1 Mission Control) |
 | `mainBlockerResolvedAt` | `TimestampLike?` | Não | ausente → sem info | Quando mainBlocker foi zerado |
@@ -54,7 +54,7 @@
 #### `UnitOpsSettings` — campos adicionados
 
 | Campo | Tipo | Obrigatório? | Default/Fallback | Propósito |
-|-------|------|-------------|-----------------|-----------|
+| ------- | ------ | ------------- | ----------------- | ----------- |
 | `kamishibaiEnabled` | `boolean?` | Não | ausente → `true` | Política de ferramenta Lean |
 | `huddleSchedule` | `ShiftSchedule?` | Não | ausente → `{ amStart: '07:00', pmStart: '19:00' }` | Horários de turno |
 | `lastHuddleAt` | `TimestampLike?` | Não | ausente → HUDDLE\_PENDING | Registro do último huddle |
@@ -68,7 +68,7 @@
 ### 2.2 `src/domain/shiftKey.ts` — funções exportadas
 
 | Exportação | Descrição |
-|-----------|-----------|
+| ----------- | ----------- |
 | `ShiftType` | `'AM' \| 'PM'` |
 | `ShiftSchedule` | `{ amStart: string; pmStart: string }` |
 | `DEFAULT_SHIFT_SCHEDULE` | `{ amStart: '07:00', pmStart: '19:00' }` |
@@ -81,7 +81,7 @@
 ### 2.3 `src/repositories/UnitSettingsRepository.ts` — métodos adicionados
 
 | Método | Descrição |
-|--------|-----------|
+| -------- | ----------- |
 | `setKamishibaiEnabled(unitId, enabled, actor)` | Grava `kamishibaiEnabled` em `settings/ops` |
 | `registerHuddle(unitId, huddleType, actor, schedule?)` | Grava os 4 campos `lastHuddle*` + calcula `shiftKey` automaticamente |
 
@@ -90,7 +90,7 @@
 ### 2.4 `scripts/seed-data.ts` — dados v1 adicionados
 
 | Bed | Tipo | Dados presentes |
-|-----|------|-----------------|
+| ----- | ------ | ----------------- |
 | `301.1` | ✅ v1 | `applicableDomains`, `reviewedShiftKey`, `blockedAt` em physio, `mainBlockerBlockedAt` |
 | `301.2` | 🔀 misto | domains v1 + 2 dominios com `na` legado (physio/social) — testa compat em leito ativo |
 | `301.3` | ✅ v1 | 4 domínios aplicáveis, todos verdes com `reviewedShiftKey` |
@@ -116,7 +116,7 @@
 ## 3. Regras de compatibilidade v0 (fallbacks)
 
 | Situação v0 | Comportamento v1 |
-|-------------|-----------------|
+| ------------- | ----------------- |
 | `kamishibai.{domain}.status === 'na'` em leito vazio | → `INACTIVE` (prec. 1) |
 | `kamishibai.{domain}.status === 'na'` em domínio fora de `applicableDomains` | → `NOT_APPLICABLE` (prec. 3) |
 | `kamishibai.{domain}.status === 'na'` em domínio aplicável | → `UNREVIEWED_THIS_SHIFT` (conservador) |
@@ -133,7 +133,7 @@
 
 A regra existente para `settings/{doc}`:
 
-```
+```text
 match /units/{unitId}/settings/{doc} {
   allow read: if isUnitMember(unitId);
   allow write: if isUnitAdmin(unitId);

@@ -6,7 +6,7 @@
 ## Cobertura
 
 | Cenário | Teste | Descrição |
-|---|---|---|
+| --- | --- | --- |
 | 1 — Editor | 1.1 | Criar pendência open → marcar done → verificar em Concluídas |
 | 1 — Editor | 1.2 | Criar pendência → cancelar → verificar em Canceladas |
 | 1 — Editor | 1.3 | Editor NÃO vê botão 🗑️ (RBAC) |
@@ -41,7 +41,7 @@ npx playwright test tests/lean-pendencies-v1.spec.ts --ui
 ## Seletores usados (nenhum novo adicionado)
 
 | Seletor | Origem |
-|---|---|
+| --- | --- |
 | `input[placeholder="Nova pendência (obrigatório)"]` | BedDetails.tsx L482 |
 | `button:has-text("+ Adicionar pendência")` | BedDetails.tsx L514 |
 | `button[aria-label^="Marcar como feito:"]` | BedDetails.tsx L436 |

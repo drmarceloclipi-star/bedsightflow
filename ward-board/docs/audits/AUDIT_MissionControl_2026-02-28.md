@@ -7,7 +7,7 @@
 ## 1. Localização na UI
 
 | Rota | Componente | Arquivo |
-|------|-----------|---------|
+| ------ | ----------- | --------- |
 | `/admin/unit/{unitId}` → aba Analytics → tab "Mission Control" | `AnalyticsScreen` → `MissionControlTab` | `src/features/admin/screens/AnalyticsScreen.tsx` |
 
 **Não existe rota dedicada `/admin/mission-control`** — é uma aba dentro de Analytics.
@@ -29,7 +29,7 @@
 ### KPI 1 — Bloqueados Agora
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Métrica** | Leitos com `mainBlocker.trim() !== ''` E `patientAlias !== ''` |
 | **Universo N** | Leitos ativos (com paciente) |
 | **Cálculo** | `blockedBedsCount / activeBedsCount * 100` |
@@ -55,7 +55,7 @@ function blockedStatus(pct: number): KpiStatus {
 ### KPI 2 — Freshness (3 sub-KPIs)
 
 | Sub-KPI | Threshold | Countermeasure |
-|---------|-----------|----------------|
+| --------- | ----------- | ---------------- |
 | **+48h sem atualização** | `count > 0` = critical | "Falha de processo. Acionar coordenação imediatamente." |
 | **+24h sem atualização** | `count >= 3` = critical; `count >= 1` = warning | "Cobrar atualização antes do fim do turno." |
 | **+12h sem atualização** | `count >= 5` = warning | "Verificar se há equipe sem acesso ao sistema." |
@@ -80,7 +80,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ### KPI 3 — Impedimentos Kamishibai
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Métrica** | Leitos com `patientAlias !== ''` E qualquer `kamishibai.{domain}.status === 'blocked'` |
 | **Threshold** | Exibido como contagem absoluta (contexto, não KPI com semáforo) |
 | **Drill-down** | `/admin/unit/{unitId}/analytics/lists?filter=kamishibai_impediment` |
@@ -91,7 +91,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ### KPI 4 — Altas Próximas 24h
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Métrica** | Leitos com `expectedDischarge === '24h'` E `patientAlias !== ''` |
 | **Status fixo** | Sempre `'ok'` (informativo, não alarme) |
 | **Drill-down** | `/admin/unit/{unitId}/analytics/lists?filter=discharge_next_24h` |
@@ -102,7 +102,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ### KPI 7 — Top Bloqueador Agora
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Cálculo** | Frequência de `mainBlocker` entre leitos bloqueados, sorted desc |
 | **Output** | `{ name, bedCount, share% }` |
 | **Exibição** | Não exposto como card no tab Mission Control (existe no snapshot mas sem card UI) |
@@ -124,7 +124,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ## 4. Drill-downs disponíveis
 
 | Filtro | Rota | Lógica |
-|--------|------|--------|
+| -------- | ------ | -------- |
 | `blocked_now` | `/analytics/lists?filter=blocked_now` | `patientAlias && mainBlocker`, sorted by `updatedAt` ASC |
 | `stale_24h` | `/analytics/lists?filter=stale_24h` | `now - updatedAt > 24h`, sorted by age |
 | `kamishibai_impediment` | `/analytics/lists?filter=kamishibai_impediment` | qualquer `kamishibai.*.status === 'blocked'` |
@@ -141,7 +141,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ## 5. Fonte de dados e latência
 
 | Fonte | Dados | Latência |
-|-------|-------|---------|
+| ------- | ------- | --------- |
 | Firestore live | Snapshot de todos os leitos da unidade | On-demand (chamada HTTPS ao clicar em refresh) |
 | BigQuery | Histórico (FlowTrend, FreshnessBQ, TopBlockersBQ, TrendComparison, etc.) | On-demand via chamadas HTTPS |
 
@@ -152,7 +152,7 @@ function freshnessStatus(count: number, tier: '12h' | '24h' | '48h'): KpiStatus 
 ## 6. Thresholds — onde estão (todos hardcoded no frontend)
 
 | KPI | Arquivo | Linhas | Tipo |
-|-----|---------|--------|------|
+| ----- | --------- | -------- | ------ |
 | Bloqueados (%, critical 35, warning 20) | `MissionControlTab.tsx` | 16-19 | Hardcoded |
 | Kamishibai (%, critical 30, warning 15) — **não usado no tab atual** | `MissionControlTab.tsx` | 25-29 | Hardcoded (código morto) |
 | Freshness 48h | `MissionControlTab.tsx` | 88 | Hardcoded |
@@ -178,7 +178,7 @@ O Mission Control **depende de kamishibai.*.status === 'blocked'** para:
 ## 8. Gaps identificados
 
 | # | Gap | Impacto |
-|---|-----|---------|
+| --- | ----- | --------- |
 | G1 | `topBlockerNow` calculado mas não exibido no Mission Control tab | KPI 7 existe no backend mas está "morto" na UI |
 | G2 | Nenhum KPI de Aging de bloqueador no Mission Control (existe no snapshot mas sem card) | `maxBlockedAgingHours` calculado, ignorado no front |
 | G3 | Não há atualização automática — usuário precisa clicar refresh manual | Em TV/huddle, os dados ficam desatualizados |

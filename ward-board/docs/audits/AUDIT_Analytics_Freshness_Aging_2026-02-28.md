@@ -7,7 +7,7 @@
 ## 1. Mapa de métricas
 
 | Métrica | Fonte | Cálculo | Destino / UI | Arquivo |
-|---------|-------|---------|--------------|---------|
+| --------- | ------- | --------- | -------------- | --------- |
 | **activePatients** (leitos ocupados) | Firestore live | `patientAlias.trim() !== ''` | Mission Control context | `getAdminMissionControlSnapshot.ts:66-68` |
 | **vacantBeds** (leitos vagos) | Firestore live | `totalBedsCount - activeBedsCount` | Mission Control context | `MissionControlTab.tsx:114-119` |
 | **blockedBedsCount** | Firestore live | `mainBlocker.trim() !== ''` E `hasPatient` | KPI 1 Mission Control | `snapshot.ts:89-110` |
@@ -30,7 +30,7 @@
 
 ### Pipeline A — Snapshot (tempo real, Firestore)
 
-```
+```text
 Firestore (units/{unitId}/beds)
     ↓ getAdminMissionControlSnapshot (Cloud Function)
     ↓ cálculos server-side (sem BigQuery)
@@ -43,7 +43,7 @@ Firestore (units/{unitId}/beds)
 
 ### Pipeline B — Analytics Histórico (BigQuery)
 
-```
+```text
 Firestore → BigQuery Export (stream automático via extensão ou trigger?)
     ↓ Cloud Functions BQ (getAdminFlowMetricsBQ, getAdminFreshnessBQ, etc.)
     → Analytics Exploração: FlowTrendChart, FreshnessCards, etc.
@@ -61,7 +61,7 @@ Firestore → BigQuery Export (stream automático via extensão ou trigger?)
 **Path:** `functions/src/callables/analytics/`
 
 | Função | Fonte | Evidência de problema |
-|--------|-------|----------------------|
+| -------- | ------- | ---------------------- |
 | `getAdminMissionControlSnapshot` | Firestore live | Funcionando (Seção 4) |
 | `getAdminOverviewBQ` | BigQuery | 500 conhecido |
 | `getAdminFlowMetricsBQ` | BigQuery | 500 conhecido |
@@ -81,7 +81,7 @@ Firestore → BigQuery Export (stream automático via extensão ou trigger?)
 
 **Problema de design:**
 
-```
+```text
 Cenário: Enfermeira marca kamishibai como 'blocked' às 10h.
 Médico atualiza 'patientAlias' às 14h.
 → updatedAt do leito = 14h
@@ -114,7 +114,7 @@ const agingHours = Math.round((now - updatedMs) / (60 * 60 * 1000))
 
 **Problema:**
 
-```
+```text
 Cenário: Leito tem bloqueador "Aguardando laudo RX" há 3 dias.
 Admin entra e corrige 'patientAlias' → updatedAt reseta para agora.
 → Sistema considera aging = 0h
@@ -161,7 +161,7 @@ let rows = snap.docs...
 ## 9. Gaps identificados
 
 | # | Gap | Impacto Lean |
-|---|-----|--------------|
+| --- | ----- | -------------- |
 | G1 | Não existe `blockedAt` — aging usa `updatedAt` como proxy | KPI de aging impreciso |
 | G2 | Não existe freshness por domínio Kamishibai | Lean exige rastrear "revisão por equipe neste turno" |
 | G3 | Pipeline BigQuery com 500 — Analytics Exploração não funciona | Histórico e trending indisponíveis |

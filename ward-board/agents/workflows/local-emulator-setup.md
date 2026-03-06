@@ -57,21 +57,21 @@ The app auto-detects `localhost` and connects to the emulators instead of produc
 
 ## Test Credentials
 
-| Role        | Email             | Password      |
-|-------------|-------------------|---------------|
-| Admin       | <admin@lean.com>    | password123   |
-| Médico      | <doctor@lean.com>   | password123   |
-| Enfermagem  | <nurse@lean.com>    | password123   |
+| Role       | Email             | Password    |
+| ---------- | ----------------- | ----------- |
+| Admin      | <admin@lean.com>  | password123 |
+| Médico     | <doctor@lean.com> | password123 |
+| Enfermagem | <nurse@lean.com>  | password123 |
 
 ## Useful URLs
 
-| Service        | URL                        |
-|----------------|----------------------------|
-| App (Mobile)   | <http://localhost:5173/mobile> |
-| App (TV)       | <http://localhost:5173/tv?unit=A> |
-| Emulator UI    | <http://localhost:4000>       |
-| Firestore UI   | <http://localhost:4000/firestore> |
-| Auth UI        | <http://localhost:4000/auth>  |
+| Service      | URL                               |
+| ------------ | --------------------------------- |
+| App (Mobile) | <http://localhost:5173/mobile>    |
+| App (TV)     | <http://localhost:5173/tv?unit=A> |
+| Emulator UI  | <http://localhost:4000>           |
+| Firestore UI | <http://localhost:4000/firestore> |
+| Auth UI      | <http://localhost:4000/auth>      |
 
 ## Notes
 

@@ -7,7 +7,7 @@
 ## 1. Objetivo da migração
 
 | Objetivo | Por quê |
-|----------|---------|
+| ---------- | --------- |
 | Remover ambiguidade do estado `'na'` | `'na'` cobre leito vazio + domínio N/A + não-revisado — semanticamente inválido (auditoria: `AUDIT_Kamishibai_States` §6, Gap G1) |
 | Manter compatibilidade retroativa | Dados antigos não devem quebrar a UI durante e após a migração |
 | Permitir migração incremental por unidade | Unidade A pode estar em v1 enquanto futuras unidades aguardam |
@@ -23,7 +23,7 @@
 Use esta tabela no render-time (frontend) para mapear dados Firestore v0 para estado visual v1:
 
 | Condição v0 (em ordem de precedência) | Estado visual v1 |
-|---------------------------------------|-----------------|
+| --------------------------------------- | ----------------- |
 | `bed.patientAlias.trim() === ''` | **INACTIVE** |
 | `kamishibaiEnabled === false` (campo novo ausente → tratar como `true`) | **INACTIVE** |
 | `entry === undefined` (kamishibai não tem o domínio) | **NOT\_APPLICABLE** |
@@ -105,7 +105,7 @@ applicableDomains: SpecialtyKey[]; // domínios que SE APLICAM ao paciente deste
 
 **Regra de N/A:**
 
-```
+```text
 domain ∉ bed.applicableDomains → NOT_APPLICABLE
 ```
 
@@ -134,7 +134,7 @@ kamishibai: Record<SpecialtyKey, KamishibaiEntry>; // se domínio ausente → NO
 
 **Regra de N/A:**
 
-```
+```text
 !bed.kamishibai?.[domain] → NOT_APPLICABLE
 ```
 
@@ -156,7 +156,7 @@ kamishibai: Record<SpecialtyKey, KamishibaiEntry>; // se domínio ausente → NO
 ### Comparação das variantes
 
 | Critério | Variante A | Variante B |
-|----------|-----------|-----------|
+| ---------- | ----------- | ----------- |
 | Explicitude | ✅ Alta | ❌ Implícita |
 | Compatibilidade retroativa | ✅ Ausência = todos aplicáveis | ❌ Requer mudança de fallback no render |
 | Tamanho do documento | 🟡 Leve aumento | ✅ Menor |
@@ -170,7 +170,7 @@ kamishibai: Record<SpecialtyKey, KamishibaiEntry>; // se domínio ausente → NO
 ### 4.1 Regras de fallback
 
 | Campo novo (v1) | Ausente no doc v0 | Comportamento de fallback | Duração |
-|-----------------|-------------------|--------------------------|---------|
+| ----------------- | ------------------- | -------------------------- | --------- |
 | `reviewedShiftKey` | Não existe | Tratar como `UNREVIEWED_THIS_SHIFT` (verde não válido) | Até migração total |
 | `blockedAt` | Não existe | Usar `updatedAt` como proxy de aging com `⚠️` em docs | Até migração total |
 | `kamishibaiEnabled` | Não existe em `settings/ops` | Tratar como `true` (habilitado por padrão) | Até migração total |
@@ -181,7 +181,7 @@ kamishibai: Record<SpecialtyKey, KamishibaiEntry>; // se domínio ausente → NO
 
 Nenhuma das regras de fallback pode resultar em um estado mais favorável (verde) do que o correto. Em qualquer ambiguidade, o estado mais conservador (sem cor ou vermelho) é aplicado.
 
-```
+```text
 Princípio de segurança: errar para o lado do "alerta", nunca para o lado do "tudo ok"
 ```
 

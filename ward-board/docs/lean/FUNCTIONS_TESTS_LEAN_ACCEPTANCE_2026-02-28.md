@@ -15,7 +15,7 @@ npm test -- --testPathPatterns="shared/__tests__|deletePendency"
 
 ## Resultado dos Testes
 
-```
+```text
 Test Suites: 3 passed, 3 total
 Tests:       51 passed, 51 total
 Snapshots:   0 total
@@ -43,7 +43,7 @@ npx tsc --noEmit
 Testa `computeEscalations()` como função pura (zero Firestore, zero emulador).
 
 | Grupo | Casos |
-|---|---|
+| --- | --- |
 | Sem leitos | retorna zeros |
 | Atrasado crítico | conta corretamente |
 | Bloqueado crítico | conta com `mainBlockerBlockedAt` |
@@ -56,7 +56,7 @@ Testa `computeEscalations()` como função pura (zero Firestore, zero emulador).
 Testa `buildSnapshot()` como função pura extraída de `getAdminMissionControlSnapshot`.
 
 | Grupo | Casos |
-|---|---|
+| --- | --- |
 | `mainBlockerBlockedAt` | usa quando presente, emite `console.warn` quando ausente e cai para `blockedAt` |
 | Escalações via SSoT | `buildSnapshot` delega para `computeEscalations` compartilhado |
 | `kamishibaiEnabled=false` | zera `unreviewedBedsCount`, preserva pendências |
@@ -70,7 +70,7 @@ Testa `buildSnapshot()` como função pura extraída de `getAdminMissionControlS
 Testa `deletePendency` com mocks completos (sem emulador Firestore).
 
 | Grupo | Casos |
-|---|---|
+| --- | --- |
 | Auth guard | `unauthenticated` sem auth |
 | invalid-argument | faltando `unitId`, `bedId`, `pendencyId` |
 | RBAC | `permission-denied` usuario comum; admin de unidade permitido; global admin permitido; `token.admin=true` permitido; editor negado |
@@ -82,7 +82,7 @@ Testa `deletePendency` com mocks completos (sem emulador Firestore).
 ## Prova dos Requisitos P0
 
 | Requisito | Verificação |
-|---|---|
+| --- | --- |
 | `mainBlockerBlockedAt` quando existe | ✅ Suite 2, grupo `mainBlockerBlockedAt` |
 | `console.warn` quando `mainBlockerBlockedAt` ausente | ✅ Suite 2, "emits warn when mainBlockerBlockedAt missing" |
 | Escalações via `computeEscalations` compartilhado | ✅ Suite 2, "uses computeEscalations as SSoT" |
@@ -95,7 +95,7 @@ Testa `deletePendency` com mocks completos (sem emulador Firestore).
 ## Arquivos Modificados/Criados
 
 | Arquivo | Tipo | Descrição |
-|---|---|---|
+| --- | --- | --- |
 | `functions/src/shared/__tests__/escalation.test.ts` | **NEW** | P0 unit tests `computeEscalations` |
 | `functions/src/shared/__tests__/missionControlSnapshot.test.ts` | **NEW** | P0/P1 unit tests `buildSnapshot` |
 | `functions/src/callables/pendencies/__tests__/deletePendency.test.ts` | **NEW** | P0 unit tests `deletePendency` (mock-only) |

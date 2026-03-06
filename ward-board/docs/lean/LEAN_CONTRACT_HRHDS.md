@@ -1,13 +1,13 @@
 # LEAN\_CONTRACT\_HRHDS — BedSight
 
-**Contrato Canônico de Operação Lean**
+## Contrato Canônico de Operação Lean
 
 ---
 
 ## 0. Status do documento
 
 | Atributo | Valor |
-|----------|-------|
+| ---------- | ------- |
 | **Versão** | v1.0 |
 | **Data** | 2026-02-28 |
 | **Dono do contrato** | HRHDS / BedSight — responsável: Marcelo Cavalcanti |
@@ -105,7 +105,7 @@ Alta não é um evento pontual — é um processo com horizonte de tempo, barrei
 O HRHDS **mantém** as 4 categorias atuais:
 
 | Valor | Label | Cor do badge | Semântica |
-|-------|-------|-------------|-----------|
+| ------- | ------- | ------------- | ----------- |
 | `'24h'` | `< 24h` | 🟢 Verde | Alta prevista para hoje — prioridade máxima de verificação de barreiras |
 | `'2-3_days'` | `2–3 dias` | 🟡 Amarelo | Alta em breve — iniciar desbloqueio de pendências cross-equipe |
 | `'>3_days'` | `> 3 dias` | 🔴 Vermelho | Alta distante — acompanhar evolução, não é foco imediato de alta |
@@ -139,7 +139,7 @@ O HRHDS **mantém** as 4 categorias atuais:
 O Kamishibai tem **dois níveis de controle**, que devem ser separados no sistema:
 
 | Nível | Campo | Path Firestore | Semântica |
-|-------|-------|----------------|-----------|
+| ------- | ------- | ---------------- | ----------- |
 | **Display** (tela na TV) | `screens[{key:'kamishibai'}].enabled` | `settings/board` | Controla se a tela de Kamishibai aparece na rotação da TV |
 | **Política operacional** | `kamishibaiEnabled` *(a criar)* | `settings/ops` | Controla se o Kamishibai está ativo como ferramenta de gestão na unidade |
 
@@ -154,7 +154,7 @@ O Kamishibai tem **dois níveis de controle**, que devem ser separados no sistem
 O HRHDS adota **estados binários + dois estados de ausência**:
 
 | Estado | Valor de sistema | Cor | Displayed quando |
-|--------|-----------------|-----|-----------------|
+| -------- | ----------------- | ----- | ----------------- |
 | **OK** | `'ok'` | 🟢 Verde | Revisado no turno atual E sem impedimento |
 | **BLOQUEADO** | `'blocked'` | 🔴 Vermelho | Impedimento ativo declarado |
 | **Sem cor** *(não revisado)* | ausência de revisão no turno | ⬜ Neutro | Não houve revisão no turno atual (mesmo que turno anterior esteja `'ok'`) |
@@ -173,7 +173,7 @@ O HRHDS adota **estados binários + dois estados de ausência**:
 O HRHDS **mantém** a ordem canônica atual:
 
 | Posição | Domínio (key) | Rótulo na TV |
-|---------|--------------|-------------|
+| --------- | -------------- | ------------- |
 | 1 | `medical` | MÉDICA |
 | 2 | `nursing` | ENFERMAGEM |
 | 3 | `physio` | FISIOTERAPIA |
@@ -209,7 +209,7 @@ O HRHDS **mantém** a ordem canônica atual:
 **Conteúdo mínimo obrigatório de um bloqueio:**
 
 | Campo | Obrigatoriedade | Exemplo |
-|-------|----------------|---------|
+| ------- | ---------------- | --------- |
 | Motivo do bloqueio | **Obrigatório** | "Aguardando laudo RX" |
 | Domínio responsável | Implícito (é o domínio do dot) | `nursing` |
 | Quem declarou | **Obrigatório** (`updatedBy`) | `{ uid, name }` |
@@ -229,7 +229,7 @@ O HRHDS **mantém** a ordem canônica atual:
 O HRHDS opera com **2 turnos por dia**:
 
 | Turno | Código | Horário padrão (BRT / America/Sao_Paulo) | Prioridade |
-|-------|--------|------------------------------------------|-----------|
+| ------- | -------- | ------------------------------------------ | ----------- |
 | AM | `'AM'` | 07:00h | Inicio de turno diurno |
 | PM | `'PM'` | 19:00h | Inicio de turno noturno |
 
@@ -239,7 +239,7 @@ O HRHDS opera com **2 turnos por dia**:
 
 Ao "registrar huddle", o sistema grava na unidade:
 
-```
+```text
 {
   lastHuddleAt:           Timestamp,   // momento do registro
   lastHuddleType:         'AM' | 'PM',
@@ -258,7 +258,7 @@ Ao "registrar huddle", o sistema grava na unidade:
 Quando o sistema detecta a virada de turno (AM → PM ou PM → AM do dia seguinte):
 
 | Comportamento | Ação do sistema |
-|--------------|----------------|
+| -------------- | ---------------- |
 | Status `'ok'` por domínio | Passa a ser exibido como "sem cor" (não-revisado) — dados não são apagados |
 | Status `'blocked'` por domínio | **Persiste** — bloqueios envelhecem, não resetam |
 | `lastHuddleAt` da unidade | Fica desatualizado (visível como "Último huddle: Xh atrás") |
@@ -281,7 +281,7 @@ Este é um dos princípios arquiteturais mais importantes do contrato.
 ### 6.1 Declaração
 
 | Configuração | Path Firestore | Responsável | O que controla |
-|-------------|----------------|-------------|----------------|
+| ------------- | ---------------- | ------------- | ---------------- |
 | **Display** | `units/{unitId}/settings/board` | Admin (TV Settings) | Rotação, duração das telas, paginação, quais telas aparecem na TV |
 | **Política Operacional** | `units/{unitId}/settings/ops` | Admin (Ops Settings) | Como a unidade opera (modo Kanban, Kamishibai ativo/inativo, cadência de huddle, turno atual) |
 
@@ -310,7 +310,7 @@ Toda nova configuração deve ser classificada **antes de ser implementada**:
 ### 7.1 Checklist de conformidade (v1)
 
 | # | Requisito | Como verificar | Status atual |
-|---|-----------|---------------|-------------|
+| --- | ----------- | --------------- | ------------- |
 | NF1 | Não existe ambiguidade de `na` | Verificar se UI distingue leito vazio / N/A / sem-revisão sem usar mesmo dot | ❌ Ambíguo hoje |
 | NF2 | Verde não pode persistir indefinidamente entre turnos | Verde de turno anterior → "sem cor" após virada | ❌ Verde persiste hoje |
 | NF3 | Huddle tem registro mensurável | `lastHuddleAt` existe e é atualizado ao registrar huddle | ❌ Campo não existe hoje |
@@ -336,7 +336,7 @@ Durante a migração de v0 (sistema atual) para v1 (sistema aderente ao contrato
 As 5 decisões abaixo requerem ratificação do dono do produto (Marcelo/HRHDS) antes da implementação. Nenhuma delas bloqueia a criação do contrato ou o início da refatoração do código.
 
 | # | Decisão | Opções | Impacto |
-|---|---------|--------|---------|
+| --- | --------- | -------- | --------- |
 | **OD-1** | Horários de virada de turno | 07:00 AM / 19:00 PM (padrão) ou outro esquema (12h/8h) | Define quando "sem cor" é ativado |
 | **OD-2** | N/A — como representar | (a) campo `applicableDomains[]` separado em `bed`; (b) `status: 'na'` com semântica redefinida; (c) omissão do domínio em `kamishibai` | Impacto em schema e queries de Mission Control |
 | **OD-3** | Registro de huddle — quem pode | (a) apenas admin; (b) admin + editor; (c) qualquer usuário autenticado da unidade | Impacto em Firestore rules |
@@ -348,7 +348,7 @@ As 5 decisões abaixo requerem ratificação do dono do produto (Marcelo/HRHDS) 
 ## Referências
 
 | Documento | Conteúdo referenciado |
-|-----------|----------------------|
+| ----------- | ---------------------- |
 | [`AUDIT_LeanAlignment_2026-02-28.md`](../audits/AUDIT_LeanAlignment_2026-02-28.md) | Tabela mestre de features, flags, CFs, testes e gap list completo |
 | [`AUDIT_Kamishibai_States_2026-02-28.md`](../audits/AUDIT_Kamishibai_States_2026-02-28.md) | Estados atuais, ambiguidade de `na`, TTL ausente |
 | [`AUDIT_Firestore_Model_2026-02-28.md`](../audits/AUDIT_Firestore_Model_2026-02-28.md) | Schemas, exemplos JSON, casos problemáticos |

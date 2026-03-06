@@ -50,7 +50,7 @@ function makeKamishibaiEntry(status: 'ok' | 'blocked', updatedAt: string) {
 ### Perfis de Bed com Pendências
 
 | Bed | Pendências | Cenário testado |
-|---|---|---|
+| --- | --- | --- |
 | `301.1` | 1 open (sem prazo) | open sem overdue badge |
 | `301.2` | 2 open (1 vencida: `dueAt = ontem`) | overdue detectado pelo renderer |
 | `301.3` | 1 **canceled** (com `canceledAt/canceledBy/note`) | histórico preservado; não conta nos KPIs |
@@ -60,7 +60,7 @@ function makeKamishibaiEntry(status: 'ok' | 'blocked', updatedAt: string) {
 ### Kamishibai v1 — Perfis Especiais
 
 | Bed | Cenário | Comportamento esperado na UI |
-|---|---|---|
+| --- | --- | --- |
 | `301.4` | `ok` SEM `reviewedShiftKey` (v0 legado) | UNREVIEWED_THIS_SHIFT (sem cor) — migração conservadora |
 | `301.3` | `na` nos domínios psychology/social (legado) | NOT_APPLICABLE (sem dot) |
 | `302.x` | Bloqueado há > 18h | aging real visível no Mission Control |
@@ -91,7 +91,7 @@ const PREV_PREV_SHIFT_KEY = '2026-02-27-PM';
 
 ### 36 Beds Canônicos
 
-```
+```text
 301.1  301.2  301.3  301.4 | 302.1  302.2  302.3 | 303
 304.1  304.2  304.3 | 305.1  305.2  305.3  305.4 | 306.1  306.2  306.3
 307.1  307.2  307.3  307.4 | 308   | 309.1  309.2  309.3
@@ -103,7 +103,7 @@ IDs Firestore: `bed_{number}` — ex: `bed_301.1`, `bed_308`.
 ### Perfis Especiais (beds reais)
 
 | Bed | `patientAlias` | Perfil | Detalhe |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `301.1` | `U.R.` | UNREVIEWED | `reviewedShiftKey = PREV_SHIFT_KEY` em todos os domínios |
 | `301.2` | `N.A.` | NOT_APPLICABLE | `applicableDomains` exclui `psychology` e `social` |
 | `301.3` | `P.D.` | PENDENCIES | 4 pendências: open, overdue (dueAt-13h), done, canceled |
@@ -116,7 +116,7 @@ IDs Firestore: `bed_{number}` — ex: `bed_301.1`, `bed_308`.
 ### IDs Fixos de Pendências Especiais
 
 | ID | Bed | Estado |
-|---|---|---|
+| --- | --- | --- |
 | `PEND_3013_A1` | `301.3` | open sem dueAt |
 | `PEND_3013_A2_OVERDUE` | `301.3` | open, `dueAt=msAgo(13)` |
 | `PEND_3013_A3_DONE` | `301.3` | done |
@@ -135,7 +135,7 @@ IDs Firestore: `bed_{number}` — ex: `bed_301.1`, `bed_308`.
 
 ### Settings Corretos
 
-```
+```text
 settings/ops.lastHuddleShiftKey = "2026-02-28-PM"  (CURRENT_SHIFT_KEY)
 settings/mission_control.escalationOverdueHoursCritical     = 12
 settings/mission_control.escalationMainBlockerHoursCritical = 24
@@ -147,7 +147,7 @@ settings/mission_control.escalationMainBlockerHoursCritical = 24
 ### Huddles (IDs Fixos)
 
 | ID | shiftKey | topActions | Summaries |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `HUDDLE_2026-02-27-PM` | `2026-02-27-PM` | 2 open | start+end com delta |
 | `HUDDLE_2026-02-28-AM` | `2026-02-28-AM` | 1 done | start+end com delta calculável |
 

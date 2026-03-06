@@ -18,7 +18,7 @@ O `shiftKey` é uma **string estável e sem ambiguidade** que identifica o turno
 ## 2. Definição canônica de turno
 
 | Atributo | Valor |
-|----------|-------|
+| ---------- | ------- |
 | **Timezone** | `America/Sao_Paulo` (UTC-3, sem DST relevante para lógica de turno) |
 | **Turno AM** | `'AM'` — início padrão: `07:00` local |
 | **Turno PM** | `'PM'` — início padrão: `19:00` local |
@@ -27,7 +27,7 @@ O `shiftKey` é uma **string estável e sem ambiguidade** que identifica o turno
 
 **Horários padrão (OD-1 default, pendente confirmação HRHDS):**
 
-```
+```text
 AM_START = "07:00"
 PM_START = "19:00"
 ```
@@ -48,7 +48,7 @@ function computeShiftKey(
 
 ### 3.2 Pseudo-código canônico
 
-```
+```text
 FUNÇÃO computeShiftKey(now, schedule = {amStart: "07:00", pmStart: "19:00"}, tz = "America/Sao_Paulo"):
 
     1. Converter 'now' para horário local em 'tz':
@@ -96,7 +96,7 @@ Isso garante que um bloqueio registrado às `02:00` de um dia não seja "resetad
 ## 4. Exemplos canônicos
 
 | `now` (horário local BRT) | `amStart` | `pmStart` | `shiftKey` resultante | Explicação |
-|--------------------------|-----------|-----------|----------------------|-----------|
+| -------------------------- | ----------- | ----------- | ---------------------- | ----------- |
 | `2026-02-28 03:00` | `07:00` | `19:00` | `2026-02-27-PM` | Madrugada → turno PM do dia anterior |
 | `2026-02-28 06:59` | `07:00` | `19:00` | `2026-02-27-PM` | 1 minuto antes do AM → ainda PM de ontem |
 | `2026-02-28 07:00` | `07:00` | `19:00` | `2026-02-28-AM` | Exatamente no início do AM |
@@ -112,7 +112,7 @@ Isso garante que um bloqueio registrado às `02:00` de um dia não seja "resetad
 ### 5.1 Por domínio Kamishibai (em `bed.kamishibai.{domain}`)
 
 | Campo | Tipo | Descrição | Presente no v0? |
-|-------|------|-----------|----------------|
+| ------- | ------ | ----------- | ---------------- |
 | `status` | `'ok' \| 'blocked'` | Status armazenado | ✅ Sim |
 | `updatedAt` | `Timestamp` | Última escrita (qualquer) | ✅ Sim |
 | `updatedBy` | `ActorRef` | Quem escreveu | ✅ Sim |
@@ -125,7 +125,7 @@ Isso garante que um bloqueio registrado às `02:00` de um dia não seja "resetad
 ### 5.2 Por unidade — cadência (em `unit.settings/ops`)
 
 | Campo | Tipo | Descrição | Presente no v0? |
-|-------|------|-----------|----------------|
+| ------- | ------ | ----------- | ---------------- |
 | `kanbanMode` | `'PASSIVE' \| 'ACTIVE_LITE'` | Modo Kanban | ✅ Sim |
 | `kamishibaiEnabled` | `boolean` | **NOVO — v1** — política operacional Kamishibai | ❌ Não existe |
 | `currentShiftType` | `'AM' \| 'PM'` | **NOVO — v1** — turno ativo confirmado (optativo) | ❌ Não existe |
@@ -195,7 +195,7 @@ if (!entry?.reviewedShiftKey) return 'UNREVIEWED_THIS_SHIFT';
 ## 8. Casos de borda e garantias
 
 | Caso | Comportamento esperado |
-|------|----------------------|
+| ------ | ---------------------- |
 | `now` exatamente na virada de turno (07:00 ou 19:00) | `computeShiftKey` usa `>=` para início — entra no novo turno imediatamente |
 | Servidor e cliente em timezones diferentes | `computeShiftKey` sempre usa `tz = "America/Sao_Paulo"` explicitamente — sem depender de timezone local do dispositivo |
 | Usuário muda `huddleSchedule` (AM=06:00) a partir de hoje | Chaves antigas (`2026-02-28-AM` com `07:00`) não são inválidas — apenas o cálculo futuro usa o novo horário. Sem migração de chaves necessária. |

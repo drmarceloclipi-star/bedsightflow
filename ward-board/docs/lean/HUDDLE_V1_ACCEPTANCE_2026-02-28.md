@@ -7,7 +7,7 @@
 ## 1. Critérios de Aceite (H1–H5)
 
 | # | Critério | Status |
-|---|----------|--------|
+| --- | ---------- | -------- |
 | H1 | Clicar "Registrar Huddle AM" grava os 4 campos: `lastHuddleAt`, `lastHuddleType`, `lastHuddleShiftKey`, `lastHuddleRegisteredBy` | ✅ `registerHuddle()` confirmado |
 | H2 | TV mostra "HUDDLE PENDENTE" quando `lastHuddleShiftKey !== currentShiftKey` (ou ausente) | ✅ badge via `useMemo` |
 | H3 | Após registrar huddle do turno atual, badge some imediatamente (realtime via `onSnapshot`) | ✅ `subscribeUnitOpsSettings` já ativo no TvDashboard |
@@ -80,7 +80,7 @@ npm run dev
 ## 4. Arquivos alterados
 
 | Arquivo | Tipo | Resumo |
-|---------|------|--------|
+| --------- | ------ | -------- |
 | `src/repositories/UnitSettingsRepository.ts` | validado | `registerHuddle()` correto, 4 campos, computeShiftKey |
 | `src/features/tv/pages/TvDashboard.tsx` | MODIFY | `useMemo(huddlePending, huddleSubtext)` + badge JSX |
 | `src/features/admin/screens/OpsScreen.tsx` | MODIFY | seção "Cadência Huddle", botões AM/PM, handler, toast |

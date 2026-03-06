@@ -8,21 +8,21 @@
 
 ## Tabela de Permissões
 
-| Ação                     | Editor autenticado | Admin (`claim.admin=true`) |
-|--------------------------|:-----------------:|:--------------------------:|
-| Criar pendência          | ✅                | ✅                          |
-| Marcar como done         | ✅                | ✅                          |
-| **Cancelar** (→ `canceled`) | ✅             | ✅                          |
-| **Excluir** fisicamente  | ❌                | ✅                          |
+| Ação                        | Editor autenticado | Admin (`claim.admin=true`) |
+| --------------------------- | :----------------: | :------------------------: |
+| Criar pendência             | ✅                 | ✅                         |
+| Marcar como done            | ✅                 | ✅                         |
+| **Cancelar** (→ `canceled`) | ✅                 | ✅                         |
+| **Excluir** fisicamente     | ❌                 | ✅                         |
 
 ---
 
 ## Justificativa: Cancel ≠ Delete
 
-| Critério           | Cancelar (`canceled`) | Excluir (`deletePendency`) |
-|--------------------|-----------------------|---------------------------|
-| Rastro de auditoria | ✅ preservado         | ❌ destruído              |
-| `canceledAt/By`     | ✅ gravado            | —                         |
+| Critério            | Cancelar (`canceled`) | Excluir (`deletePendency`) |
+| ------------------- | --------------------- | -------------------------- |
+| Rastro de auditoria | ✅ preservado         | ❌ destruído               |
+| `canceledAt/By`     | ✅ gravado            | —                          |
 | Histórico visível   | ✅ colapsado na UI    | ❌ invisível               |
 | Reversível          | ❌ (imutável v1)      | ❌                         |
 | Quem pode usar      | Todo editor           | Somente admin              |
@@ -64,7 +64,7 @@ async deletePendency(unitId, bedId, pendencyId, actor): Promise<void>  // → re
 
 ## Fluxo de estados
 
-```
+```text
                   ┌────────────┐
     [criar]  ───▶ │    OPEN    │
                   └─────┬──────┘
@@ -90,13 +90,13 @@ async deletePendency(unitId, bedId, pendencyId, actor): Promise<void>  // → re
 
 Todo evento de transição de status grava:
 
-| Campo        | Quando                     | Valor                          |
-|--------------|---------------------------|-------------------------------|
-| `createdAt`  | na criação                | ISO 8601 / FieldValue.serverTimestamp |
-| `createdBy`  | na criação                | `{ id, name }` do actor       |
-| `updatedAt`  | em qualquer transição     | ISO 8601                      |
-| `updatedBy`  | em qualquer transição     | `{ id, name }` do actor       |
-| `doneAt`     | ao marcar done            | ISO 8601                      |
-| `doneBy`     | ao marcar done            | `{ id, name }` do actor       |
-| `canceledAt` | ao cancelar               | ISO 8601                      |
-| `canceledBy` | ao cancelar               | `{ id, name }` do actor       |
+| Campo        | Quando                | Valor                                 |
+| ------------ | --------------------- | ------------------------------------- |
+| `createdAt`  | na criação            | ISO 8601 / FieldValue.serverTimestamp |
+| `createdBy`  | na criação            | `{ id, name }` do actor               |
+| `updatedAt`  | em qualquer transição | ISO 8601                              |
+| `updatedBy`  | em qualquer transição | `{ id, name }` do actor               |
+| `doneAt`     | ao marcar done        | ISO 8601                              |
+| `doneBy`     | ao marcar done        | `{ id, name }` do actor               |
+| `canceledAt` | ao cancelar           | ISO 8601                              |
+| `canceledBy` | ao cancelar           | `{ id, name }` do actor               |

@@ -465,7 +465,7 @@ async function seed() {
                 const existing = await auth.getUserByEmail(user.email);
                 await auth.deleteUser(existing.uid);
                 console.log(`  🗑️  Deleted existing user: ${user.email}`);
-            } catch (e: unknown) {
+            } catch {
                 // If user doesn't exist, proceed
             }
 

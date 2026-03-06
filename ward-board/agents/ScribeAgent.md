@@ -164,7 +164,7 @@ Se um documento existente não tiver esse cabeçalho, o ScribeAgent deve adicion
 ### Última sessão registrada
 
 | Campo | Valor |
-|---|---|
+| --- | --- |
 | Data | 2026-03-01 |
 | Etapa mais recente | 1.9 — Seed Determinístico Lean |
 | Próxima etapa natural | Cobertura E2E usando `seed:lean` (Testes Kamishibai, Pendências, Escalonamentos) |
@@ -173,7 +173,7 @@ Se um documento existente não tiver esse cabeçalho, o ScribeAgent deve adicion
 ### Dívidas Técnicas Rastreadas
 
 | # | Item | Impacto | Responsável |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | D-01 | RBAC server-side para `deletePendency` (CF + custom claim) | Médio | SecAgent + BackendAgent |
 | D-02 | E2E Playwright usando `seed:lean` (pendências, kamishibai, escalações) | Alto | TestingAgent |
 | D-03 | `npm run seed:lean` no CI antes de `npm run test:e2e` | Alto | OpsAgent + TestingAgent |
@@ -184,7 +184,7 @@ Se um documento existente não tiver esse cabeçalho, o ScribeAgent deve adicion
 ## Coordenação com Outros Agentes
 
 | Agente | O que o ScribeAgent recebe dele |
-|---|---|
+| --- | --- |
 | Maestro | Etapas concluídas, decisões globais, estado do sistema |
 | PMAgent | Backlog atualizado, marcos, riscos |
 | BackendAgent / FrontendAgent | Arquivos alterados, contratos de API, mudanças de schema |

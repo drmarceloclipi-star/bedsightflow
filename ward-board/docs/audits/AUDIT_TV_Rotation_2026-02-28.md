@@ -7,7 +7,7 @@
 ## 1. Inventário de telas e rotas
 
 | Rota | Componente | Dados consumidos | Quem escreve os dados |
-|------|-----------|------------------|-----------------------|
+| ------ | ----------- | ------------------ | ----------------------- |
 | `/tv?unit={unitId}` | `TvDashboard` → `TvRotationContainer` | `beds`, `settings/board`, `units`, `settings/ops` | Editor via `BedsRepository.updateBed()` |
 | `/tv` → slide Kanban | `KanbanScreen` | `beds[]` (paginados) | Editor |
 | `/tv` → slide Kamishibai | `KamishibaiScreen` | `beds[]` (paginados) | Editor |
@@ -21,7 +21,7 @@
 
 **Evidência:** [`src/features/tv/components/TvRotationContainer.tsx`](../../../src/features/tv/components/TvRotationContainer.tsx)
 
-```
+```text
 TvDashboard
   ↓ 4 subscriptions onSnapshot (realtime)
   │  ├── BedsRepository.listenToBeds()       → units/{unitId}/beds
@@ -67,7 +67,7 @@ const getDischargeColorClass = (estimate: string) => {
 ```
 
 | Valor `expectedDischarge` | Label exibido | Classe CSS | Semântica Lean |
-|---------------------------|---------------|-----------|----------------|
+| --------------------------- | --------------- | ----------- | ---------------- |
 | `'24h'` | `< 24h` | `state-success-bg` | Verde — alta iminente |
 | `'2-3_days'` | `2-3 dias` | `state-warning-bg` | Amarelo — próxima |
 | `'>3_days'` | `> 3 dias` | `state-danger-bg` | Vermelho — distante |
@@ -153,7 +153,7 @@ Admin pode configurar via `updateBoardSettings` Cloud Function:
 ## 10. Gaps identificados
 
 | # | Gap | Impacto Lean |
-|---|-----|--------------|
+| --- | ----- | -------------- |
 | G1 | Kamishibai não tem card de "leito sem paciente" visualmente separado — aparece na tabela com dots cinzas | Lean: leitos vagos não deveriam aparecer no quadro kamishibai (sem cor = ausência, não N/A) |
 | G2 | Não existe modo "Kamishibai desabilitado" granular — apenas `enabled: false` na screen oculta a tela inteira | Sem como mostrar Kanban sem Kamishibai seletivamente por leito |
 | G3 | Sem indicação de "qual turno" está sendo exibido na TV | TV não diferencia dados de turno AM vs PM |

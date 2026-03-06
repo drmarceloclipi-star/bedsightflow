@@ -22,7 +22,7 @@ The TestingAgent ensures that all features are robust, bug-free, and meet the pr
 ### Checklist P1–P5 Verificado (Pendências v1.1)
 
 | # | Critério | Como verificar |
-|---|---|---|
+| --- | --- | --- |
 | P1 | Realtime (onSnapshot) | Abrir 2 abas do editor do mesmo leito → adicionar pendência em uma → ver atualização na outra |
 | P2 | Persiste entre turnos | Adicionar pendência → recarregar página → pendência deve aparecer |
 | P3 | Overdue correto | Seed `301.2` → campo `dueAt = ontem` → deve exibir `⚠ Vencida` |
@@ -32,7 +32,7 @@ The TestingAgent ensures that all features are robust, bug-free, and meet the pr
 ### Testes E2E Existentes (Playwright)
 
 | Arquivo | Cobertura |
-|---|---|
+| --- | --- |
 | `tests/kanban-mode.spec.ts` | Kanban Mode toggle, realtime sync |
 | `tests/kanban-sync.spec.ts` | Sincronização Kanban entre views |
 | `tests/tv-settings.spec.ts` | TV Settings persistência |

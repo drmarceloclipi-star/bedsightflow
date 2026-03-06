@@ -35,7 +35,7 @@ const [showCanceledPendencies, setShowCanceledPendencies] = useState(false);
 
 **Estrutura da seção:**
 
-```
+```text
 ┌─ Pendências abertas (open)
 │   ├─ [⚠ Vencida]?  título  [✓ done]  [✕ cancel]  [🗑️ admin-only]
 │   └─ data-status="open|overdue", aria-label em cada botão
@@ -61,7 +61,7 @@ const [showCanceledPendencies, setShowCanceledPendencies] = useState(false);
 Estados derivados para renderização (em ordem de precedência):
 
 | Estado | CSS/dot | `data-state` |
-|---|---|---|
+| --- | --- | --- |
 | `NOT_APPLICABLE` | sem dot | `"na"` |
 | `INACTIVE` (leito vazio) | sem dot | `"inactive"` |
 | `UNREVIEWED_THIS_SHIFT` | sem cor | `"unreviewed"` |

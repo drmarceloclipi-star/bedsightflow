@@ -1,4 +1,5 @@
 # Auditoria Lean-Operacional — BedSight Flow · Fase 2
+
 **Data:** 2026-03-06
 **Branch base:** `main` (após merge dos patches C1–C3, M1–M5)
 **Metodologia:** Genba digital + VSM + discovery técnico
@@ -30,7 +31,7 @@ Após os patches C1–C3 (riscos críticos) e M1–M5 (riscos moderados), o BedS
 Entretanto, **4 gaps estruturais** ainda impedem a rotina operacional autônoma:
 
 | Prioridade | Gap | Impacto |
-|-----------|-----|---------|
+| ----------- | ----- | --------- |
 | 🔴 P0 | `computeShiftKey` duplicado sem verificação de convergência | Divergência silenciosa quebraria Kamishibai e Huddle |
 | 🔴 P0 | Mission Control sem cache — snapshot on-demand de 60 s | Gestores recebem dados defasados durante o turno |
 | 🟠 P1 | `topBlockerNow` calculado mas invisível na TV | Operador não vê o bloqueador mais frequente em tempo real |
@@ -39,6 +40,7 @@ Entretanto, **4 gaps estruturais** ainda impedem a rotina operacional autônoma:
 Além desses, foram identificadas **6 lacunas de produto** e **8 lacunas técnicas** com severidade média.
 
 **O sistema SUSTENTA:**
+
 - Visualização em tempo real com escalações automáticas
 - Entrada de dados auditada (leito, bloqueador, especialidades, alta prevista)
 - Gestão de pendências com SLA e overdue
@@ -46,6 +48,7 @@ Além desses, foram identificadas **6 lacunas de produto** e **8 lacunas técnic
 - RBAC com custom claims e regras por coleção
 
 **O sistema AINDA DEPENDE de esforço humano para:**
+
 - Atualizar manualmente Mission Control durante o turno
 - Registrar status Kamishibai por equipe (sem UI dedicada)
 - Encerrar formalmente cada huddle (ação opcional, não forçada)
@@ -59,7 +62,7 @@ Além desses, foram identificadas **6 lacunas de produto** e **8 lacunas técnic
 ### 2.1 Tecnologias
 
 | Componente | Tecnologia | Versão |
-|-----------|-----------|--------|
+| ----------- | ----------- | -------- |
 | Frontend (SPA) | React + TypeScript | 19.x |
 | Build | Vite | 7.3.1 |
 | Database | Firebase Firestore | ^12.9 |
@@ -71,7 +74,7 @@ Além desses, foram identificadas **6 lacunas de produto** e **8 lacunas técnic
 
 ### 2.2 Modelo de Dados (Firestore)
 
-```
+```text
 units/{unitId}/
 ├── beds/{bedId}           # Estado real-time de cada leito
 ├── users/{uid}            # Papel do usuário na unidade
@@ -89,6 +92,7 @@ users/{uid}/authz/authz    # RBAC document (units:{unitId}.role)
 ### 2.3 Padrão Arquitetural
 
 **Domain-Driven Design + Repository Pattern:**
+
 - `src/domain/` — lógica pura, sem I/O, 100% testável
 - `src/repositories/` — interface abstrata para Firestore (Client SDK)
 - `functions/src/callables/` — operações admin-only com auditoria
@@ -100,7 +104,7 @@ users/{uid}/authz/authz    # RBAC document (units:{unitId}.role)
 ### 2.4 Rotas e Superfícies
 
 | Superfície | Usuário-alvo | Acesso |
-|-----------|-------------|--------|
+| ----------- | ------------- | -------- |
 | TV Dashboard | Equipe da unidade (readonly) | Público (sem auth) |
 | Editor Mobile | Enfermeiro / Médico (editor+) | Auth + RBAC unit member |
 | Admin / Mission Control | Gestor da unidade (admin) | Auth + RBAC unit admin |
@@ -113,7 +117,8 @@ users/{uid}/authz/authz    # RBAC document (units:{unitId}.role)
 ### 3.1 TV Dashboard (`src/features/tv/pages/TvDashboard.tsx`, 324 linhas)
 
 **Fluxo de dados:**
-```
+
+```text
 BedsRepository.listenToBeds()          → state.beds
 BoardSettingsRepository.listenTo()     → state.settings (rotação)
 UnitSettingsRepository.subscribe()     → state.opsSettings
@@ -126,7 +131,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 **6 listeners simultâneos abertos.** Custo Firestore aceitável em escala piloto (≤36 leitos), mas deve ser monitorado ao crescer.
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | Thresholds de escalonamento dinâmicos | TvDashboard.tsx:114 | — | ✅ OK |
 | `computeEscalations()` reutilizado (shared SSoT) | TvDashboard.tsx:145 | — | ✅ OK |
 | Huddle Pendente renderizado corretamente | TvDashboard.tsx:257-281 | — | ✅ OK |
@@ -134,6 +139,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 | Refresh de relógio a 30 s | TvDashboard.tsx:42 | — | ✅ OK |
 
 **Rotação de painéis (`TvRotationContainer.tsx`):**
+
 - Configurável via `settings.screens` (BoardSettings)
 - `durationSeconds` por tela, `enabled` por tela
 - Override por query param `?screen=kanban`
@@ -144,7 +150,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 **Campos editáveis:**
 
 | Campo | Validação | Persistência | Auditoria |
-|-------|-----------|-------------|----------|
+| ------- | ----------- | ------------- | ---------- |
 | `patientAlias` | obrigatório se leito ativo | updateDoc | ✅ |
 | `expectedDischarge` | tipo restrito | updateDoc | ✅ |
 | `mainBlocker` | texto livre | updateDoc | ✅ |
@@ -156,7 +162,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 **Pendências:** form presente (title, domain, dueAt, note). Toggles de filtro (done, canceled). ✅
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | `dueAt` exposto e editável | BedDetails.tsx:31 | — | ✅ OK |
 | Badge overdue renderizado na TV | KamishibaiScreen.tsx:34 | — | ✅ OK |
 | **Sem editor Kamishibai na UI** | — | 🟠 Alta | ❌ Gap |
@@ -172,7 +178,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 **KPIs calculados:**
 
 | KPI | Fonte | Renderizado em |
-|-----|-------|----------------|
+| ----- | ------- | ---------------- |
 | Bloqueados (count + %) | `mainBlocker !== ''` | MissionControlTab.tsx ✅ |
 | Aging máximo de bloqueador | `mainBlockerBlockedAt` ou fallback `updatedAt` | MissionControlTab.tsx ✅ |
 | Altas 24h | `expectedDischarge === '24h'` | MissionControlTab.tsx ✅ |
@@ -183,7 +189,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 | **`topBlockerNow`** | aggregação em `buildSnapshot()` | TopBlockersTable.tsx apenas |
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | `buildSnapshot` função pura + testada | getAdminMissionControlSnapshot.ts:82 | — | ✅ OK |
 | Thresholds mergeados com defaults | getAdminMissionControlSnapshot.ts:90-105 | — | ✅ OK |
 | Fallback `updatedAt` gera warning na UI | MissionControlTab.tsx:93-116 | — | ✅ OK |
@@ -195,7 +201,7 @@ setInterval(30s)                       → setNow() → recompute escalações
 
 **Fluxo de estados (derivados, nunca persistidos):**
 
-```
+```text
 bed.kamishibai[domain].status           → stored ('ok' | 'blocked' | 'na')
 bed.kamishibai[domain].reviewedShiftKey → stored (string)
 applicableDomains[]                     → stored (opcional)
@@ -208,7 +214,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 **5 estados visuais corretos.** `applicableDomains` respeita Variante A (domínios configuráveis por leito). ✅
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | **`computeShiftKey` duplicado — client vs CF** | src/domain/shiftKey.ts vs functions/src/shared/shiftKey.ts | 🔴 Crítica | ❌ Gap |
 | `reviewedShiftKey` persistido corretamente | types.ts:141 | — | ✅ OK |
 | V0 compat `'na'` preservado (read-only) | types.ts:129 | — | ✅ OK |
@@ -221,12 +227,13 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 **Schema (`types.ts:182-225`):** completo — id, title, domain, note, dueAt, status, createdBy, doneBy, canceledBy. ✅
 
 **Regras de negócio:**
+
 - Overdue = `status === 'open' && dueAt < now` (`pendencies.ts:64`)
 - Delete físico: exclusivo de admin via Cloud Function `deletePendency` ✅
 - arrayUnion para add, runTransaction para mark-done e cancel ✅
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | Badge overdue "2 ⚠1" renderizado | KamishibaiScreen.tsx:34 | — | ✅ OK |
 | Cancelamento preserva evidência | pendencies.ts + deletePendency.ts | — | ✅ OK |
 | **Sem filtro por `domain` na UI** | BedDetails.tsx | 🟡 Média | ❌ Gap |
@@ -239,7 +246,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 **Dados:** mesma fonte que grade de leitos (Firestore listener). Sem filtragem especial.
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | **`kanbanMode` flag renderizado mas sem efeito** | TvDashboard.tsx:242 | 🟡 Média | ❌ Gap |
 | Badge overdue nas linhas kanban | KanbanScreen.tsx:37 | — | ✅ OK |
 | Especialidades com abreviações | KanbanScreen.tsx | — | ✅ OK |
@@ -247,6 +254,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 ### 3.7 Huddle / LSW (`src/features/admin/components/ops/HuddleConsole.tsx`, ~250 linhas)
 
 **Funcionalidades presentes:**
+
 - Iniciar huddle (`startedAt`)
 - Encerrar huddle (`endedAt`) — obrigatório para "Huddle Pendente" desaparecer da TV
 - Checklist de 8 itens padrão HRHDS
@@ -256,7 +264,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 **Segurança:** somente global admin pode setar `completionState === 'COMPLETED'` (firestore.rules:84-86). ✅
 
 | Achado | Arquivo:Linha | Severidade | Status |
-|--------|-------------|-----------|--------|
+| -------- | ------------- | ----------- | -------- |
 | `lswGraceMinutes` presente em `types.ts` | types.ts:405 | — | ✅ OK |
 | `computeHuddleCadence()` implementado | lswCadence.ts | — | ✅ OK |
 | **Encerramento opcional — sem validação de transição** | HuddleConsole.tsx | 🟡 Média | ❌ Gap |
@@ -268,7 +276,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 **8 funções de analytics — todas consultam Firestore, nenhuma usa BigQuery real:**
 
 | Função | Propósito | Naming |
-|--------|-----------|--------|
+| -------- | ----------- | -------- |
 | `getAdminMissionControlSnapshot` | Snapshot on-demand | ✅ claro |
 | `getAdminMissionControlPeriod` | Histórico de período | ✅ claro |
 | `getAdminOverviewBQ` | Ocupação e bloqueadores | ⚠️ "BQ" enganoso |
@@ -286,7 +294,7 @@ resolveKamishibaiVisualState()          → INACTIVE | NOT_APPLICABLE |
 
 ### 4.1 Fluxo de Turno Ideal (Lean HRHDS)
 
-```
+```text
 Início de turno
     │
     ▼
@@ -316,7 +324,7 @@ Fim de turno
 
 ### 4.2 Fluxo Atual Real (Observado no Código)
 
-```
+```text
 Início de turno
     │
     ▼
@@ -342,7 +350,7 @@ Início de turno
 ### 4.3 Mudas (Desperdícios) Identificados
 
 | Muda (desperdício Lean) | Manifestação no Sistema |
-|------------------------|------------------------|
+| ------------------------ | ------------------------ |
 | **Espera** | Mission Control atualiza a cada 60 s — gestor espera |
 | **Processamento desnecessário** | Equipes registram Kamishibai fora do sistema (papel/WhatsApp) |
 | **Informação oculta** | `topBlockerNow` calculado mas não exibido onde é mais útil (TV) |
@@ -380,7 +388,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### 6.1 Lacunas de Experiência (UX/UI)
 
 | ID | Lacuna | Impacto | Esforço |
-|----|--------|---------|---------|
+| ---- | -------- | --------- | --------- |
 | LP-01 | **Editor Kamishibai ausente** — equipes não têm como registrar ok/blocked/N/A | Alto | 2-3 dias |
 | LP-02 | **`topBlockerNow` fora da TV** — gestor não vê bloqueador dominante sem entrar no admin | Alto | 1 dia |
 | LP-03 | **`kanbanMode` sem semântica** — flag configurável mas sem efeito operacional real | Médio | 1 dia |
@@ -391,7 +399,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### 6.2 Lacunas de Processo (Operacional)
 
 | ID | Lacuna | Impacto |
-|----|--------|---------|
+| ---- | -------- | --------- |
 | LO-01 | **Sem notificações push de escalações** — usuário descobre escalação apenas entrando no sistema | Alto |
 | LO-02 | **Sem relatório de aderência de huddle** — `computeHuddleCadence()` existe, sem UI de histórico | Médio |
 | LO-03 | **Sem UI de configuração de thresholds** — overrides de `mission_control` só via console Firestore | Baixo |
@@ -401,7 +409,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ## 7. Lacunas Técnicas
 
 | ID | Lacuna | Severidade | Arquivo(s) |
-|----|--------|-----------|------------|
+| ---- | -------- | ----------- | ------------ |
 | LT-01 | **`computeShiftKey` duplicado** — client vs CF, sync manual, sem teste de divergência | 🔴 Crítica | `src/domain/shiftKey.ts`, `functions/src/shared/shiftKey.ts` |
 | LT-02 | **Sem cache de Mission Control snapshot** — 60 s de latência por cold-start | 🔴 Crítica | `MissionControlScreen.tsx:26-29`, `getAdminMissionControlSnapshot.ts` |
 | LT-03 | **Nomenclatura "*BQ" enganosa** — todas consultam Firestore, nenhuma usa BigQuery | 🟡 Média | `functions/src/callables/analytics/*BQ.ts` (6 arquivos) |
@@ -418,7 +426,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### 8.1 Matriz de Maturidade por Dimensão
 
 | Dimensão | Maturidade | Nota |
-|----------|-----------|------|
+| ---------- | ----------- | ------ |
 | **Visualização em tempo real** | ✅ Alta | TV com rotação, dados live, semáforos, escalações |
 | **Entrada de dados (leito)** | ✅ Alta | Editor mobile funcional, auditado, RBAC, actor capture |
 | **Pendências operacionais** | ✅ Alta | Schema v1 completo, dueAt, overdue badge, audit trail |
@@ -436,6 +444,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 **Resposta:** Parcialmente — com qualificação importante.
 
 **O sistema SUSTENTA:**
+
 - Visibilidade do estado do fluxo em tempo real (TV Dashboard)
 - Registro estruturado de bloqueadores, alta prevista e especialidades
 - Trilha de auditoria completa (quem fez o quê e quando, com correlationId)
@@ -444,6 +453,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 - Protocolo de huddle com checklist e top actions
 
 **O sistema AINDA DEPENDE de esforço humano não estruturado para:**
+
 - Registrar status Kamishibai por equipe (sem UI dedicada → fallback para papel)
 - Encerrar formalmente cada huddle (sem validação de transição)
 - Verificar Mission Control periodicamente (sem push de alertas)
@@ -459,7 +469,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### P0 — Crítico (resolve gaps de governança autônoma)
 
 | ID | Ação | Arquivo(s)-alvo | Esforço |
-|----|------|----------------|---------|
+| ---- | ------ | ---------------- | --------- |
 | P0-01 | **Consolidar `computeShiftKey`**: extrair para pacote compartilhado ou copiar como `shiftKey.shared.ts` + importar nas duas pontas + adicionar teste de convergência | `src/domain/shiftKey.ts`, `functions/src/shared/shiftKey.ts` | 0.5 dia |
 | P0-02 | **Cache de Mission Control**: implementar documento `units/{unitId}/snapshots/latest` escrito por trigger ou scheduled function; leitura direta via listener (sem cold-start) | `getAdminMissionControlSnapshot.ts`, novo trigger | 1-2 dias |
 | P0-03 | **`topBlockerNow` na TV**: adicionar card ou banner em `TvDashboard.tsx` lendo do snapshot cacheado | `TvDashboard.tsx`, `KanbanScreen.tsx` | 0.5 dia |
@@ -467,7 +477,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### P1 — Alta Prioridade (impacta qualidade da rotina)
 
 | ID | Ação | Arquivo(s)-alvo | Esforço |
-|----|------|----------------|---------|
+| ---- | ------ | ---------------- | --------- |
 | P1-01 | **Editor Kamishibai**: modal em `BedDetails` com toggle ok/blocked/N/A por domínio + campo razão de bloqueio | `BedDetails.tsx`, novo `KamishibaiDomainEditor.tsx` | 2-3 dias |
 | P1-02 | **`mainBlockerBlockedAt` obrigatório**: tornar campo obrigatório ao salvar `mainBlocker` não vazio | `BedDetails.tsx`, `BedsRepository.ts` | 0.5 dia |
 | P1-03 | **Semântica de `kanbanMode`**: implementar filtragem/ordenação diferente entre `PASSIVE` e `ACTIVE_LITE` | `KanbanScreen.tsx`, `TvDashboard.tsx` | 1 dia |
@@ -477,7 +487,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ### P2 — Médio Prazo (eleva governança)
 
 | ID | Ação | Arquivo(s)-alvo |
-|----|------|----------------|
+| ---- | ------ | ---------------- |
 | P2-01 | **Renomear CFs "*BQ"** → sem sufixo (ex: `getAdminKamishibaiStats`) — dívida de nomenclatura | `functions/src/callables/analytics/` |
 | P2-02 | **Testes unitários para CFs críticas** — `applyCanonicalBeds`, `softResetUnit`, `setUnitUserRole` | `functions/src/__tests__/` |
 | P2-03 | **Relatório de aderência de huddle** — dashboard com histórico de `computeHuddleCadence` por turno | Nova tela admin |
@@ -490,7 +500,7 @@ O campo `topBlockerNow` (com nome, count e % de leitos) é calculado pelo Missio
 ## 10. Apêndice: Inventário de Arquivos-Chave
 
 | Arquivo | Linhas | Responsabilidade |
-|---------|--------|-----------------|
+| --------- | -------- | ----------------- |
 | `src/domain/types.ts` | ~410 | Schema canônico — fonte de verdade de tipos |
 | `src/domain/shiftKey.ts` | ~165 | `computeShiftKey` — frontend |
 | `functions/src/shared/shiftKey.ts` | ~50 | `computeShiftKey` — Cloud Functions (duplicado) |

@@ -7,7 +7,7 @@
 ## 1. Critérios de Aceite
 
 | # | Critério | Verificação |
-|---|----------|-------------|
+| --- | ---------- | ------------- |
 | A1 | Leito vazio → sem dots na TV (nenhuma cor, nenhum placeholder) | `resolveKamishibaiVisualState` regra 1 → INACTIVE → `kamishibai-empty` |
 | A2 | `kamishibaiEnabled=false` → sem dots (todos INACTIVE) | regra 2 |
 | A3 | Verde **expira na virada de turno** (reviewedShiftKey ≠ currentShiftKey → sem cor) | regra 5 |
@@ -49,7 +49,7 @@
 ## 3. Mapeamento Visual → Classe CSS
 
 | Estado | Classe CSS | Visual |
-|--------|-----------|--------|
+| -------- | ----------- | -------- |
 | `OK` | `.kamishibai-dot--ok` | 🟢 verde sólido |
 | `BLOCKED` | `.kamishibai-dot--blocked` | 🔴 vermelho sólido |
 | `NOT_APPLICABLE` | `.kamishibai-placeholder--na` | ⭕ borda tracejada, opacity 0.28 |
@@ -76,7 +76,7 @@ npx tsc --noEmit
 ## 5. Arquivos alterados
 
 | Arquivo | Tipo | Resumo da mudança |
-|---------|------|-------------------|
+| --------- | ------ | ------------------- |
 | `src/domain/kamishibaiVisualState.ts` | NOVO | Resolvedor canônico (6 regras + compat v0) |
 | `src/index.css` | MODIFY | +4 classes v1 (dot--ok, dot--blocked, placeholder--na, empty) |
 | `src/features/tv/components/KamishibaiScreen.tsx` | MODIFY | Usa resolveKamishibaiVisualState; data-state/aria-label; legenda v1 |

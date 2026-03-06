@@ -8,7 +8,7 @@
 ## Checklist MC1–MC6
 
 | # | Critério | Status | Evidência |
-|---|----------|--------|-----------|
+| --- | ---------- | -------- | ----------- |
 | MC1 | Aging KPI1 usa `mainBlockerBlockedAt` quando presente; fallback gera `warnings[]` quando ausente | ✅ | Cloud Function linhas 142–162 |
 | MC2 | Freshness não depende mais de `bed.updatedAt` | ✅ | CF usa `max(kamishibai.{domain}.reviewedAt)` por bed |
 | MC3 | "Não revisados neste turno" aparece e conta correto | ✅ | Card `unreviewed_shift` em MissionControlTab (só se kamishibaiEnabled=true) |
@@ -153,7 +153,7 @@ npm run seed  # reset completo
 ## Arquivos alterados
 
 | Arquivo | Tipo | Resumo |
-|---------|------|--------|
+| --------- | ------ | -------- |
 | `src/domain/missionControl.ts` | NOVO | Interface + defaults + status helpers |
 | `src/domain/analytics.ts` | MODIFY | MissionControlSnapshot estendida com campos v1 opcionais |
 | `functions/src/callables/analytics/getAdminMissionControlSnapshot.ts` | MODIFY | Aging real (mainBlockerBlockedAt), freshness por reviewedAt, thresholds Firestore, unreviewedBedsCount |

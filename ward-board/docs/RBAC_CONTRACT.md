@@ -8,7 +8,7 @@
 ## Conceitos
 
 | Conceito | O que faz |
-|---|---|
+| --- | --- |
 | **Gate de entrada** | `authorized_users` — lista que controla quem **pode logar** no sistema. |
 | **Papéis (roles)** | Claims JWT + documentos `authz` — controlam **o que o usuário pode fazer** depois de logado. |
 
@@ -19,10 +19,12 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 ## Papéis e Escopo
 
 ### Platform / Super-admin *(futuro — P1+)*
+
 - Multi-instituição.
 - Não implementado na UI; gerenciado manualmente.
 
 ### Platform Admin — break-glass
+
 - **Claim JWT:** `admin: true` (setado via Cloud Function `setGlobalAdminClaim`).
 - **Acesso:** tudo. Sem restrição de unidade.
 - **UI:** `/admin`, `/mobile-admin`.
@@ -30,18 +32,22 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 - Não há lista de e-mails com esse efeito no runtime (ver seção Legado abaixo).
 
 ### Institution Admin *(equivalente ao "admin" P0)*
+
 - Mesmo que Platform Admin nesta fase (app é single-tenant).
 - Governado pelo mesmo custom claim `admin: true`.
 
 ### Unit Admin *(P1 — não implementado)*
+
 - Role `admin` no documento `/users/{uid}/authz/authz.units.{unitId}`.
 - UI de gerenciamento de unidade (`/unit-admin`) ainda não existe.
 
 ### Unit Editor
+
 - Role `editor` no documento `/users/{uid}/authz/authz.units.{unitId}`.
 - **UI:** `/editor`, `/tv`.
 
 ### Unit Viewer
+
 - Role `viewer` no documento `/users/{uid}/authz/authz.units.{unitId}`.
 - **UI:** `/tv` (somente leitura).
 
@@ -50,7 +56,7 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 ## Fonte de Verdade
 
 | O que verificar | Onde fica |
-|---|---|
+| --- | --- |
 | É global admin? | `token.claims.admin === true` |
 | Papéis por unidade | `/users/{uid}/authz/authz` (campo `units`) |
 | Pode logar? | `authorized_users` (coleção Firestore) |
@@ -62,7 +68,7 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 ## Regras de Rotas (Frontend)
 
 | Rota | Requisito |
-|---|---|
+| --- | --- |
 | `/login` | Público |
 | `/tv` | Autenticado (viewer/editor/admin) |
 | `/editor` | Autenticado (editor+) |
@@ -76,7 +82,7 @@ Pós-login bem-sucedido, o usuário é redirecionado para `/tv` (ponto de entrad
 ## Política de Huddles — Completion (P0)
 
 | Ação | Quem pode |
-|---|---|
+| --- | --- |
 | Criar huddle | Editor+ (completionState ≠ COMPLETED) |
 | Atualizar huddle (DRAFT, IN_PROGRESS…) | Editor+ |
 | **Setar COMPLETED** | **Somente global admin** (`token.claims.admin === true`) |
@@ -96,11 +102,13 @@ Pós-login bem-sucedido, o usuário é redirecionado para `/tv` (ponto de entrad
 ## Legado e Migração
 
 ### ADMIN_EMAILS (`src/config/admins.ts`)
+
 - Lista existente **apenas para seed/bootstrap** inicial de custom claims.
 - **Não usada** para roteamento, permissão ou autorização em runtime.
 - Remover no P1 após confirmar que todos os admins têm custom claim setada.
 
 ### `/units/{unitId}/users/{uid}` (legacy data — não é enforcement)
+
 - **Firestore Rules já não usa este caminho** para verificar papéis de unidade (migrado no P0.1).
 - Cloud Functions (`updateBoardSettings`) também não dependem mais deste caminho.
 - Os dados podem ainda existir no Firestore como legado; a coleção tem regras de leitura/escrita restritas ao global admin para eventuais migrações.

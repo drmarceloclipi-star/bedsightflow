@@ -21,7 +21,7 @@ Distingue explicitamente: **leito ativo** vs **leito vazio**, **Sem cor** vs **N
 > **5 estados lógicos.** Somente 2 são armazenados diretamente (`ok`, `blocked`). Os outros 3 são **derivados** em runtime a partir de condições do documento.
 
 | Estado lógico | Nome canônico | Persiste entre turnos? | Dot na UI | Condições necessárias (em ordem de precedência) |
-|--------------|---------------|----------------------|----------|------------------------------------------------|
+| -------------- | --------------- | ---------------------- | ---------- | ------------------------------------------------ |
 | **INACTIVE** | Inativo | N/A | Sem dot — posição vazia/neutra | `patientAlias.trim() === ''` (leito vazio) **OU** `kamishibaiEnabled === false` |
 | **NOT_APPLICABLE** | Não aplicável | Não se aplica | Sem dot — placeholder cinza leve (distinto de branco/vazio) | Leito ativo + domínio marcado como N/A (via `applicableDomains` — OD-2) |
 | **UNREVIEWED\_THIS\_SHIFT** | Sem cor (não revisado) | Não — reseta a cada turno | Sem dot — posição em branco | Leito ativo + kamishibai habilitado + domínio aplicável + `reviewedShiftKey ≠ currentShiftKey` |
@@ -30,7 +30,7 @@ Distingue explicitamente: **leito ativo** vs **leito vazio**, **Sem cor** vs **N
 
 ### 2.1 Estado armazenado vs estado visual
 
-```
+```text
 Armazenado em Firestore:
   kamishibai.{domain}.status          → 'ok' | 'blocked'   (somente estes dois)
   kamishibai.{domain}.reviewedShiftKey → 'YYYY-MM-DD-AM' | 'YYYY-MM-DD-PM'
@@ -48,7 +48,7 @@ Derivado em runtime (nunca armazenado):
 
 Aplicar na ordem abaixo — a **primeira condição verdadeira** vence:
 
-```
+```text
 1. bed.patientAlias.trim() === ''           → INACTIVE  (leito vazio)
 2. kamishibaiEnabled === false              → INACTIVE  (ferramenta desligada)
 3. domain ∉ bed.applicableDomains          → NOT_APPLICABLE
@@ -105,7 +105,7 @@ stateDiagram-v2
 #### `SET_OK(domain)`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (marca domínio como OK) |
 | **Pré-condições** | Leito ativo, kamishibai habilitado, domínio aplicável |
 | **Campos escritos** | `kamishibai.{domain}.status = 'ok'`, `reviewedShiftKey = computeShiftKey(now)`, `reviewedAt = now`, `updatedAt = now`, `updatedBy = actorRef` |
@@ -117,7 +117,7 @@ stateDiagram-v2
 #### `SET_BLOCKED(domain, reason?, note?)`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (declara impedimento) |
 | **Pré-condições** | Leito ativo, kamishibai habilitado, domínio aplicável |
 | **Campos escritos** | `kamishibai.{domain}.status = 'blocked'`, `blockedAt = now` (se não existia), `reason = reason \|\| ''`, `note = note \|\| ''`, `reviewedShiftKey = computeShiftKey(now)`, `updatedAt = now`, `updatedBy = actorRef` |
@@ -129,7 +129,7 @@ stateDiagram-v2
 #### `RESOLVE_BLOCKED(domain)` (equivalente a `SET_OK`)
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (resolve impedimento) |
 | **Pré-condições** | `status === 'blocked'` |
 | **Campos escritos** | `status = 'ok'`, `resolvedAt = now`, `reviewedShiftKey = computeShiftKey(now)`, `updatedAt = now`, `updatedBy = actorRef` |
@@ -141,7 +141,7 @@ stateDiagram-v2
 #### `SHIFT_ROLLOVER(AM→PM / PM→AM)`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Sistema — computed em runtime (comparação de `reviewedShiftKey` com `currentShiftKey`) |
 | **Pré-condições** | Sempre |
 | **Campos escritos** | **Nenhum** — rollover é uma mudança de interpretação visual, não de dados |
@@ -155,7 +155,7 @@ stateDiagram-v2
 #### `BED_BECOMES_EMPTY`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (remove `patientAlias`) ou soft reset |
 | **Pré-condições** | Leito ativo |
 | **Campos escritos** | `patientAlias = ''` (possivelmente reset dos campos de bed) |
@@ -167,7 +167,7 @@ stateDiagram-v2
 #### `BED_BECOMES_ACTIVE`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (preenche `patientAlias`) |
 | **Pré-condições** | Leito vazio |
 | **Campos escritos** | `patientAlias = alias` |
@@ -179,7 +179,7 @@ stateDiagram-v2
 #### `DOMAIN_BECOMES_NOT_APPLICABLE`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (desmarca domínio em `applicableDomains`) — OD-2 |
 | **Campos escritos** | Remove domínio de `applicableDomains[]` |
 | **Estado visual resultante** | **NOT\_APPLICABLE** (sem dot, placeholder neutro) |
@@ -190,7 +190,7 @@ stateDiagram-v2
 #### `DOMAIN_BECOMES_APPLICABLE`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Usuário no Editor (marca domínio em `applicableDomains`) |
 | **Campos escritos** | Adiciona domínio a `applicableDomains[]` |
 | **Estado visual resultante** | **UNREVIEWED\_THIS\_SHIFT** (domínio ainda não foi revisado neste turno) |
@@ -200,7 +200,7 @@ stateDiagram-v2
 #### `KAMISHIBAI_ENABLED_TOGGLE(on/off)`
 
 | Item | Valor |
-|------|-------|
+| ------ | ------- |
 | **Disparado por** | Admin no OpsScreen (liga/desliga `kamishibaiEnabled`) |
 | **Campos escritos** | `settings/ops.kamishibaiEnabled = true \| false` |
 | **Estado visual resultante** | `off` → todos dots **INACTIVE** (TV oculta semáforos); `on` → estados derivados normalmente |
@@ -211,7 +211,7 @@ stateDiagram-v2
 ## 5. Matriz Kanban (Previsão de Alta)
 
 | Valor (`expectedDischarge`) | Label | Cor badge | Classe CSS | Regra de exibição | Compat. legado |
-|----------------------------|-------|-----------|-----------|-------------------|---------------|
+| ---------------------------- | ------- | ----------- | ----------- | ------------------- | --------------- |
 | `'24h'` | `< 24h` | 🟢 Verde | `state-success-bg` | Somente leito ativo | ✅ Mantido |
 | `'2-3_days'` | `2–3 dias` | 🟡 Amarelo | `state-warning-bg` | Somente leito ativo | ✅ Mantido |
 | `'>3_days'` | `> 3 dias` | 🔴 Vermelho | `state-danger-bg` | Somente leito ativo | ✅ Mantido |
@@ -219,7 +219,7 @@ stateDiagram-v2
 | *(leito vazio)* | — | Sem badge | — | Posição vazia no grid, sem badge | N/A |
 
 > **Compatibilidade:** as 4 categorias são mantidas do v0. Nenhuma migração de valor necessária.
-
+>
 > **Distinção canônica:** badges do Kanban (verde/amarelo/vermelho = horizonte de alta) **NÃO têm o mesmo significado** que dots do Kamishibai (verde = OK de equipe; vermelho = bloqueio). São sistemas visuais independentes.
 
 ---
@@ -227,7 +227,7 @@ stateDiagram-v2
 ## 6. Matriz de estados do Huddle (nível de unidade)
 
 | Estado | Condição | Indicador na TV |
-|--------|----------|----------------|
+| -------- | ---------- | ---------------- |
 | **HUDDLE\_DONE** | `lastHuddleShiftKey === computeShiftKey(now)` | Sem indicação especial (normal) |
 | **HUDDLE\_PENDING** | `lastHuddleShiftKey ≠ computeShiftKey(now)` ou campo ausente | Badge "Huddle pendente" (a implementar) |
 

@@ -40,7 +40,7 @@ O BedSight Flow tem uma fundação técnica bem construída: modelo de domínio 
 No entanto, a análise do código revela que o sistema **ainda depende de esforço humano não estruturado** para sustentar a rotina operacional real. Os principais pontos de dependência humana residuais são:
 
 | Ponto de Dependência Humana | Risco |
-|---|---|
+| --- | --- |
 | Huddle sem verificação de conclusão automática na TV | Alto — TV não distingue huddle "iniciado" de "concluído" |
 | Mission Control atualizado apenas por refresh manual | Alto — dados de KPI ficam desatualizados durante plantão |
 | Analytics histórico (Pipeline BigQuery) inoperante | Alto — tomada de decisão gerencial cega para tendências |
@@ -58,7 +58,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 ### 2.1 Tecnologias
 
 | Camada | Tecnologia | Versão |
-|--------|-----------|--------|
+| -------- | ----------- | -------- |
 | Frontend | React + TypeScript | 19.x / ~5.9 |
 | Build | Vite | 7.x |
 | Backend / DB | Firebase Firestore | ^12.9 |
@@ -75,7 +75,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 
 ### 2.2 Modelo de dados (Firestore)
 
-```
+```text
 /units/{unitId}
   /beds/{bedId}             ← Documento principal por leito
   /settings/board           ← Configuração TV (rotação, telas, duração)
@@ -89,6 +89,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 ```
 
 **Modelo `Bed` (campos relevantes para fluxo):**
+
 - `patientAlias` — identificação do paciente (vazio = leito vazio)
 - `expectedDischarge` — `'24h' | '2-3_days' | '>3_days' | 'later'`
 - `mainBlocker` — texto livre do bloqueador principal (Kanban KPI1)
@@ -100,7 +101,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 
 ### 2.3 Arquitetura de fluxo de dados
 
-```
+```text
 [Editor Mobile]
      │  updateBed() → Firestore
      ↓
@@ -118,7 +119,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 ### 2.4 Rotas e superfícies
 
 | Rota | Usuário-alvo | Dispositivo |
-|------|-------------|-------------|
+| ------ | ------------- | ------------- |
 | `/editor` | Enfermeiro/equipe assistencial | Mobile (smartphone) |
 | `/tv` | Toda equipe de unidade | TV/monitor kiosk |
 | `/admin` | Coordenador/gerente | Desktop |
@@ -130,7 +131,7 @@ No entanto, a análise do código revela que o sistema **ainda depende de esfor�
 
 ### 3.1 Fluxo de turno ideal (Lean HRHDS)
 
-```
+```text
 INÍCIO DE TURNO (07:00 / 19:00)
     │
     ├─[1] Passagem de plantão + revisão do turno anterior
@@ -170,7 +171,7 @@ FIM DE TURNO
 ### 3.2 Fluxo atual real (observado no código)
 
 | Passo | O que o sistema oferece | Dependência humana residual |
-|-------|------------------------|----------------------------|
+| ------- | ------------------------ | ---------------------------- |
 | 1. Início de turno | Banner "Huddle Pendente" na TV | Alguém precisa VER a TV |
 | 2. Abrir huddle | Console em /admin/ops | Admin precisa navegar ativamente |
 | 3. Revisar Kanban | TV Kanban (tempo real) + MC (manual) | Refresh manual do MC |
@@ -182,7 +183,7 @@ FIM DE TURNO
 ### 3.3 Muda (desperdícios) identificados
 
 | Tipo Muda | Manifestação | Impacto |
-|-----------|-------------|---------|
+| ----------- | ------------- | --------- |
 | **Espera** | MC exige refresh manual — dados desatualizados | Decisão baseada em snapshot antigo |
 | **Superprodução** | 6 domínios kamishibai por leito mesmo para leitos simples | Esforço de entrada sem valor agregado |
 | **Defeito** | Analytics histórico inoperante (500 errors) | Gestão sem visibilidade histórica |
@@ -200,6 +201,7 @@ FIM DE TURNO
 **Avaliação geral: ✅ Funcional, com gaps de completude**
 
 **O que funciona bem:**
+
 - Rotação automática entre 3 telas (Kanban, Kamishibai, Summary) com durações configuráveis
 - Dados em tempo real via `onSnapshot` com reconexão automática em caso de erro
 - Banner "Huddle Pendente" baseado em `lastHuddleShiftKey` vs `currentShiftKey()`
@@ -209,6 +211,7 @@ FIM DE TURNO
 - Suporte a dark/light mode via ThemeContext
 
 **Gaps identificados:**
+
 - `G-TV-01`: Huddle banner mostra "pendente" mesmo quando huddle foi *iniciado* mas não *encerrado* formalmente. O indicador correto deveria ser "Huddle em andamento" vs "Huddle não iniciado".
 - `G-TV-02`: Screen `summary` exibe métricas estáticas calculadas client-side, sem KPIs de comparação com turno anterior.
 - `G-TV-03`: Kamishibai na TV não exibe nota de bloqueio (`KamishibaiEntry.reason`) — operadores na TV não sabem *por que* está bloqueado.
@@ -220,6 +223,7 @@ FIM DE TURNO
 **Avaliação geral: ⚠️ Funcional mas com UX crítica para adoção**
 
 **O que funciona bem:**
+
 - Edição por leito com campos: alias, bloqueador, previsão de alta, especialidades
 - Kamishibai por domínio com TTL de turno (shiftKey gravado em `reviewedShiftKey`)
 - Pendências v1: criação, conclusão, cancelamento com trilha de auditoria
@@ -228,6 +232,7 @@ FIM DE TURNO
 - Loading skeleton para UX fluida
 
 **Gaps identificados:**
+
 - `G-ED-01`: Filtro `stale` na MobileDashboard usa `bed.updatedAt` (leito inteiro) para calcular staleness, **diferente do Mission Control** que usa `kamishibai[domain].reviewedAt`. Inconsistência que cria falsos-negativos (leito parece revisado, mas kamishibai não foi).
 - `G-ED-02`: Campo `mainBlocker` é texto livre sem sugestões de categorias. Dificulta análise de top blockers e aumenta fragmentação do dado (mesma causa escrita de 5 formas diferentes).
 - `G-ED-03`: `applicableDomains` não tem UI de edição no editor mobile — profissional não consegue marcar "N/A" para domínio não aplicável ao caso.
@@ -240,6 +245,7 @@ FIM DE TURNO
 **Avaliação geral: ⚠️ Bem estruturado, operacionalmente incompleto**
 
 **O que funciona bem:**
+
 - KPIs com semáforos: bloqueados%, kamishibai impedimentos%, freshness (12h/24h/48h), unreviewed no turno, escalações 🔥, altas próximas
 - Thresholds configuráveis por unidade em Firestore (`settings/mission_control`)
 - Drill-down de leitos para cada KPI (lista filtrada)
@@ -247,6 +253,7 @@ FIM DE TURNO
 - Snapshot captura `warnings[]` de qualidade de dados (proxy usado quando `mainBlockerBlockedAt` ausente)
 
 **Gaps identificados:**
+
 - `G-MC-01`: **Mission Control é on-demand** — requer refresh manual. Não há polling automático, websocket ou agendamento. Dados podem estar até horas desatualizados.
 - `G-MC-02`: `topBlockerNow` é calculado na Cloud Function mas **não renderizado** no MissionControlTab. Dado valioso ignorado na UI.
 - `G-MC-03`: Sem histórico temporal do Mission Control — não é possível comparar o estado atual com o turno anterior ou semana anterior.
@@ -259,6 +266,7 @@ FIM DE TURNO
 **Avaliação geral: ✅ Modelo sólido, adoção dependente de disciplina**
 
 **O que funciona bem:**
+
 - Máquina de estados visual rica: `INACTIVE | NOT_APPLICABLE | UNREVIEWED_THIS_SHIFT | OK | BLOCKED`
 - TTL de turno: `reviewedShiftKey` comparado com `currentShiftKey()` — lógica SSoT compartilhada entre TV e Editor
 - `applicableDomains[]` permite marcar domínios como N/A por paciente
@@ -267,6 +275,7 @@ FIM DE TURNO
 - Testes unitários cobrindo estados visuais
 
 **Gaps identificados:**
+
 - `G-KM-01`: Migração v0→v1 incompleta — documentos legados com `status: 'na'` ainda existem em produção. Esses docs não têm `reviewedShiftKey`, sendo tratados como `UNREVIEWED_THIS_SHIFT` (correto por contrato, mas cria "ruído amarelo" na TV para leitos que foram marcados como N/A no sistema anterior).
 - `G-KM-02`: `applicableDomains` não tem fluxo de edição no Editor Mobile. Operador tem que acessar Admin → Beds → editar manualmente.
 - `G-KM-03`: Na TV, dot `BLOCKED` mostra apenas cor vermelha, sem razão. `KamishibaiEntry.reason` existe no schema mas não é exibida.
@@ -278,6 +287,7 @@ FIM DE TURNO
 **Avaliação geral: ✅ Modelo v1 robusto, UI básica**
 
 **O que funciona bem:**
+
 - Schema rico: `status (open/done/canceled)`, `dueAt`, `domain`, `createdBy`, `doneBy`, `canceledBy` — trilha completa
 - `canceled` preserva evidência (não é delete) — RBAC: apenas admin pode deletar fisicamente
 - `computePendencyCounts()` e `computeUnitPendencyCounts()` como SSoT para contagens
@@ -285,6 +295,7 @@ FIM DE TURNO
 - Summary screen exibe pendências abertas e vencidas
 
 **Gaps identificados:**
+
 - `G-PD-01`: UI de pendências no Editor Mobile é básica — sem visualização de histórico de pendências concluídas por default (toggle `showDonePendencies`).
 - `G-PD-02`: Pendências não têm campo `note` editável na criação via Editor Mobile (existe no schema).
 - `G-PD-03`: Sem agregação "pendências por domínio" no Mission Control — impossível saber qual equipe acumula mais pendências abertas.
@@ -296,12 +307,14 @@ FIM DE TURNO
 **Avaliação geral: ⚠️ Visualização boa, semântica de processo ausente**
 
 **O que funciona bem:**
+
 - TV Kanban exibe: leito, alias, especialidades, previsão de alta (color-coded), bloqueador principal, badge pendências
 - Ordenação por número de leito (natural sort)
 - Suporte a múltiplas colunas (`kanbanColumnsPerPage`)
 - `mainBlockerBlockedAt` para aging do bloqueador
 
 **Gaps identificados:**
+
 - `G-KN-01`: `kanbanMode: 'ACTIVE_LITE'` é configurável na UI mas **não tem efeito no comportamento do sistema** — é informativo. A diferença entre PASSIVE e ACTIVE_LITE não está implementada operacionalmente.
 - `G-KN-02`: `topBlockerNow` calculado no snapshot mas não exibido no Kanban TV — oportunidade perdida de destacar o bloqueador predominante.
 - `G-KN-03`: `mainBlocker` é texto livre sem taxonomia — impossível agregar causas sistematicamente sem normalização.
@@ -313,6 +326,7 @@ FIM DE TURNO
 **Avaliação geral: ⚠️ Estrutura sólida, adoção crítica**
 
 **O que funciona bem:**
+
 - `HuddleDoc` schema: `startedAt`, `endedAt`, `ledBy`, `recordedBy`, `checklist[8 itens]`, `topActions[max 3]`
 - Checklist LSW padronizado: 8 passos canônicos (review_previous_shift, review_kanban_24h, review_kamishibai_blocked, review_overdue_pendencies, etc.)
 - `startSummary` + `endSummary` capturam snapshot Mission Control no início e fim do huddle
@@ -321,6 +335,7 @@ FIM DE TURNO
 - `HuddleRepository.listenToHuddle()` usa shiftKey como ID — 1 huddle por turno por design
 
 **Gaps identificados:**
+
 - `G-HL-01`: **Huddleonly completa o ciclo LSW quando formalmente encerrado.** Huddles "iniciados mas não encerrados" deixam `lastHuddleShiftKey` desatualizado — TV continua mostrando "Huddle Pendente". Profissionais que esquecem de clicar "Encerrar" corrompem o indicador de cadência.
 - `G-HL-02`: `HuddleConsole` está somente no Admin OPS (`/admin/unit/{unitId}` → aba Ops). No mobile admin (`/mobile-admin`), `MobileOpsScreen` existe mas precisa de verificação se `HuddleConsole` está integrado.
 - `G-HL-03`: `topActions` têm `ownerName` como string livre — sem binding com usuários do sistema. Impossível notificar responsável automaticamente ou cobrar via sistema.
@@ -333,11 +348,13 @@ FIM DE TURNO
 **Avaliação geral: 🔴 Pipeline histórico inoperante**
 
 **O que funciona bem:**
+
 - Mission Control Snapshot (Firestore, on-demand): funcional
 - `audit_logs` gerados automaticamente pela trigger `auditBedWrites`
 - Analytics histórico arquitetado corretamente: queries sobre `audit_logs`
 
 **Gaps identificados:**
+
 - `G-AN-01` 🔴: **Todas as Cloud Functions "BQ" retornam 500 Internal Server Error** (evidência: AUDIT_Analytics_Freshness_Aging_2026-02-28.md §3). `getAdminFlowMetricsBQ`, `getAdminFreshnessBQ`, `getAdminKamishibaiStatsBQ`, `getAdminTopBlockersBQ`, `getAdminTrendComparisonBQ`, `getAdminMissionControlPeriod` — todas inoperantes.
 - `G-AN-02`: Causa provável do erro 500: **índices compostos ausentes no Firestore** para queries sobre `audit_logs` com múltiplos filtros (action, createdAt, unitId). A `AuditScreen` já exibe mensagem de "FAILED_PRECONDITION" para índices ausentes.
 - `G-AN-03`: Nome enganoso "BQ" (BigQuery) para funções que consultam Firestore `audit_logs`. Dívida de nomenclatura que confunde manutenção.
@@ -350,6 +367,7 @@ FIM DE TURNO
 **Avaliação geral: ✅ Implementação robusta**
 
 **O que funciona bem:**
+
 - RBAC por unidade: `admin | editor | viewer` via documento `/users/{uid}/authz/authz`
 - Global admin por custom claim Firebase (sem fallback por email — correto)
 - Regras Firestore granulares: leitura pública autenticada, escrita restrita por papel
@@ -357,6 +375,7 @@ FIM DE TURNO
 - 58 testes E2E de RBAC passando (incluindo boundary tests)
 
 **Gaps identificados:**
+
 - `G-RB-01`: `UnitRole: 'viewer'` definido no tipo mas sem evidência de tela específica para viewer — viewer provavelmente cai no editor mobile sem poder escrever, sem feedback claro de sua limitação.
 - `G-RB-02`: Sem expiração de sessão ou renovação de token configurada — usuários desligados continuam com acesso até rotação de token manual.
 
@@ -365,11 +384,13 @@ FIM DE TURNO
 **Avaliação geral: ⚪ Presente mas imatura**
 
 **O que existe:**
+
 - `EduCenterHome.tsx`, `MicrolessonList.tsx`, `PlaybookView.tsx`, `AppTutorialView.tsx`
 - `EduContentRepository.ts` — repositório de conteúdo educacional
 - Botão `?` flutuante no Admin (não na navbar principal — intencional conforme CHANGELOG)
 
 **Gaps identificados:**
+
 - `G-ED-10`: EduCenter não tem integração com contexto operacional — não sugere microlesson ao detectar padrão problemático (ex: kamishibai sempre bloqueado para um domínio).
 - `G-ED-11`: Conteúdo de microlessons/playbooks não foi avaliado nesta auditoria (fora do escopo técnico).
 
@@ -380,7 +401,7 @@ FIM DE TURNO
 Ordenados por impacto na rotina operacional diária × frequência de ocorrência:
 
 | # | Gargalo | Frequência | Impacto Fluxo | Causa Raiz |
-|---|---------|-----------|--------------|------------|
+| --- | --------- | ----------- | -------------- | ------------ |
 | **G1** | Analytics histórico inoperante (500 errors) | Cada uso do Analytics | 🔴 Crítico | Índices Firestore ausentes nas CFs BQ |
 | **G2** | Mission Control on-demand (sem auto-refresh) | Cada turno (12x/semana) | 🔴 Crítico | Arquitetura pull, sem subscription no MC |
 | **G3** | Huddle sem marcação automática de conclusão | Cada turno | 🟠 Alto | Depende de clique "Encerrar" — comportamento frágil |
@@ -399,7 +420,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### 6.1 Lacunas de experiência (UX/UI)
 
 | ID | Lacuna | Usuário Impactado |
-|----|--------|------------------|
+| ---- | -------- | ------------------ |
 | LP-01 | TV Kamishibai não exibe razão do bloqueio — equipe na TV vê vermelho sem contexto | Toda a equipe de unidade |
 | LP-02 | TV Kanban não exibe aging do bloqueador — leito bloqueado há 48h parece igual ao de 1h | Coordenador |
 | LP-03 | Sem tela de "meu turno" no editor — profissional de apoio não sabe quais leitos são seus | Fisio, Nutrição, Social, etc. |
@@ -410,7 +431,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### 6.2 Lacunas de processo (operacional)
 
 | ID | Lacuna | Impacto |
-|----|--------|---------|
+| ---- | -------- | --------- |
 | LO-01 | Sem onboarding guiado no primeiro uso — curva de adoção alta | Risco de abandono na implantação |
 | LO-02 | Sem alertas de cadência de huddle para quem não está na frente da TV | Turnos sem huddle passam despercebidos |
 | LO-03 | Sem relatório de aderência LSW (% huddles completos/semana por unidade) | Impossível cobrar cadência gerencialmente |
@@ -422,7 +443,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ## 7. Lacunas Técnicas
 
 | ID | Lacuna | Severidade | Arquivo(s) |
-|----|--------|-----------|------------|
+| ---- | -------- | ----------- | ------------ |
 | LT-01 | **Índices Firestore ausentes para queries de audit_logs** — causa direta do 500 nas CFs analíticas | 🔴 Crítica | `firestore.indexes.json`, CFs analytics |
 | LT-02 | **Dupla implementação de `computeShiftKey`** — uma em `domain/shiftKey.ts` e outra inline em `getAdminMissionControlSnapshot.ts`. Risco de divergência em horários de virada de turno | 🟠 Alta | `shiftKey.ts:*`, `getAdminMissionControlSnapshot.ts:50-70` |
 | LT-03 | **`lswGraceMinutes` referenciado mas ausente do `UnitOpsSettings` schema** — silenciosamente usa default 30min | 🟠 Alta | `lswCadence.ts:*`, `types.ts:UnitOpsSettings` |
@@ -441,7 +462,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### 8.1 Matriz de maturidade por dimensão
 
 | Dimensão | Maturidade | Nota |
-|----------|-----------|------|
+| ---------- | ----------- | ------ |
 | **Visualização em tempo real** | ✅ Alta | TV com rotação automática, dados live, semáforos |
 | **Entrada de dados** | ✅ Alta | Editor mobile funcional, auditado, com proteção RBAC |
 | **Kamishibai (cadência multiprofissional)** | 🟡 Média-Alta | Modelo correto, TTL de turno, falta UI para N/A e razão de bloqueio |
@@ -458,6 +479,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 **Resposta:** Parcialmente — com a seguinte qualificação:
 
 **O sistema SUSTENTA:**
+
 - Visibilidade do estado do fluxo em tempo real (TV Dashboard)
 - Registro estruturado de bloqueadores, previsão de alta e kamishibai por turno
 - Trilha de auditoria completa de quem fez o quê e quando
@@ -465,6 +487,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 - Identificação automática de escalações críticas
 
 **O sistema AINDA DEPENDE de esforço humano para:**
+
 - Iniciar e encerrar formalmente cada huddle (sem lembretes automáticos além da TV)
 - Atualizar Mission Control (manual) para obter KPIs atualizados durante o turno
 - Inserir dados de kamishibai por 6 equipes de forma independente e disciplinada
@@ -480,7 +503,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### P0 — Crítico (bloqueia uso operacional real)
 
 | ID | Ação | Entregável | Esforço Est. |
-|----|------|-----------|-------------|
+| ---- | ------ | ----------- | ------------- |
 | P0-01 | **Corrigir índices Firestore para CFs analíticas** — criar índices compostos em `audit_logs` para queries de analytics (action + unitId + createdAt). Validar cada função BQ individualmente | `firestore.indexes.json` atualizado + testes de smoke | Médio (1-2 dias) |
 | P0-02 | **Auto-refresh do Mission Control** — substituir refresh manual por `setInterval` de 2-3 min ou subscription Firestore nos beds (recomendado: subscription com debounce) | MC atualiza automaticamente durante turno | Médio (1 dia) |
 | P0-03 | **Unificar `computeShiftKey`** — eliminar implementação inline no CF do snapshot, importar de `shared/shiftKey` compartilhado | Única implementação, sem risco de divergência | Baixo (0.5 dia) |
@@ -489,7 +512,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### P1 — Alta prioridade (impacta qualidade da rotina)
 
 | ID | Ação | Entregável | Esforço Est. |
-|----|------|-----------|-------------|
+| ---- | ------ | ----------- | ------------- |
 | P1-01 | **TV: exibir aging do bloqueador no Kanban** — adicionar badge de aging (12h/24h/48h+) na célula do bloqueador | TV Kanban com indicador visual de aging | Baixo (0.5 dia) |
 | P1-02 | **TV: exibir razão do bloqueio Kamishibai** — tooltip ou modal ao passar/clicar no dot vermelho | UX de contexto para profissional na TV | Médio (1 dia) |
 | P1-03 | **Editor Mobile: UI para `applicableDomains`** — checklist de domínios N/A por leito | Profissional de apoio consegue marcar domínio não aplicável | Médio (1 dia) |
@@ -501,7 +524,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ### P2 — Médio prazo (eleva governança)
 
 | ID | Ação | Entregável | Esforço Est. |
-|----|------|-----------|-------------|
+| ---- | ------ | ----------- | ------------- |
 | P2-01 | **Taxonomia de bloqueadores** — campo `mainBlocker` com sugestões predefinidas (+ opção "outro") configuráveis por unidade | Qualidade do dado de top blockers | Alto (2-3 dias) |
 | P2-02 | **Snapshots persistidos automaticamente** — Cloud Function agendada (cron) para gravar snapshot do MC a cada turno | Histórico de KPIs por turno para comparação | Alto (2-3 dias) |
 | P2-03 | **Notificações push (FCM)** — alert de escalação crítica para admins da unidade via Firebase Cloud Messaging | Delivery proativo sem depender da TV | Alto (3-5 dias) |
@@ -516,7 +539,7 @@ Ordenados por impacto na rotina operacional diária × frequência de ocorrênci
 ## Apêndice: Inventário de Testes
 
 | Tipo | Quantidade | Status |
-|------|-----------|--------|
+| ------ | ----------- | -------- |
 | Testes unitários (Vitest) | ~20 arquivos `.test.ts` | ✅ Passando |
 | Testes E2E (Playwright) | ~20 arquivos `.spec.ts` | ✅ 58/58 RBAC passando |
 | Cobertura de Analytics CFs (smoke) | 0 | 🔴 Ausente |

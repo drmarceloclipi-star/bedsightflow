@@ -13,7 +13,7 @@ export type KamishibaiStatus = 'ok' | 'blocked' | 'na';
 ```
 
 | Estado | Valor | Significado no código | Cor/CSS |
-|--------|-------|-----------------------|---------|
+| -------- | ------- | ----------------------- | --------- |
 | OK / Concluído | `'ok'` | Sem bloqueio, tarefa realizada | `kamishibai-dot ok` → CSS verde |
 | Bloqueado | `'blocked'` | Impedimento ativo para esta equipe | `kamishibai-dot blocked` → CSS vermelho |
 | N/A | `'na'` | Especialidade não envolvida no caso | `kamishibai-dot na` → CSS cinza/sem cor |
@@ -58,7 +58,7 @@ social:     'SERVIÇO SOCIAL'
 ## 3. Onde o estado é calculado (frontend vs backend)
 
 | Operação | Local | Evidência |
-|----------|-------|-----------|
+| ---------- | ------- | ----------- |
 | **Leitura/exibição** do status | Frontend (`KamishibaiScreen.tsx`) | `entry?.status \|\| 'na'` |
 | **Escrita** do status | Frontend → Firestore direto via `BedsRepository.updateBed()` | `BedsRepository.ts:47-62` |
 | **Contagem de impedimentos** (Analytics) | Backend — Cloud Function `getAdminMissionControlSnapshot` | `functions/src/callables/analytics/getAdminMissionControlSnapshot.ts:112-120` |
@@ -123,7 +123,7 @@ O campo `enabled: boolean` por screen controla se a tela aparece na rotação da
 ## 6. Gaps identificados vs Lean do hospital
 
 | # | Gap | Impacto |
-|---|-----|---------|
+| --- | ----- | --------- |
 | G1 | Não existe estado "sem cor" / "inativo" binário — `'na'` serve tanto para "não aplicável" quanto para "leito vazio" | Kamishibai Lean exige: sem cor = leito inativo; verde = OK; vermelho = bloqueado |
 | G2 | Não há `updatedAt` por kamishibai sendo comparado com horário do huddle | Sem visibilidade de "foi revisado neste turno?" |
 | G3 | O status `'ok'` não tem TTL (não reseta entre turnos) — um `ok` de ontem ainda aparece verde | Lean exige que verde seja "revisado e ok NESTE turno" |

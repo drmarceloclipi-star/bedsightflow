@@ -10,7 +10,7 @@
 ## 1. Checklist P1–P5
 
 | # | Critério | Status | Evidência |
-|---|---|:---:|---|
+| --- | --- | :---: | --- |
 | **P1** | Pendência persiste em realtime (listener ativo no BedDetails) | ✅ | `BedsRepository.listenToBed` atualiza `bed.pendencies` via `onSnapshot` — UI reflete imediatamente após `addPendency/markPendencyDone/cancelPendency` |
 | **P2** | Persiste entre turnos (dados no Firestore, não em memória) | ✅ | Gravado em `units/{unitId}/beds/{bedId}.pendencies[]` via Firestore; não é estado local |
 | **P3** | Overdue calculado corretamente (`dueAt < now && status==='open'`) | ✅ | `const isOverdue = !!p.dueAt && new Date(p.dueAt).getTime() < nowMs` — bed `301.2` tem 1 vencida no seed |
@@ -22,7 +22,7 @@
 ## 2. Arquivos Alterados — Etapa 1.4
 
 | Arquivo (path real) | Tipo de mudança |
-|---|---|
+| --- | --- |
 | `src/domain/types.ts` | `PendencyStatus += 'canceled'`; `Pendency += updatedAt/updatedBy/canceledAt/canceledBy/note` |
 | `src/repositories/BedsRepository.ts` | `cancelPendency()` NOVO; `markPendencyDone` → `runTransaction`; `deletePendency` → `runTransaction` + `actor` |
 | `src/features/editor/pages/BedDetails.tsx` | `useAuthStatus` importado; botão cancelar (todos); botão excluir (admin); lista canceladas; `data-status`; `aria-label` |
@@ -145,7 +145,7 @@ export interface Pendency {
 ## 6. Regras Operacionais v1.1
 
 | Regra | Comportamento |
-|---|---|
+| --- | --- |
 | `status='open'` sem `dueAt` | Aparece na lista open sem badge de prazo (D4) |
 | `status='open'` com `dueAt < now` | Indicada com ⚠ "Vencida" em vermelho + `data-status="overdue"` |
 | `status='done'` | Lista colapsada "Concluídas" — mostra `doneAt` + `doneBy.name` |
@@ -160,7 +160,7 @@ export interface Pendency {
 ## 7. Política de Permissões
 
 | Ação | Editor | Admin |
-|---|:---:|:---:|
+| --- | :---: | :---: |
 | Criar | ✅ | ✅ |
 | Marcar done | ✅ | ✅ |
 | **Cancelar** | ✅ | ✅ |
@@ -173,7 +173,7 @@ export interface Pendency {
 ## 8. Dados de Teste (seed v1.1)
 
 | Bed | Pendências | Aparece em |
-|---|---|---|
+| --- | --- | --- |
 | `301.1` | 1 open (sem prazo) | `pendencies_open` |
 | `301.2` | 2 open (1 vencida: hemoculturas) | `pendencies_open` + `pendencies_overdue` |
 | `301.3` | 1 **canceled** (cardiologia) | Não aparece em nenhum filtro open |
@@ -220,7 +220,7 @@ cd functions   && npx tsc --noEmit  # → 0 erros
 ## 10. Dívidas Técnicas v1.2
 
 | Item | Impacto | Prioridade |
-|---|---|---|
+| --- | --- | --- |
 | Pendências na TV — badge "X pendências" no card do leito | Visibilidade (gestão à vista) | Alto |
 | RBAC server-side: Cloud Function validar custom claim `admin` antes de delete | Segurança extra | Médio |
 | Paginação em `bedsWithOpenPendenciesIds` (atual: limitado a 200) | Escala | Baixo |
@@ -230,7 +230,7 @@ cd functions   && npx tsc --noEmit  # → 0 erros
 
 ## 11. Verificação tsc
 
-```
+```text
 cd ward-board && npx tsc --noEmit  →  ✅ 0 erros  (2026-02-28 19:32 -03:00)
 cd functions  && npx tsc --noEmit  →  ✅ 0 erros  (2026-02-28 19:32 -03:00)
 ```

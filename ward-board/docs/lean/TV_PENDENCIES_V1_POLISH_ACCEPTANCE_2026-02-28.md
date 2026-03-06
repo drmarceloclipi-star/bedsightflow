@@ -8,7 +8,7 @@
 ## Checklist PZ1–PZ5
 
 | # | Critério | Status |
-|---|---|:---:|
+| --- | --- | :---: |
 | PZ1 | Leito vazio (`patientAlias=''\|null`) **nunca** exibe badge (Kanban ou Kamishibai) | ✅ |
 | PZ2 | Summary totals **não** contam leitos vazios | ✅ |
 | PZ3 | Overdue visualmente distinguível (sutil) + `aria-label` correto | ✅ |
@@ -20,7 +20,7 @@
 ## Arquivos Alterados
 
 | Arquivo | Mudança |
-|---|---|
+| --- | --- |
 | `src/domain/pendencies.ts` | Guard `patientAlias` em `computePendencyCounts`; `computeUnitPendencyCounts` DRY |
 | `src/features/tv/components/KanbanScreen.tsx` | `aria-label` padronizado no `PendencyBadge` |
 | `src/features/tv/components/KamishibaiScreen.tsx` | `aria-label` padronizado no `PendencyBadge` |

@@ -8,7 +8,7 @@
 ## Checklist T1–T6
 
 | # | Critério | Status |
-|---|---|:---:|
+| --- | --- | :---: |
 | T1 | Leitos sem pendências **não exibem** badge | ✅ |
 | T2 | Leito com `open > 0` exibe badge com contagem correta | ✅ |
 | T3 | Leito com overdue exibe `"X ⚠Y"` (`dueAt < now && status==='open'`) | ✅ |
@@ -21,7 +21,7 @@
 ## Arquivos Alterados
 
 | Arquivo | Tipo | Mudança |
-|---|---|---|
+| --- | --- | --- |
 | `src/domain/pendencies.ts` | **NOVO** | Helpers canônicos: `PendencyCounts`, `computePendencyCounts`, `computeUnitPendencyCounts`, `hasOverdue`, `formatPendencyBadge` |
 | `src/domain/types.ts` | MODIFY | `SummaryMetrics` +2 campos: `pendenciesOpen`, `pendenciesOverdue` |
 | `src/domain/SummaryCalculator.ts` | MODIFY | Usa `computeUnitPendencyCounts`; aceita `now` como parâmetro injetável |
@@ -92,7 +92,7 @@ npm run dev         # Vite dev server
 **Beds com pendências no seed:**
 
 | Bed | Pendências | Esperado na TV |
-|---|---|---|
+| --- | --- | --- |
 | `301.1` | 1 open sem prazo | Badge `"1"` neutro |
 | `301.2` | 2 open (1 vencida, `dueAt = ontem`) | Badge `"2 ⚠1"` warning |
 | `301.3` | 1 canceled (não conta) | Sem badge |
@@ -134,7 +134,7 @@ npm run dev         # Vite dev server
 ## Dívidas v1.6 (identificadas)
 
 | Item | Impacto |
-|---|---|
+| --- | --- |
 | Badge na TV não filtra por `patientAlias` not-empty (leito vazio pode ter badge) | Baixo — semanticamente correto, mas visualmente ruidoso |
 | Animação sutil quando badge `overdue` aparece pela primeira vez | UX — não blocante |
 | Escalão "🔥" após X horas (Etapa 1.6) | Próximo passo |

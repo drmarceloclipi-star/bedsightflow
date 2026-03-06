@@ -8,7 +8,7 @@
 ## Documentos gerados
 
 | Documento | Conteúdo |
-|-----------|----------|
+| ----------- | ---------- |
 | [AUDIT_LeanAlignment_2026-02-28.md](./AUDIT_LeanAlignment_2026-02-28.md) | **Documento mestre.** Features, flags, CFs, testes, respostas às 6 perguntas, gap list K+H+M |
 | [AUDIT_Kamishibai_States_2026-02-28.md](./AUDIT_Kamishibai_States_2026-02-28.md) | Estados `ok/blocked/na`, ordem canônica de domínios, onde é lido/escrito, 5 gaps |
 | [AUDIT_Firestore_Model_2026-02-28.md](./AUDIT_Firestore_Model_2026-02-28.md) | Schema canônico de todas as coleções, exemplos JSON anonimizados, 5 casos problemáticos |
@@ -22,7 +22,7 @@
 ## Gaps críticos (resumo executivo)
 
 | Prioridade | Gap | Arquivo detalhe |
-|-----------|-----|----------------|
+| ----------- | ----- | ---------------- |
 | 🔴 ALTA | Verde Kamishibai sem TTL de turno — `ok` de ontem persiste | Kamishibai_States G3, Cadencia R2 |
 | 🔴 ALTA | Estado "sem cor/inativo" não existe — `na` é ambíguo | Kamishibai_States G1, LeanAlignment K1 |
 | 🔴 ALTA | Sem `lastHuddleAt` — sistema não suporta rituais AM/PM | Cadencia R1, LeanAlignment H1 |
@@ -40,7 +40,7 @@
 ## Perguntas de conclusão — status
 
 | # | Pergunta | Respondida? |
-|---|---------|------------|
+| --- | --------- | ------------ |
 | 1 | Quais estados/cor existem e onde definidos? | ✅ AUDIT_Kamishibai_States + AUDIT_LeanAlignment §6.1 |
 | 2 | Como Kamishibai é ligado/desligado? | ✅ AUDIT_Kamishibai_States §5 + AUDIT_LeanAlignment §2 |
 | 3 | Como Mission Control depende dos estados? | ✅ AUDIT_MissionControl §7 |

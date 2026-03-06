@@ -13,7 +13,7 @@ The UIAgent owns the visual language of LEAN. It defines and enforces the design
 ## Design System Reference
 
 | Token category | Variable prefix | Example |
-|---|---|---|
+| --- | --- | --- |
 | Colors | `--color-*` | `--color-surface`, `--color-accent` |
 | Typography | `--font-*` | `--font-size-body`, `--font-family-base` |
 | Spacing | `--space-*` | `--space-4`, `--space-8` |

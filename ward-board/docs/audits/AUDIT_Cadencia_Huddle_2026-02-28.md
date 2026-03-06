@@ -7,7 +7,7 @@
 ## 1. O que o sistema suporta hoje em rituals/huddle
 
 | Ritual Lean | Existência no sistema | Evidência |
-|------------|----------------------|-----------|
+| ------------ | ---------------------- | ----------- |
 | Huddle AM (revisão matutina) | ❌ Nenhum suporte | Sem campo, sem tela, sem timestamp de revisão |
 | Huddle PM (revisão vespertina) | ❌ Nenhum suporte | Idem |
 | Checklist de turno por leito | ❌ Nenhum suporte | Sem estrutura de checklist no schema |
@@ -23,7 +23,7 @@
 ## 2. O que existe que poderia SERVIR aos rituais (mas não foi projetado para isso)
 
 | Elemento | Como poderia servir | Limitação |
-|----------|--------------------|-----------|
+| ---------- | -------------------- | ----------- |
 | `updatedAt` do leito | Proxy para "quando foi a última revisão" | É a timestamp do leito inteiro, não da revisão de huddle |
 | `kamishibai.{domain}.updatedAt` | Proxy para "quando aquela equipe marcou o status" | Não diferencia "revisão de huddle" de "edição aleatória" |
 | Audit logs (`audit_logs`) | Historial de quem mudou o quê e quando | Read-only, sem query de "revisões deste turno" |
@@ -35,7 +35,7 @@
 
 ### Fluxo ideal (Lean HRHDS)
 
-```
+```text
 07:00h — Sistema gera lembrete de Huddle AM
 07:05h — Coordenador abre Mission Control na TV
 07:05h — Cada equipe atualiza kamishibai (ok/vermelho) — verde = revisado hoje
@@ -46,7 +46,7 @@
 
 ### Fluxo atual (sistema real)
 
-```
+```text
 [sem horário fixo] — Coordenador abre admin → Analytics → Mission Control
 [manual] — Clica refresh → dados carregados do Firestore
 [manual] — Equipe entra no /editor e atualiza leito
@@ -96,7 +96,7 @@ interface Pendency {
 ## 5. Gaps críticos para rituais Lean
 
 | # | Gap | Prioridade |
-|---|-----|-----------|
+| --- | ----- | ----------- |
 | R1 | Sem `lastHuddleAt` — sistema não sabe quando o huddle ocorreu | ALTA |
 | R2 | Verde Kamishibai não tem TTL de turno — verde de ontem = verde hoje | ALTA |
 | R3 | Sem checklist de turno — "o que foi feito neste turno" não é rastreado | ALTA |

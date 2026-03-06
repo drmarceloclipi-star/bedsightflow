@@ -8,7 +8,7 @@
 ## Funcionalidades e Critérios de Aceite (Etapa 1.7)
 
 | # | Critério | Status | Onde Ver |
-|---|----------|--------|-----------|
+| --- | ---------- | -------- | ----------- |
 | LSW1 | O componente HuddleConsole.tsx suporta LSW AM/PM com checklist | ✅ | \`src/features/admin/components/ops/HuddleConsole.tsx\` |
 | LSW2 | A interface OpsScreen agora abriga nativamente o HuddleConsole | ✅ | \`src/features/admin/screens/OpsScreen.tsx\` |
 | LSW3 | Ações do Top 3 podem ser adicionadas e concluídas (open/done) | ✅ | Console LSW na interface Admin > Área de "Top 3 Ações" |
@@ -56,7 +56,7 @@ npm run seed
 ## Arquivos e Diretórios (Resumo da Mudança)
 
 | Arquivo/Caminho | Tipo | Status |
-|-----------------|------|--------|
+| ----------------- | ------ | -------- |
 | \`src/domain/huddle.ts\` | **NOVO** | Tipagens de domínio, constantes e helpers (\`HuddleDoc\`, \`HuddleAction\`) |
 | \`src/repositories/HuddleRepository.ts\` | **NOVO** | Camada de isolamento de DB (CRUD em \`huddles/{shiftKey}\`, atomic transaction pra \`ops\`) |
 | \`src/features/admin/components/ops/HuddleConsole.tsx\` | **NOVO** | UI Admin, isolada para gerir a sessão de Huddle, substituir o registro legado. |
