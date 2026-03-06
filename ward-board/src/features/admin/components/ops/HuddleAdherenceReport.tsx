@@ -235,6 +235,7 @@ const HuddleAdherenceReport: React.FC<Props> = ({ unitId, opsSettings }) => {
 
     // Fetch more huddles when period increases (days × 2 shifts/day)
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(true);
         setError(null);
         HuddleRepository.listRecentHuddles(unitId, days * 2)
