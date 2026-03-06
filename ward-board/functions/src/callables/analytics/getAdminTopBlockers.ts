@@ -12,7 +12,7 @@ import { Timestamp } from 'firebase-admin/firestore'
  * RESET_BED_KANBAN / UPDATE_BED-clear events from the previous 7-day window to
  * see which blockers were present before discharge.
  */
-export const getAdminTopBlockersBQ = functions
+export const getAdminTopBlockers = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

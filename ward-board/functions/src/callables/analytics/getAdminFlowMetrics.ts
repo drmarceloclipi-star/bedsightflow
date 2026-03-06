@@ -25,7 +25,7 @@ interface DailyBucketPoint {
  *   '>3_days'  → gt3d
  *   'later'/null/undefined → undefinedBucket
  */
-export const getAdminFlowMetricsBQ = functions
+export const getAdminFlowMetrics = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

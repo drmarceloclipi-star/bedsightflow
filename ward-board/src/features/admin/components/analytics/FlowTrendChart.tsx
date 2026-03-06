@@ -22,8 +22,8 @@ const FlowTrendChart: React.FC<FlowTrendChartProps> = ({ unitId, period, refresh
             setLoading(true);
             setError(null);
             try {
-                const getAdminFlowMetricsBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, DailyBucketPoint[]>(functions, CLOUD_FUNCTIONS.GET_ADMIN_FLOW_METRICS_BQ);
-                const result = await getAdminFlowMetricsBQ({ unitId, periodKey: period });
+                const getAdminFlowMetrics = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, DailyBucketPoint[]>(functions, CLOUD_FUNCTIONS.GET_ADMIN_FLOW_METRICS);
+                const result = await getAdminFlowMetrics({ unitId, periodKey: period });
                 setData(result.data);
             } catch (err) {
                 console.error('Error fetching flow metrics', err);

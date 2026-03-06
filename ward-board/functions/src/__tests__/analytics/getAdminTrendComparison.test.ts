@@ -1,5 +1,5 @@
 /**
- * Tests for getAdminTrendComparisonBQ
+ * Tests for getAdminTrendComparison
  *
  * These tests are integration-level: they write documents to the Firestore
  * emulator and verify the function reads them correctly.
@@ -18,14 +18,14 @@ const testEnv = functionsTest({
 })
 
 import * as admin from 'firebase-admin'
-import { getAdminTrendComparisonBQ } from '../../callables/analytics/getAdminTrendComparisonBQ'
+import { getAdminTrendComparison } from '../../callables/analytics/getAdminTrendComparison'
 
 // Initialise admin SDK pointing to the emulator
 if (!admin.apps.length) {
     admin.initializeApp({ projectId: 'lean-841e5' })
 }
 
-const wrapped = testEnv.wrap(getAdminTrendComparisonBQ)
+const wrapped = testEnv.wrap(getAdminTrendComparison)
 const db = admin.firestore()
 
 const UNIT_ID = 'TEST_TREND'
@@ -66,7 +66,7 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-describe('getAdminTrendComparisonBQ – auth guard', () => {
+describe('getAdminTrendComparison – auth guard', () => {
     it('throws unauthenticated when no auth context is provided', async () => {
         await expect(
             wrapped({ unitId: UNIT_ID }, { auth: undefined })
@@ -77,7 +77,7 @@ describe('getAdminTrendComparisonBQ – auth guard', () => {
 // ---------------------------------------------------------------------------
 // Argument validation
 // ---------------------------------------------------------------------------
-describe('getAdminTrendComparisonBQ – argument validation', () => {
+describe('getAdminTrendComparison – argument validation', () => {
     it('throws invalid-argument when unitId is missing', async () => {
         await expect(
             wrapped({}, { auth })
@@ -88,7 +88,7 @@ describe('getAdminTrendComparisonBQ – argument validation', () => {
 // ---------------------------------------------------------------------------
 // Fallback: no audit logs → uses bed snapshot
 // ---------------------------------------------------------------------------
-describe('getAdminTrendComparisonBQ – fallback when no audit logs', () => {
+describe('getAdminTrendComparison – fallback when no audit logs', () => {
     beforeEach(async () => {
         await clearCollection(`units/${UNIT_ID}/audit_logs`)
         await clearCollection(`units/${UNIT_ID}/beds`)
@@ -111,7 +111,7 @@ describe('getAdminTrendComparisonBQ – fallback when no audit logs', () => {
 // ---------------------------------------------------------------------------
 // Correct aggregation from audit logs
 // ---------------------------------------------------------------------------
-describe('getAdminTrendComparisonBQ – aggregating audit logs', () => {
+describe('getAdminTrendComparison – aggregating audit logs', () => {
     beforeEach(async () => {
         await clearCollection(`units/${UNIT_ID}/audit_logs`)
     })

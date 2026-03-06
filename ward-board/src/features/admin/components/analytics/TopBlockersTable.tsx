@@ -22,8 +22,8 @@ const TopBlockersTable: React.FC<TopBlockersProps> = ({ unitId, period, refreshT
             setLoading(true);
             setError(null);
             try {
-                const getAdminTopBlockersBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, BlockerMetric[]>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TOP_BLOCKERS_BQ);
-                const result = await getAdminTopBlockersBQ({ unitId, periodKey: period });
+                const getAdminTopBlockers = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, BlockerMetric[]>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TOP_BLOCKERS);
+                const result = await getAdminTopBlockers({ unitId, periodKey: period });
                 setData(result.data);
             } catch (error) {
                 console.error("Error fetching top blockers", error);

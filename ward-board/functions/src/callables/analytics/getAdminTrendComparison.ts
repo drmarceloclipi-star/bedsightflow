@@ -36,7 +36,7 @@ async function countAuditEventsPerDay(
         .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export const getAdminTrendComparisonBQ = functions
+export const getAdminTrendComparison = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

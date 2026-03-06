@@ -10,7 +10,7 @@ import { Timestamp } from 'firebase-admin/firestore'
  * - updatesByHour: audit log event counts grouped by hour-of-day (last 24h)
  * - updatesByDay: audit log event counts grouped by calendar day (last 7 days)
  */
-export const getAdminFreshnessBQ = functions
+export const getAdminFreshness = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

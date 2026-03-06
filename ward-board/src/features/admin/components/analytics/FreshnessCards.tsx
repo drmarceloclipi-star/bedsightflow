@@ -24,8 +24,8 @@ const FreshnessCards: React.FC<FreshnessProps> = ({ unitId, period, refreshTrigg
             setLoading(true);
             setError(null);
             try {
-                const getAdminFreshnessBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, FreshnessMetrics>(functions, CLOUD_FUNCTIONS.GET_ADMIN_FRESHNESS_BQ);
-                const result = await getAdminFreshnessBQ({ unitId, periodKey: period });
+                const getAdminFreshness = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, FreshnessMetrics>(functions, CLOUD_FUNCTIONS.GET_ADMIN_FRESHNESS);
+                const result = await getAdminFreshness({ unitId, periodKey: period });
                 setData(result.data);
             } catch (err) {
                 console.error('Error fetching freshness metrics', err);
