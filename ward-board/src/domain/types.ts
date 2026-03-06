@@ -396,6 +396,14 @@ export interface UnitOpsSettings {
     /** Quem registrou o huddle. */
     lastHuddleRegisteredBy?: ActorRef;
 
+    // ── v1 — LSW Cadence ─────────────────────────────────────────────────
+    /**
+     * Período de graça (em minutos) após o início do turno antes de marcar huddle como OVERDUE.
+     * Ausente → 30 minutos (default).
+     * Ref: lswCadence.ts, LSW_V2_SPEC.md §Patch 2
+     */
+    lswGraceMinutes?: number;
+
     // ── v1 — Reservado (não usar ainda) ──────────────────────────────────
     /** Turno ativo explicitamente confirmado pelo admin. Reservado. */
     currentShiftType?: 'AM' | 'PM';

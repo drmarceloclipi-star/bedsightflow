@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import type { Timestamp } from 'firebase-admin/firestore'
 import { computeEscalations, EscalationThresholds } from '../../shared/escalation'
+import { computeShiftKey } from '../../shared/shiftKey'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,30 +48,6 @@ export const DEFAULT_THRESHOLDS: Required<MissionControlThresholdsDoc> = {
     escalationOverdueHoursCritical: 12,
     escalationMainBlockerHoursWarning: 8,
     escalationMainBlockerHoursCritical: 24,
-}
-
-// ── ShiftKey helper (inline — não importa src/) ────────────────────────────────
-const SHIFT_TZ = 'America/Sao_Paulo'
-
-export function computeShiftKeySnapshot(now: Date, amStart = '07:00', pmStart = '19:00'): string {
-    const localStr = new Intl.DateTimeFormat('sv-SE', {
-        timeZone: SHIFT_TZ,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false,
-    }).format(now)
-    const [datePart, timePart] = localStr.split(' ')
-    const [h, m] = (timePart ?? '00:00').split(':').map(Number)
-    const localMin = (h ?? 0) * 60 + (m ?? 0)
-    const [amH, amM] = amStart.split(':').map(Number)
-    const [pmH, pmM] = pmStart.split(':').map(Number)
-    const amMinutes = (amH ?? 7) * 60 + (amM ?? 0)
-    const pmMinutes = (pmH ?? 19) * 60 + (pmM ?? 0)
-
-    if (localMin >= amMinutes && localMin < pmMinutes) return `${datePart}-AM`
-    if (localMin >= pmMinutes) return `${datePart}-PM`
-    const d = new Date((datePart ?? '') + 'T00:00:00Z')
-    d.setUTCDate(d.getUTCDate() - 1)
-    return `${d.toISOString().slice(0, 10)}-PM`
 }
 
 // ── Timestamp helpers ─────────────────────────────────────────────────────────
@@ -128,7 +105,7 @@ export function buildSnapshot(
     }
 
     const kamishibaiEnabled: boolean = typeof ops.kamishibaiEnabled === 'boolean' ? ops.kamishibaiEnabled : true
-    const currentShift = computeShiftKeySnapshot(
+    const currentShift = computeShiftKey(
         now,
         ops.huddleSchedule?.amStart ?? '07:00',
         ops.huddleSchedule?.pmStart ?? '19:00',

@@ -5,7 +5,8 @@ import { Timestamp } from 'firebase-admin/firestore'
 /**
  * Returns data freshness metrics from live Firestore data.
  *
- * - stale12h / stale24h / stale48h: beds whose updatedAt is older than that threshold
+ * - stale12h / stale24h / stale48h: beds whose most recent kamishibai[domain].reviewedAt
+ *   (or bed.updatedAt as fallback) is older than that threshold
  * - updatesByHour: audit log event counts grouped by hour-of-day (last 24h)
  * - updatesByDay: audit log event counts grouped by calendar day (last 7 days)
  */
@@ -29,6 +30,8 @@ export const getAdminFreshnessBQ = functions
             const ms48h = 48 * 60 * 60 * 1000
 
             // ---- Stale bed counts (from beds collection) ----
+            // Uses the most recent kamishibai[domain].reviewedAt across all domains.
+            // Falls back to bed.updatedAt only when no domain has been reviewed yet.
             const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
 
             let stale12h = 0
@@ -37,18 +40,38 @@ export const getAdminFreshnessBQ = functions
 
             for (const doc of bedsSnap.docs) {
                 const bed = doc.data()
-                const rawTs = bed.updatedAt
-                if (!rawTs) continue
 
-                let updatedMs: number
-                if (typeof rawTs === 'string') {
-                    updatedMs = new Date(rawTs).getTime()
-                } else {
-                    updatedMs = (rawTs as Timestamp).toMillis()
+                // Resolve the most recent reviewedAt across all kamishibai domains
+                let lastReviewedMs: number | null = null
+                if (bed.kamishibai && typeof bed.kamishibai === 'object') {
+                    for (const entry of Object.values(bed.kamishibai)) {
+                        const raw = (entry as Record<string, unknown>)?.reviewedAt
+                        if (!raw) continue
+                        let ms: number
+                        if (typeof raw === 'string') {
+                            ms = new Date(raw).getTime()
+                        } else {
+                            ms = (raw as Timestamp).toMillis()
+                        }
+                        if (!isNaN(ms) && (lastReviewedMs === null || ms > lastReviewedMs)) {
+                            lastReviewedMs = ms
+                        }
+                    }
                 }
-                if (isNaN(updatedMs)) continue
 
-                const age = now.getTime() - updatedMs
+                // Fall back to bed.updatedAt when no reviewedAt is available
+                if (lastReviewedMs === null) {
+                    const rawTs = bed.updatedAt
+                    if (!rawTs) continue
+                    if (typeof rawTs === 'string') {
+                        lastReviewedMs = new Date(rawTs).getTime()
+                    } else {
+                        lastReviewedMs = (rawTs as Timestamp).toMillis()
+                    }
+                    if (isNaN(lastReviewedMs)) continue
+                }
+
+                const age = now.getTime() - lastReviewedMs
                 if (age > ms12h) stale12h++
                 if (age > ms24h) stale24h++
                 if (age > ms48h) stale48h++

@@ -58,8 +58,21 @@ const MobileDashboard: React.FC = () => {
             const hours = parseInt(hoursStr, 10);
             if (isNaN(hours)) return true;
 
-            const lastUpdate = parseDate(bed.updatedAt);
-            const diffHours = (now - lastUpdate.getTime()) / (1000 * 60 * 60);
+            // Use most recent kamishibai[domain].reviewedAt as the freshness signal;
+            // fall back to bed.updatedAt when no domain has been reviewed yet.
+            let lastReviewedMs: number | null = null;
+            if (bed.kamishibai && typeof bed.kamishibai === 'object') {
+                for (const entry of Object.values(bed.kamishibai)) {
+                    const raw = (entry as Record<string, unknown>)?.reviewedAt;
+                    if (!raw) continue;
+                    const ms = parseDate(raw).getTime();
+                    if (!isNaN(ms) && (lastReviewedMs === null || ms > lastReviewedMs)) {
+                        lastReviewedMs = ms;
+                    }
+                }
+            }
+            const referenceMs = lastReviewedMs ?? parseDate(bed.updatedAt).getTime();
+            const diffHours = (now - referenceMs) / (1000 * 60 * 60);
             return diffHours > hours;
         }
 
