@@ -30,6 +30,11 @@ const BedDetails: React.FC = () => {
     const [newPendencyDomain, setNewPendencyDomain] = useState<SpecialtyKey | ''>('');
     const [newPendencyDueAt, setNewPendencyDueAt] = useState('');
     const [pendencySaving, setPendencySaving] = useState(false);
+    // P1-04: filtro de pendências abertas por domínio
+    const [pendencyDomainFilter, setPendencyDomainFilter] = useState<SpecialtyKey | ''>('');
+
+    // P1-01: rascunho local das razões de bloqueio Kamishibai (descartado ao salvar)
+    const [kamishibaiBlockNotes, setKamishibaiBlockNotes] = useState<Partial<Record<SpecialtyKey, string>>>({});
 
     // Build actor payload from currently logged-in user for audit trail
     const getActor = () => {
@@ -121,14 +126,25 @@ const BedDetails: React.FC = () => {
         if (textToSave === bed.mainBlocker) return;
         setIsSaving(true);
         try {
-            await BedsRepository.updateBed(unitId, id, { mainBlocker: textToSave }, getActor());
+            const now = new Date().toISOString();
+            const updates: Partial<Bed> = { mainBlocker: textToSave };
+            // P1-02: registra quando o bloqueador foi inserido pela primeira vez (aging preciso)
+            if (textToSave && !bed.mainBlockerBlockedAt) {
+                updates.mainBlockerBlockedAt = now;
+            }
+            // P1-02: registra quando o bloqueador foi resolvido
+            if (!textToSave && bed.mainBlocker) {
+                updates.mainBlockerResolvedAt = now;
+            }
+            await BedsRepository.updateBed(unitId, id, updates, getActor());
             setIsSaving(false);
         } catch (error) {
             handleError(error);
         }
     };
 
-    const handleUpdateKamishibai = async (specialty: SpecialtyKey, status: KamishibaiStatus) => {
+    // P1-01: note é a razão de bloqueio (opcional, gravada junto com status 'blocked')
+    const handleUpdateKamishibai = async (specialty: SpecialtyKey, status: KamishibaiStatus, note?: string) => {
         if (!bed || !id) return;
         setIsSaving(true);
         try {
@@ -137,9 +153,10 @@ const BedDetails: React.FC = () => {
             const shiftKey = currentShiftKey(schedule);
 
             const existing = bed.kamishibai?.[specialty];
-            const newEntry: Record<string, any> = {
+            const newEntry: Record<string, unknown> = {
                 ...existing,
                 status,
+                note: note !== undefined ? note : (existing?.note ?? ''),
                 updatedAt: now,
                 // ── v1: campos de turno ──────────────────────────────────
                 reviewedShiftKey: shiftKey,
@@ -362,7 +379,7 @@ const BedDetails: React.FC = () => {
             <section className="bg-surface-1 p-4 rounded-xl border shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted mb-4">Quadro Kamishibai</h3>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                     {KAMISHIBAI_DOMAINS.map(s => {
                         // ── v1: calcular estado visual para display ──────────────
                         const visualState = resolveKamishibaiVisualState(bed, s, {
@@ -370,37 +387,62 @@ const BedDetails: React.FC = () => {
                             schedule: opsSettings?.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE,
                         });
                         const currentStatus = bed.kamishibai[s]?.status;
+                        // P1-01: rascunho local da nota; fallback para o que está salvo
+                        const noteValue = kamishibaiBlockNotes[s] ?? bed.kamishibai[s]?.note ?? '';
 
                         return (
-                            <div key={s} className="flex justify-between items-center bg-surface-2 p-3 rounded-lg gap-2">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="text-sm font-semibold truncate">{getKamishibaiLabel(s)}</span>
-                                    {/* Badge de estado visual v1 — só mostra quando relevante */}
-                                    {(visualState === 'UNREVIEWED_THIS_SHIFT' || visualState === 'INACTIVE' || visualState === 'NOT_APPLICABLE') && (
-                                        <span
-                                            className="text-[9px] font-bold uppercase tracking-widest opacity-50"
-                                            title={visualStateLabel(visualState)}
-                                        >
-                                            {visualState === 'NOT_APPLICABLE' ? 'N/A' :
-                                                visualState === 'INACTIVE' ? 'Inativo' :
-                                                    'Não revisado'}
-                                        </span>
-                                    )}
+                            <div key={s} className="bg-surface-2 rounded-lg overflow-hidden">
+                                <div className="flex justify-between items-center p-3 gap-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="text-sm font-semibold truncate">{getKamishibaiLabel(s)}</span>
+                                        {/* Badge de estado visual v1 — só mostra quando relevante */}
+                                        {(visualState === 'UNREVIEWED_THIS_SHIFT' || visualState === 'INACTIVE' || visualState === 'NOT_APPLICABLE') && (
+                                            <span
+                                                className="text-[9px] font-bold uppercase tracking-widest opacity-50"
+                                                title={visualStateLabel(visualState)}
+                                            >
+                                                {visualState === 'NOT_APPLICABLE' ? 'N/A' :
+                                                    visualState === 'INACTIVE' ? 'Inativo' :
+                                                        'Não revisado'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        {/* v1: apenas ok e blocked — 'na' removido dos controles */}
+                                        {(['ok', 'blocked'] as KamishibaiStatus[]).map(status => (
+                                            <button
+                                                key={status}
+                                                onClick={() => handleUpdateKamishibai(s, status)}
+                                                className={`w-10 h-10 flex items-center justify-center rounded-full kami-btn border border-transparent transition-all ${currentStatus === status ? 'selected bg-surface-1 shadow-sm border-soft ring-1 ring-accent-primary/20' : 'hover:bg-surface-1/50'}`}
+                                                aria-label={`Definir status ${status} para ${getKamishibaiLabel(s)}`}
+                                                aria-pressed={currentStatus === status}
+                                            >
+                                                <div className={`w-3.5 h-3.5 rounded-full kamishibai-dot ${status}`} />
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex gap-2 flex-shrink-0">
-                                    {/* v1: apenas ok e blocked — 'na' removido dos controles */}
-                                    {(['ok', 'blocked'] as KamishibaiStatus[]).map(status => (
-                                        <button
-                                            key={status}
-                                            onClick={() => handleUpdateKamishibai(s, status)}
-                                            className={`w-10 h-10 flex items-center justify-center rounded-full kami-btn border border-transparent transition-all ${currentStatus === status ? 'selected bg-surface-1 shadow-sm border-soft ring-1 ring-accent-primary/20' : 'hover:bg-surface-1/50'}`}
-                                            aria-label={`Definir status ${status} para ${getKamishibaiLabel(s)}`}
-                                            aria-pressed={currentStatus === status}
-                                        >
-                                            <div className={`w-3.5 h-3.5 rounded-full kamishibai-dot ${status}`} />
-                                        </button>
-                                    ))}
-                                </div>
+                                {/* P1-01: campo de razão de bloqueio — visível apenas quando blocked */}
+                                {currentStatus === 'blocked' && (
+                                    <div className="px-3 pb-3 border-t border-state-danger/20 pt-2">
+                                        <input
+                                            type="text"
+                                            className="w-full bg-surface-1 border border-state-danger/30 focus:border-state-danger rounded px-2 py-1.5 text-xs text-primary outline-none transition-colors placeholder:text-muted"
+                                            placeholder="Razão do bloqueio (opcional)"
+                                            value={noteValue}
+                                            onChange={(e) => setKamishibaiBlockNotes(prev => ({ ...prev, [s]: e.target.value }))}
+                                            onBlur={async (e) => {
+                                                const trimmed = e.target.value.trim();
+                                                if (trimmed !== (bed.kamishibai[s]?.note ?? '')) {
+                                                    await handleUpdateKamishibai(s, 'blocked', trimmed);
+                                                }
+                                            }}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                                            maxLength={200}
+                                            aria-label={`Razão do bloqueio para ${getKamishibaiLabel(s)}`}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -418,6 +460,32 @@ const BedDetails: React.FC = () => {
                     )}
                 </h3>
 
+                {/* P1-04: filtro por domínio — só exibido quando há pendências com domínio definido */}
+                {(bed.pendencies ?? []).filter(p => p.status === 'open' && p.domain).length > 0 && (
+                    <div className="flex items-center gap-2 mb-3">
+                        <select
+                            className="input text-xs py-1 flex-1"
+                            value={pendencyDomainFilter}
+                            onChange={e => setPendencyDomainFilter(e.target.value as SpecialtyKey | '')}
+                            aria-label="Filtrar pendências por domínio"
+                        >
+                            <option value="">Todos os domínios</option>
+                            {(['medical', 'nursing', 'physio', 'nutrition', 'psychology', 'social'] as SpecialtyKey[])
+                                .filter(d => (bed.pendencies ?? []).some(p => p.status === 'open' && p.domain === d))
+                                .map(d => (
+                                    <option key={d} value={d}>{SpecialtyLabel[d]}</option>
+                                ))}
+                        </select>
+                        {pendencyDomainFilter && (
+                            <button
+                                onClick={() => setPendencyDomainFilter('')}
+                                className="text-xs text-muted hover:text-primary px-2"
+                                aria-label="Limpar filtro"
+                            >✕</button>
+                        )}
+                    </div>
+                )}
+
                 {/* Lista OPEN */}
                 {(bed.pendencies ?? []).filter(p => p.status === 'open').length === 0 && (
                     <p className="text-sm text-muted italic mb-3">Nenhuma pendência aberta.</p>
@@ -425,6 +493,7 @@ const BedDetails: React.FC = () => {
                 <div className="flex flex-col gap-2 mb-4">
                     {(bed.pendencies ?? [])
                         .filter(p => p.status === 'open')
+                        .filter(p => !pendencyDomainFilter || p.domain === pendencyDomainFilter)
                         .map(p => {
                             const isOverdue = !!p.dueAt && new Date(p.dueAt as string).getTime() < nowMs;
                             return (

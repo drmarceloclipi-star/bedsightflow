@@ -102,7 +102,7 @@ const TvRotationContainer: React.FC<TvRotationContainerProps> = ({ beds, setting
     return (
         <div className="h-full flex flex-col relative">
             <div className="flex-1 overflow-hidden">
-                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} columns={activeScreen.columns} now={now} />}
+                {activeScreen.key === 'kanban' && <KanbanScreen beds={activeScreen.beds || []} columns={activeScreen.columns} now={now} kanbanMode={opsSettings?.kanbanMode} />}
                 {activeScreen.key === 'kamishibai' && <KamishibaiScreen beds={activeScreen.beds || []} columns={activeScreen.columns} opsSettings={opsSettings} now={now} />}
                 {activeScreen.key === 'summary' && <SummaryScreen metrics={metrics} unitName={unitName} />}
             </div>
