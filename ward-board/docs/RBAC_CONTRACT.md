@@ -42,7 +42,7 @@ Esses papéis pertencem à operação dentro de uma instituição específica.
 ## Separação Obrigatória
 
 | Regra | Descrição |
-|---|---|
+| --- | --- |
 | Super Admin ≠ Global Admin | Super Admin administra a plataforma, NÃO o hospital |
 | Global Admin ≠ Super Admin | Global Admin não herda funções de plataforma |
 | Sem mistura | Gestão de plataforma, gestão de instituição, gestão de unidade, operação e visualização são camadas separadas |
@@ -108,7 +108,7 @@ Esses papéis pertencem à operação dentro de uma instituição específica.
 Dentro da instituição, cada papel vê o seu nível e os níveis abaixo dele.
 
 | Papel | Vê |
-|---|---|
+| --- | --- |
 | Global Admin | Global Admin + Unit Admin + Editor + Viewer |
 | Unit Admin | Unit Admin + Editor + Viewer |
 | Editor | Editor + Viewer |
@@ -164,7 +164,7 @@ Dentro da instituição, cada papel vê o seu nível e os níveis abaixo dele.
 ## Gestão de Plataforma (Super Admin exclusivo)
 
 | Recurso | Quem pode |
-|---|---|
+| --- | --- |
 | Criar/deletar instituições (units) | Super Admin |
 | Gerenciar authorized_users (whitelist global) | Super Admin |
 | Setar claim `superAdmin` | Super Admin |
