@@ -29,7 +29,11 @@ dist-ssr
 
 # Testing
 playwright-report
+playwright-report-*
 test-results
+
+# Runtime
+emulators.pid
 test-admin-page.js
 viewer-error-banner.png
 
