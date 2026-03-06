@@ -75,7 +75,7 @@ function makeDocMock(getImpl: () => any): any {
 
 // Top-level collection mock: returns a doc that supports subcollection chaining
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockCollection = jest.fn((): any => ({
+const mockCollection = jest.fn((_path?: string): any => ({
     doc: () => makeDocMock(() => Promise.resolve({
         exists: mockRoleDocExists,
         data: () => mockRoleDocData,
