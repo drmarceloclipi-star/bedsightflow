@@ -10,6 +10,7 @@ import { useAuthStatus } from '../../../hooks/useAuthStatus';
 import type { UnitOpsSettings, KanbanMode } from '../../../domain/types';
 import HuddleConsole from '../components/ops/HuddleConsole';
 import HuddleAdherenceReport from '../components/ops/HuddleAdherenceReport';
+import PushNotificationToggle from '../components/ops/PushNotificationToggle';
 
 interface Props {
     unitId: string;
@@ -288,6 +289,21 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                 <div className="mb-6">
                     <HuddleAdherenceReport unitId={unitId} opsSettings={opsSettings} />
                 </div>
+
+                {/* ── P2-04: Push Notifications ─────────────────────────────────────── */}
+                {user && (
+                    <div className="mb-6 bg-surface-1 border rounded-lg p-6 shadow-sm">
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-primary mb-1">Notificações Push</h3>
+                                <p className="text-sm text-muted">
+                                    Receba alertas no navegador quando um novo bloqueio crítico for registrado nesta unidade.
+                                </p>
+                            </div>
+                            <PushNotificationToggle unitId={unitId} uid={user.uid} />
+                        </div>
+                    </div>
+                )}
 
                 {/* Flash */}
                 {msg && (

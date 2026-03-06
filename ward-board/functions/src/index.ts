@@ -7,6 +7,7 @@ export { setUnitUserRole } from './callables/setUnitUserRole';
 export { removeUnitUser } from './callables/removeUnitUser';
 export { softResetUnit } from './callables/softResetUnit';
 export { auditBedWrites } from './triggers/auditBedWrites';
+export { notifyEscalations } from './triggers/notifyEscalations';
 export { setGlobalAdminClaim } from './callables/setGlobalAdminClaim';
 export { deletePendency } from './callables/pendencies/deletePendency';
 
