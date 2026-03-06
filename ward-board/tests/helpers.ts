@@ -32,7 +32,6 @@ export const ADMIN_TAB_LABELS: Record<string, string> = {
 export async function signInViaEmulator(
     page: Page,
     email: string,
-    _displayName?: string,
 ) {
     // Log console errors to terminal
     page.on('console', msg => {
@@ -56,13 +55,13 @@ export async function signInViaEmulator(
 }
 
 export const signInAsAdmin = (page: Page) =>
-    signInViaEmulator(page, 'global-admin@lean.com', 'Global Admin');
+    signInViaEmulator(page, 'global-admin@lean.com');
 
 export const signInAsUnitAdmin = (page: Page) =>
-    signInViaEmulator(page, 'unit-admin@lean.com', 'Unit Admin');
+    signInViaEmulator(page, 'unit-admin@lean.com');
 
 export const signInAsEditor = (page: Page) =>
-    signInViaEmulator(page, 'editor@lean.com', 'Editor User');
+    signInViaEmulator(page, 'editor@lean.com');
 
 // ─── Navigation ────────────────────────────────────────────────────────────
 
