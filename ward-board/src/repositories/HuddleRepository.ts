@@ -2,10 +2,14 @@ import {
     doc,
     collection,
     getDoc,
+    getDocs,
     setDoc,
     updateDoc,
     onSnapshot,
     serverTimestamp,
+    query,
+    orderBy,
+    limit,
 } from 'firebase/firestore';
 import type { FieldValue } from 'firebase/firestore';
 import { db } from '../infra/firebase/config';
@@ -272,5 +276,18 @@ export class HuddleRepository {
             lastHuddleType: huddleType,
             lastHuddleShiftKey: huddleId,
         }, { merge: true });
+    }
+
+    /**
+     * Retorna os N huddles mais recentes de uma unidade, ordenados por shiftKey
+     * descendente (mais recente primeiro).
+     *
+     * Usado pelo relatório de aderência de huddle (P2-03).
+     */
+    static async listRecentHuddles(unitId: string, limitCount = 14): Promise<HuddleDoc[]> {
+        const ref = this.getCollectionRef(unitId);
+        const q = query(ref, orderBy('shiftKey', 'desc'), limit(limitCount));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => d.data() as HuddleDoc);
     }
 }

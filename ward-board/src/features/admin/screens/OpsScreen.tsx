@@ -9,6 +9,7 @@ import { UnitSettingsRepository } from '../../../repositories/UnitSettingsReposi
 import { useAuthStatus } from '../../../hooks/useAuthStatus';
 import type { UnitOpsSettings, KanbanMode } from '../../../domain/types';
 import HuddleConsole from '../components/ops/HuddleConsole';
+import HuddleAdherenceReport from '../components/ops/HuddleAdherenceReport';
 
 interface Props {
     unitId: string;
@@ -281,6 +282,11 @@ const OpsScreen: React.FC<Props> = ({ unitId }) => {
                         user={user}
                         flash={flash}
                     />
+                </div>
+
+                {/* ── P2-03: Relatório de aderência de huddle ───────────────────────── */}
+                <div className="mb-6">
+                    <HuddleAdherenceReport unitId={unitId} opsSettings={opsSettings} />
                 </div>
 
                 {/* Flash */}
