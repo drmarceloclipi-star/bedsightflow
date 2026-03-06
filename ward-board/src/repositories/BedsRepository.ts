@@ -30,7 +30,7 @@ export const BedsRepository = {
         });
     },
 
-    listenToBed(unitId: string, bedId: string, callback: (bed: Bed | null) => void) {
+    listenToBed(unitId: string, bedId: string, callback: (bed: Bed | null) => void, onError?: (error: Error) => void) {
         const bedRef = doc(db, 'units', unitId, 'beds', bedId);
 
         return onSnapshot(bedRef, (snapshot) => {
@@ -41,6 +41,7 @@ export const BedsRepository = {
             }
         }, (error) => {
             console.error("Error listening to single bed:", error);
+            if (onError) onError(error);
         });
     },
 
@@ -76,7 +77,10 @@ export const BedsRepository = {
         const batch = writeBatch(db);
 
         beds.forEach((bed) => {
-            const bedId = bed.number!;
+            if (!bed.number || typeof bed.number !== 'string' || bed.number.trim() === '') {
+                throw new Error(`Invalid bed: missing or empty 'number' field (got ${JSON.stringify(bed.number)})`);
+            }
+            const bedId = bed.number;
             const bedRef = doc(db, 'units', unitId, 'beds', bedId);
             const data = {
                 unitId,

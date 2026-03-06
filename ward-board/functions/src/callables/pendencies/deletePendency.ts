@@ -27,18 +27,14 @@ export const deletePendency = functions.region('southamerica-east1').https.onCal
         await db.runTransaction(async (tx) => {
             const snap = await tx.get(bedRef);
             if (!snap.exists) {
-                console.warn(`[deletePendency] Bed ${bedId} not found in unit ${unitId}`);
                 throw new functions.https.HttpsError('not-found', `Bed ${bedId} not found`);
             }
 
             const bed = snap.data();
             const pendencies = (bed?.pendencies || []) as Array<{ id: string }>;
 
-            console.info(`[deletePendency] Bed found. Pendencies count: ${pendencies.length}. Looking for: ${pendencyId}`);
-
             const idx = pendencies.findIndex(p => p.id === pendencyId);
             if (idx === -1) {
-                console.warn(`[deletePendency] Pendency ${pendencyId} not found in bed ${bedId}. Available IDs: ${pendencies.map(p => p.id).join(', ')}`);
                 throw new functions.https.HttpsError('not-found', `Pendency ${pendencyId} not found`);
             }
 
@@ -57,8 +53,6 @@ export const deletePendency = functions.region('southamerica-east1').https.onCal
                 updatedAt: FieldValue.serverTimestamp(),
                 updatedBy
             });
-
-            console.info(`[deletePendency] SUCCESS: pendency ${pendencyId} removed from bed ${bedId}.`);
         });
 
         return { success: true, deletedId: pendencyId };
