@@ -75,7 +75,7 @@ function makeDocMock(getImpl: () => any): any {
 
 // Top-level collection mock: returns a doc that supports subcollection chaining
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockCollection = jest.fn((): any => ({
+const mockCollection = jest.fn((_path: string): any => ({
     doc: () => makeDocMock(() => Promise.resolve({
         exists: mockRoleDocExists,
         data: () => mockRoleDocData,
@@ -90,12 +90,6 @@ jest.mock('../../../config', () => ({
     },
 }))
 
-// ── Mock isGlobalAdmin ────────────────────────────────────────────────────────
-
-let mockIsGlobal = false
-jest.mock('../../../config/admins', () => ({
-    isGlobalAdmin: () => mockIsGlobal,
-}))
 
 // ── Load the function AFTER mocks are in place ────────────────────────────────
 
@@ -150,7 +144,6 @@ describe('deletePendency — invalid-argument', () => {
 
 describe('deletePendency — RBAC', () => {
     beforeEach(() => {
-        mockIsGlobal = false
         mockRoleDocExists = false
         mockRoleDocData = {}
 
@@ -161,9 +154,9 @@ describe('deletePendency — RBAC', () => {
         })
     })
 
-    it('throws permission-denied for non-admin user without global admin', async () => {
+    it('throws permission-denied for non-admin user', async () => {
         const ctx = makeContext('u1', 'user@test.com', false)
-        // Role doc does not exist → not admin
+        // Role doc does not exist, no custom claim → not admin
         await expect(handler(makeData(), ctx)).rejects.toMatchObject({ code: 'permission-denied' })
     })
 
@@ -175,16 +168,8 @@ describe('deletePendency — RBAC', () => {
         expect(result).toMatchObject({ success: true, deletedId: 'PEND_01' })
     })
 
-    it('allows global admin via isGlobalAdmin()', async () => {
-        mockIsGlobal = true
-        const ctx = makeContext('gadmin', 'global@test.com', false)
-        const result = await handler(makeData(), ctx)
-        expect(result).toMatchObject({ success: true })
-    })
-
-    it('allows user with context.auth.token.admin === true', async () => {
-        mockIsGlobal = false
-        const ctx = makeContext('tok', 'tok@test.com', true) // token.admin = true
+    it('allows global admin via custom claim token.admin === true', async () => {
+        const ctx = makeContext('gadmin', 'global@test.com', true)
         const result = await handler(makeData(), ctx)
         expect(result).toMatchObject({ success: true })
     })
@@ -199,13 +184,11 @@ describe('deletePendency — RBAC', () => {
 // ── Suite 4: not-found errors ────────────────────────────────────────────────
 
 describe('deletePendency — not-found', () => {
-    beforeEach(() => {
-        mockIsGlobal = true // bypass RBAC
-    })
+    const adminCtx = makeContext('gadmin', 'global@test.com', true) // bypass RBAC via custom claim
 
     it('throws not-found when bed does not exist', async () => {
         mockGet.mockResolvedValueOnce({ exists: false, data: () => null })
-        await expect(handler(makeData(), makeContext())).rejects.toMatchObject({ code: 'not-found' })
+        await expect(handler(makeData(), adminCtx)).rejects.toMatchObject({ code: 'not-found' })
     })
 
     it('throws not-found when pendency id not in bed', async () => {
@@ -213,15 +196,16 @@ describe('deletePendency — not-found', () => {
             exists: true,
             data: () => ({ pendencies: [{ id: 'OTHER_PEND' }] }),
         })
-        await expect(handler(makeData(), makeContext())).rejects.toMatchObject({ code: 'not-found' })
+        await expect(handler(makeData(), adminCtx)).rejects.toMatchObject({ code: 'not-found' })
     })
 })
 
 // ── Suite 5: Happy path ───────────────────────────────────────────────────────
 
 describe('deletePendency — happy path', () => {
+    const adminCtx = makeContext('gadmin', 'global@test.com', true)
+
     beforeEach(() => {
-        mockIsGlobal = true
         mockUpdate.mockClear()
         mockGet.mockResolvedValue({
             exists: true,
@@ -235,12 +219,12 @@ describe('deletePendency — happy path', () => {
     })
 
     it('returns { success: true, deletedId }', async () => {
-        const result = await handler(makeData(), makeContext())
+        const result = await handler(makeData(), adminCtx)
         expect(result).toMatchObject({ success: true, deletedId: 'PEND_01' })
     })
 
     it('calls tx.update with pendencies array minus the deleted item', async () => {
-        await handler(makeData(), makeContext())
+        await handler(makeData(), adminCtx)
         const updateArgs = mockUpdate.mock.calls[0]
         const updatedPendencies: { id: string }[] = updateArgs[1].pendencies
         expect(updatedPendencies).toHaveLength(1)
@@ -253,7 +237,7 @@ describe('deletePendency — happy path', () => {
             exists: true,
             data: () => ({ pendencies: [{ id: 'PEND_DONE', status: 'done' }] }),
         })
-        const result = await handler(makeData({ pendencyId: 'PEND_DONE' }), makeContext())
+        const result = await handler(makeData({ pendencyId: 'PEND_DONE' }), adminCtx)
         expect(result).toMatchObject({ success: true, deletedId: 'PEND_DONE' })
     })
 })

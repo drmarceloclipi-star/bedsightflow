@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../../config';
-import { isGlobalAdmin } from '../../config/admins';
 
 export const deletePendency = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
@@ -16,8 +15,7 @@ export const deletePendency = functions.region('southamerica-east1').https.onCal
     // Check caller is admin of this unit or global admin
     const roleDoc = await db.collection('units').doc(unitId).collection('users').doc(adminUid).get();
 
-    // fallback context.auth.token.admin == true or isGlobalAdmin check
-    const isGlobal = isGlobalAdmin(adminEmail) || context.auth.token.admin === true;
+    const isGlobal = context.auth.token.admin === true;
 
     if (!isGlobal && (!roleDoc.exists || roleDoc.data()?.role !== 'admin')) {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
