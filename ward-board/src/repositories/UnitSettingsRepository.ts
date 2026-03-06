@@ -2,6 +2,7 @@ import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../infra/firebase/config';
 import type { UnitOpsSettings, KanbanMode, ActorRef } from '../domain/types';
 import { DEFAULT_SHIFT_SCHEDULE, computeShiftKey, type ShiftSchedule } from '../domain/shiftKey';
+import { parseMissionControlThresholds, type MissionControlThresholds } from '../domain/missionControl';
 
 // ── Parsers ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ function parseOpsSettings(data: Record<string, unknown>): UnitOpsSettings {
         lastHuddleType: (data.lastHuddleType as 'AM' | 'PM') ?? undefined,
         lastHuddleShiftKey: typeof data.lastHuddleShiftKey === 'string' ? data.lastHuddleShiftKey : undefined,
         lastHuddleRegisteredBy: (data.lastHuddleRegisteredBy as ActorRef) ?? undefined,
+        lswGraceMinutes: typeof data.lswGraceMinutes === 'number' ? data.lswGraceMinutes : undefined,
     };
 }
 
@@ -152,6 +154,29 @@ export const UnitSettingsRepository = {
                 updatedAt: serverTimestamp(),
             },
             { merge: true }
+        );
+    },
+
+    // ── v1 — Mission Control thresholds ──────────────────────────────────────
+
+    /**
+     * Subscribes to the unit's mission_control settings document.
+     * Invokes callback with parsed thresholds (merged with defaults) on every change.
+     * Falls back to DEFAULT_MISSION_CONTROL_THRESHOLDS when the document doesn't exist.
+     */
+    subscribeMissionControlSettings(
+        unitId: string,
+        callback: (thresholds: MissionControlThresholds) => void
+    ): () => void {
+        const ref = doc(db, 'units', unitId, 'settings', 'mission_control');
+        return onSnapshot(
+            ref,
+            (docSnap) => {
+                callback(parseMissionControlThresholds(docSnap.exists() ? docSnap.data() : undefined));
+            },
+            (error) => {
+                console.error('Error listening to mission_control settings:', error);
+            }
         );
     },
 };

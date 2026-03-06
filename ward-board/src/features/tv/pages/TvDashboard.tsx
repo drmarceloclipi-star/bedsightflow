@@ -13,7 +13,8 @@ import { currentShiftKey, DEFAULT_SHIFT_SCHEDULE } from '../../../domain/shiftKe
 import { getReviewOfShiftKey } from '../../../domain/huddle';
 import type { HuddleDoc } from '../../../domain/huddle';
 import { HuddleRepository } from '../../../repositories/HuddleRepository';
-import { computeEscalations, DEFAULT_ESCALATION_THRESHOLDS } from '../../../domain/escalation';
+import { computeEscalations } from '../../../domain/escalation';
+import { DEFAULT_MISSION_CONTROL_THRESHOLDS, type MissionControlThresholds } from '../../../domain/missionControl';
 import { CheckSquare, Flame } from 'lucide-react';
 
 const TvDashboard: React.FC = () => {
@@ -31,6 +32,7 @@ const TvDashboard: React.FC = () => {
     const [now, setNow] = useState(new Date());
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [opsSettings, setOpsSettings] = useState<UnitOpsSettings | null>(null);
+    const [missionControlThresholds, setMissionControlThresholds] = useState<MissionControlThresholds>(DEFAULT_MISSION_CONTROL_THRESHOLDS);
 
     // Huddle Docs
     const [currentHuddle, setCurrentHuddle] = useState<HuddleDoc | null>(null);
@@ -109,11 +111,13 @@ const TvDashboard: React.FC = () => {
         });
 
         const unsubscribeOps = UnitSettingsRepository.subscribeUnitOpsSettings(unitId, setOpsSettings);
+        const unsubscribeMC = UnitSettingsRepository.subscribeMissionControlSettings(unitId, setMissionControlThresholds);
 
         return () => {
             unsubscribeBeds();
             unsubscribeSettings();
             unsubscribeOps();
+            unsubscribeMC();
         };
     }, [unitId]);
 
@@ -137,11 +141,12 @@ const TvDashboard: React.FC = () => {
     }, [unitId, opsSettings, now.getHours()]);
 
     // ── Escalation (v1 runtime) ──────────────────────────────────────────────────
+    // Uses unit-specific thresholds from settings/mission_control (subscribed above).
     const escalationsTotal = useMemo(() => {
         if (!beds) return 0;
-        const esc = computeEscalations(beds, DEFAULT_ESCALATION_THRESHOLDS, now);
+        const esc = computeEscalations(beds, missionControlThresholds, now);
         return esc.total;
-    }, [beds, now]);
+    }, [beds, missionControlThresholds, now]);
 
     // Banners state
     const currentActionsOpen = (currentHuddle?.topActions || []).filter(a => a.status === 'open').length;
