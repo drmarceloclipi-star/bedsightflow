@@ -14,7 +14,7 @@ type KamishibaiStatus = 'ok' | 'blocked' | 'na'
  *  - kamishibai blocked counts
  *  - stale beds (not updated in >24h)
  */
-export const getAdminOverviewBQ = functions
+export const getAdminOverview = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

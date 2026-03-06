@@ -10,12 +10,12 @@ export { auditBedWrites } from './triggers/auditBedWrites';
 export { setGlobalAdminClaim } from './callables/setGlobalAdminClaim';
 export { deletePendency } from './callables/pendencies/deletePendency';
 
-// Analytics (BigQuery integration callables)
-export { getAdminOverviewBQ } from './callables/analytics/getAdminOverviewBQ';
-export { getAdminFlowMetricsBQ } from './callables/analytics/getAdminFlowMetricsBQ';
-export { getAdminKamishibaiStatsBQ } from './callables/analytics/getAdminKamishibaiStatsBQ';
-export { getAdminTopBlockersBQ } from './callables/analytics/getAdminTopBlockersBQ';
-export { getAdminFreshnessBQ } from './callables/analytics/getAdminFreshnessBQ';
-export { getAdminTrendComparisonBQ } from './callables/analytics/getAdminTrendComparisonBQ';
+// Analytics callables (query Firestore audit logs — not BigQuery)
+export { getAdminOverview } from './callables/analytics/getAdminOverview';
+export { getAdminFlowMetrics } from './callables/analytics/getAdminFlowMetrics';
+export { getAdminKamishibaiStats } from './callables/analytics/getAdminKamishibaiStats';
+export { getAdminTopBlockers } from './callables/analytics/getAdminTopBlockers';
+export { getAdminFreshness } from './callables/analytics/getAdminFreshness';
+export { getAdminTrendComparison } from './callables/analytics/getAdminTrendComparison';
 export { getAdminMissionControlSnapshot } from './callables/analytics/getAdminMissionControlSnapshot';
 export { getAdminMissionControlPeriod } from './callables/analytics/getAdminMissionControlPeriod';

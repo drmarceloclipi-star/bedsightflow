@@ -1,5 +1,5 @@
 /**
- * Tests for getAdminFlowMetricsBQ (real Firestore data version)
+ * Tests for getAdminFlowMetrics (real Firestore data version)
  *
  * Now an integration test — queries real audit_logs from the Firestore emulator.
  * Prerequisites: Firestore emulator must be running on localhost:8080.
@@ -15,13 +15,13 @@ const testEnv = functionsTest({
 })
 
 import * as admin from 'firebase-admin'
-import { getAdminFlowMetricsBQ } from '../../callables/analytics/getAdminFlowMetricsBQ'
+import { getAdminFlowMetrics } from '../../callables/analytics/getAdminFlowMetrics'
 
 if (!admin.apps.length) {
     admin.initializeApp({ projectId: 'lean-841e5' })
 }
 
-const wrapped = testEnv.wrap(getAdminFlowMetricsBQ)
+const wrapped = testEnv.wrap(getAdminFlowMetrics)
 const db = admin.firestore()
 
 const UNIT_ID = 'TEST_FLOW'
@@ -82,7 +82,7 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-describe('getAdminFlowMetricsBQ – auth guard', () => {
+describe('getAdminFlowMetrics – auth guard', () => {
     it('throws unauthenticated when no auth context is provided', async () => {
         await expect(
             wrapped({ unitId: UNIT_ID }, { auth: undefined })
@@ -93,7 +93,7 @@ describe('getAdminFlowMetricsBQ – auth guard', () => {
 // ---------------------------------------------------------------------------
 // Argument validation
 // ---------------------------------------------------------------------------
-describe('getAdminFlowMetricsBQ – argument validation', () => {
+describe('getAdminFlowMetrics – argument validation', () => {
     it('throws invalid-argument when unitId is missing', async () => {
         await expect(wrapped({}, { auth })).rejects.toMatchObject({ code: 'invalid-argument' })
     })
@@ -102,7 +102,7 @@ describe('getAdminFlowMetricsBQ – argument validation', () => {
 // ---------------------------------------------------------------------------
 // Response structure
 // ---------------------------------------------------------------------------
-describe('getAdminFlowMetricsBQ – response structure', () => {
+describe('getAdminFlowMetrics – response structure', () => {
     beforeAll(() => clearCollection(`units/${UNIT_ID}/audit_logs`))
 
     it('returns 1 point for periodKey=today', async () => {
@@ -151,7 +151,7 @@ describe('getAdminFlowMetricsBQ – response structure', () => {
 // ---------------------------------------------------------------------------
 // Bucket assignment from real audit logs
 // ---------------------------------------------------------------------------
-describe('getAdminFlowMetricsBQ – bucket assignment', () => {
+describe('getAdminFlowMetrics – bucket assignment', () => {
     beforeEach(() => clearCollection(`units/${UNIT_ID}/audit_logs`))
 
     it('counts RESET_BED_KANBAN as a discharge and assigns correct bucket', async () => {

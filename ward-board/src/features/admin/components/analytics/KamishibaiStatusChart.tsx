@@ -36,8 +36,8 @@ const KamishibaiStatusChart: React.FC<KamishibaiStatsProps> = ({ unitId, period,
             setLoading(true);
             setError(null);
             try {
-                const getAdminKamishibaiStatsBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, KamishibaiResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_KAMISHIBAI_STATS_BQ);
-                const result = await getAdminKamishibaiStatsBQ({ unitId, periodKey: period });
+                const getAdminKamishibaiStats = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, KamishibaiResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_KAMISHIBAI_STATS);
+                const result = await getAdminKamishibaiStats({ unitId, periodKey: period });
                 setData(result.data);
             } catch (err) {
                 console.error('Error fetching kamishibai stats', err);

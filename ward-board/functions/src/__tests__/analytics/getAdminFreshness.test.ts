@@ -1,5 +1,5 @@
 /**
- * Tests for getAdminFreshnessBQ (Firestore emulator)
+ * Tests for getAdminFreshness (Firestore emulator)
  *
  * R2 validation: stale counts should use kamishibai[domain].reviewedAt as the
  * freshness signal, not bed.updatedAt.
@@ -15,13 +15,13 @@ const functionsTest = require('firebase-functions-test')
 const testEnv = functionsTest({ projectId: 'lean-841e5' })
 
 import * as admin from 'firebase-admin'
-import { getAdminFreshnessBQ } from '../../callables/analytics/getAdminFreshnessBQ'
+import { getAdminFreshness } from '../../callables/analytics/getAdminFreshness'
 
 if (!admin.apps.length) {
     admin.initializeApp({ projectId: 'lean-841e5' })
 }
 
-const wrapped = testEnv.wrap(getAdminFreshnessBQ)
+const wrapped = testEnv.wrap(getAdminFreshness)
 const db = admin.firestore()
 
 const UNIT_ID = 'TEST_FRESHNESS'
@@ -46,7 +46,7 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-describe('getAdminFreshnessBQ – auth guard', () => {
+describe('getAdminFreshness – auth guard', () => {
     it('throws unauthenticated when no auth context', async () => {
         await expect(
             wrapped({ unitId: UNIT_ID }, { auth: undefined })
@@ -57,7 +57,7 @@ describe('getAdminFreshnessBQ – auth guard', () => {
 // ---------------------------------------------------------------------------
 // Argument validation
 // ---------------------------------------------------------------------------
-describe('getAdminFreshnessBQ – argument validation', () => {
+describe('getAdminFreshness – argument validation', () => {
     it('throws invalid-argument when unitId is missing', async () => {
         await expect(wrapped({}, { auth })).rejects.toMatchObject({ code: 'invalid-argument' })
     })
@@ -66,7 +66,7 @@ describe('getAdminFreshnessBQ – argument validation', () => {
 // ---------------------------------------------------------------------------
 // Response structure
 // ---------------------------------------------------------------------------
-describe('getAdminFreshnessBQ – response structure', () => {
+describe('getAdminFreshness – response structure', () => {
     beforeAll(() => clearCollection(`units/${UNIT_ID}/beds`))
 
     it('returns stale counts and activity arrays', async () => {
@@ -86,7 +86,7 @@ describe('getAdminFreshnessBQ – response structure', () => {
 // ---------------------------------------------------------------------------
 // R2: reviewedAt takes precedence over updatedAt for staleness
 // ---------------------------------------------------------------------------
-describe('getAdminFreshnessBQ – R2: reviewedAt as freshness signal', () => {
+describe('getAdminFreshness – R2: reviewedAt as freshness signal', () => {
     beforeEach(() => clearCollection(`units/${UNIT_ID}/beds`))
 
     it('uses kamishibai reviewedAt (recent) — bed NOT stale even if updatedAt is old', async () => {

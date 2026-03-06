@@ -10,7 +10,7 @@ type KamishibaiStatus = 'ok' | 'blocked' | 'na'
  * Reads the `kamishibai` field of each bed (Record<SpecialtyKey, KamishibaiEntry>)
  * and aggregates status counts across all beds — total distribution and by specialty.
  */
-export const getAdminKamishibaiStatsBQ = functions
+export const getAdminKamishibaiStats = functions
     .region('southamerica-east1')
     .https.onCall(async (data, context) => {
         if (!context.auth) {

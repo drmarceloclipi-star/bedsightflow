@@ -13,13 +13,13 @@ export const CLOUD_FUNCTIONS = {
     RESET_BED_KAMISHIBAI: 'resetBedKamishibai',
     RESET_BED_ALL: 'resetBedAll',
 
-    // Analytics (BigQuery)
-    GET_ADMIN_FRESHNESS_BQ: 'getAdminFreshnessBQ',
-    GET_ADMIN_KAMISHIBAI_STATS_BQ: 'getAdminKamishibaiStatsBQ',
-    GET_ADMIN_FLOW_METRICS_BQ: 'getAdminFlowMetricsBQ',
-    GET_ADMIN_OVERVIEW_BQ: 'getAdminOverviewBQ',
-    GET_ADMIN_TREND_COMPARISON_BQ: 'getAdminTrendComparisonBQ',
-    GET_ADMIN_TOP_BLOCKERS_BQ: 'getAdminTopBlockersBQ',
+    // Analytics (query Firestore audit logs)
+    GET_ADMIN_FRESHNESS: 'getAdminFreshness',
+    GET_ADMIN_KAMISHIBAI_STATS: 'getAdminKamishibaiStats',
+    GET_ADMIN_FLOW_METRICS: 'getAdminFlowMetrics',
+    GET_ADMIN_OVERVIEW: 'getAdminOverview',
+    GET_ADMIN_TREND_COMPARISON: 'getAdminTrendComparison',
+    GET_ADMIN_TOP_BLOCKERS: 'getAdminTopBlockers',
 
     // Mission Control
     GET_ADMIN_MISSION_CONTROL_SNAPSHOT: 'getAdminMissionControlSnapshot',

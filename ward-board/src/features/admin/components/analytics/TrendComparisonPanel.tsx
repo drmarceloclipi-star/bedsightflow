@@ -7,7 +7,7 @@ import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsContract } from './AnalyticsContract';
 
 /**
- * The backend getAdminTrendComparisonBQ returns { currentPeriod, previousPeriod }
+ * The backend getAdminTrendComparison returns { currentPeriod, previousPeriod }
  * where each period is an array of { date, value } objects.
  * We transform this into a summary comparison on the frontend.
  */
@@ -16,7 +16,7 @@ interface PeriodPoint {
     value: number;
 }
 
-interface TrendComparisonBQResult {
+interface TrendComparisonResult {
     currentPeriod: PeriodPoint[];
     previousPeriod: PeriodPoint[];
 }
@@ -28,7 +28,7 @@ interface TrendComparisonProps {
 }
 
 const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period, refreshTrigger }) => {
-    const [data, setData] = useState<TrendComparisonBQResult | null>(null);
+    const [data, setData] = useState<TrendComparisonResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +37,8 @@ const TrendComparisonPanel: React.FC<TrendComparisonProps> = ({ unitId, period, 
             setLoading(true);
             setError(null);
             try {
-                const getAdminTrendComparisonBQ = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, TrendComparisonBQResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TREND_COMPARISON_BQ);
-                const result = await getAdminTrendComparisonBQ({ unitId, periodKey: period });
+                const getAdminTrendComparison = httpsCallable<{ unitId: string, periodKey: AnalyticsPeriodKey }, TrendComparisonResult>(functions, CLOUD_FUNCTIONS.GET_ADMIN_TREND_COMPARISON);
+                const result = await getAdminTrendComparison({ unitId, periodKey: period });
                 setData(result.data);
             } catch (err) {
                 console.error("Error fetching trend comparison", err);
