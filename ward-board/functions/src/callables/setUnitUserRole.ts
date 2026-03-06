@@ -30,15 +30,13 @@ export const setUnitUserRole = functions.region('southamerica-east1').https.onCa
     let targetUid: string;
     let targetDisplayName: string;
     try {
-        console.log(`[setUnitUserRole] Looking up user: ${email}`);
         const userRecord = await admin.auth().getUserByEmail(email.toLowerCase().trim());
         targetUid = userRecord.uid;
         // displayName may be undefined for users who signed up without a name
         targetDisplayName = userRecord.displayName ?? userRecord.email ?? email;
-    } catch (err: any) {
-        console.error(`[setUnitUserRole] Error in auth lookup for ${email}:`, err);
-        if (err.code === 'auth/user-not-found') {
-            console.log(`[setUnitUserRole] Creating new user: ${email}`);
+    } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        if (code === 'auth/user-not-found') {
             try {
                 const newUser = await admin.auth().createUser({
                     email: email.toLowerCase().trim(),
@@ -47,13 +45,13 @@ export const setUnitUserRole = functions.region('southamerica-east1').https.onCa
                 });
                 targetUid = newUser.uid;
                 targetDisplayName = newUser.displayName ?? email;
-            } catch (createErr: any) {
-                console.error(`[setUnitUserRole] Error creating user ${email}:`, createErr);
-                throw new functions.https.HttpsError('internal', `Error creating user: ${createErr.message}`);
+            } catch (createErr: unknown) {
+                const msg = createErr instanceof Error ? createErr.message : String(createErr);
+                throw new functions.https.HttpsError('internal', `Error creating user: ${msg}`);
             }
         } else {
-            console.error(`[setUnitUserRole] Unexpected error looking up user ${email}:`, err);
-            throw new functions.https.HttpsError('internal', `Error looking up user: ${err.message}`);
+            const msg = err instanceof Error ? err.message : String(err);
+            throw new functions.https.HttpsError('internal', `Error looking up user: ${msg}`);
         }
     }
 

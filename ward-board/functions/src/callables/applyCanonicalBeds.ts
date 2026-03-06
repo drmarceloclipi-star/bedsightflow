@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 import { v4 as uuidv4 } from 'uuid';
+import { chunkAndCommitBatch } from '../lib/firestoreBatch';
 
 const CANONICAL_BED_NUMBERS = [
     '301.1', '301.2', '301.3', '301.4',
@@ -37,7 +38,6 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
         throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
     }
 
-    const batch = db.batch();
     const now = FieldValue.serverTimestamp();
     const updatedBy = { uid, email };
     const correlationId = uuidv4(); // ID único desta operação em lote — agrupa todos os logs relacionados
@@ -45,12 +45,7 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
     const bedsRef = db.collection('units').doc(unitId).collection('beds');
     const existingBeds = await bedsRef.get();
 
-    // Deleta leitos que não estão na lista canônica e reseta os que estão
-    existingBeds.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-
-    const kamishibai: Record<string, any> = {};
+    const kamishibai: Record<string, unknown> = {};
     const domains = ['medical', 'nursing', 'physio', 'nutrition', 'psychology', 'social'];
     domains.forEach(d => {
         kamishibai[d] = {
@@ -61,10 +56,17 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
         };
     });
 
+    const operations: Array<(batch: FirebaseFirestore.WriteBatch) => void> = [];
+
+    // Deleta leitos que não estão na lista canônica e reseta os que estão
+    existingBeds.docs.forEach(doc => {
+        operations.push((batch) => batch.delete(doc.ref));
+    });
+
     for (const num of CANONICAL_BED_NUMBERS) {
         const id = `bed_${num}`;
         const bedRef = bedsRef.doc(id);
-        batch.set(bedRef, {
+        operations.push((batch) => batch.set(bedRef, {
             id,
             unitId,
             number: num,
@@ -76,11 +78,11 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
             updatedAt: now,
             updatedBy,
             _correlationId: correlationId // permite rastrear leitos criados por esta operação
-        });
+        }));
     }
 
     const auditLogRef = db.collection('units').doc(unitId).collection('audit_logs').doc();
-    batch.set(auditLogRef, {
+    operations.push((batch) => batch.set(auditLogRef, {
         id: auditLogRef.id,
         unitId,
         actor: { uid, email, displayName, role: 'admin' },
@@ -95,8 +97,8 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
         reason: reason.trim(),
         correlationId,
         createdAt: now
-    });
+    }));
 
-    await batch.commit();
+    await chunkAndCommitBatch(db, operations);
     return { success: true };
 });
