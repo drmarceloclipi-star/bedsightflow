@@ -43,7 +43,8 @@ const hoursAgo = (h: number): string => new Date(Date.now() - h * 3600_000).toIS
 const daysAgo = (d: number): string => new Date(Date.now() - d * 86_400_000).toISOString();
 
 const SEED_USERS = [
-    { email: 'admin@lean.com', password: 'password123', role: 'admin', name: 'Admin User' },
+    { email: 'global-admin@lean.com', password: 'password123', role: 'global-admin', name: 'Global Admin User' },
+    { email: 'unit-admin@lean.com', password: 'password123', role: 'admin', name: 'Unit Admin User' },
     { email: 'editor@lean.com', password: 'password123', role: 'editor', name: 'Editor User' },
     { email: 'viewer@lean.com', password: 'password123', role: 'viewer', name: 'Viewer User' },
     { email: 'doctor@lean.com', password: 'password123', role: 'doctor', name: 'Dr. Silva' },
@@ -230,12 +231,19 @@ async function seed() {
     // 1. Seed Auth Users + Firestore user profiles
     console.log('👤 Creating users...');
     for (const user of SEED_USERS) {
+        const isGlobalAdmin = user.role === 'global-admin';
+        const unitRole = isGlobalAdmin ? 'admin' : user.role;
+
         try {
             const userRecord = await auth.createUser({
                 email: user.email,
                 password: user.password,
                 displayName: user.name,
             });
+
+            if (isGlobalAdmin) {
+                await auth.setCustomUserClaims(userRecord.uid, { admin: true });
+            }
 
             await db.collection('users').doc(userRecord.uid).set({
                 uid: userRecord.uid,
@@ -250,6 +258,12 @@ async function seed() {
                 addedAt: new Date().toISOString()
             });
 
+            // Also give the core /users/{uid}/authz/authz structure
+            await db.collection('users').doc(userRecord.uid).collection('authz').doc('authz').set({
+                units: { 'A': { role: unitRole, assignedAt: new Date().toISOString(), assignedBy: 'seed' } },
+                updatedAt: new Date().toISOString()
+            });
+
             console.log(`  ✅ ${user.name} (${user.email}) — uid: ${userRecord.uid}`);
         } catch (error: unknown) {
             const err = error as { code?: string; message?: string };
@@ -257,6 +271,9 @@ async function seed() {
                 console.log(`  ℹ️  Already exists: ${user.email} (updating profiles)`);
                 try {
                     const existingUser = await auth.getUserByEmail(user.email);
+                    if (isGlobalAdmin) {
+                        await auth.setCustomUserClaims(existingUser.uid, { admin: true });
+                    }
                     await db.collection('users').doc(existingUser.uid).set({
                         uid: existingUser.uid,
                         email: user.email,
@@ -268,6 +285,11 @@ async function seed() {
                     await db.collection('authorized_users').doc(existingUser.uid).set({
                         email: user.email,
                         addedAt: new Date().toISOString()
+                    }, { merge: true });
+
+                    await db.collection('users').doc(existingUser.uid).collection('authz').doc('authz').set({
+                        units: { 'A': { role: unitRole, assignedAt: new Date().toISOString(), assignedBy: 'seed' } },
+                        updatedAt: new Date().toISOString()
                     }, { merge: true });
                 } catch (e) {
                     console.error(`  ❌ Error updating existing user ${user.email}:`, e);
@@ -293,10 +315,11 @@ async function seed() {
     for (const user of SEED_USERS) {
         try {
             const userRecord = await auth.getUserByEmail(user.email);
+            const unitRole = user.role === 'global-admin' ? 'admin' : user.role;
             await db.collection('units').doc('A').collection('users').doc(userRecord.uid).set({
                 uid: userRecord.uid,
                 email: user.email,
-                role: user.role,
+                role: unitRole,
                 name: user.name,
                 addedAt: new Date().toISOString()
             });

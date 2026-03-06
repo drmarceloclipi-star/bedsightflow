@@ -56,7 +56,8 @@ console.log('[seed:lean] prevShiftKey:', PREV_SHIFT_KEY);
 const SEED_ACTOR = { id: 'seed', name: 'System Seed' };
 
 const SEED_USERS = [
-    { email: 'admin@lean.com', password: 'password123', role: 'admin', name: 'Admin User' },
+    { email: 'global-admin@lean.com', password: 'password123', role: 'global-admin', name: 'Global Admin User' },
+    { email: 'unit-admin@lean.com', password: 'password123', role: 'admin', name: 'Unit Admin User' },
     { email: 'editor@lean.com', password: 'password123', role: 'editor', name: 'Editor User' },
     { email: 'viewer@lean.com', password: 'password123', role: 'viewer', name: 'Viewer User' },
 ];
@@ -200,6 +201,8 @@ const SPECIAL_BEDS: Record<string, unknown> = {
         mainBlocker: 'Aguardando CTI (seed)',
         mainBlockerBlockedAt: msAgo(29),
         expectedDischarge: 'later',
+        pendenciesOpen: 2,
+        pendenciesTotal: 2,
         applicableDomains: ALL_DOMAINS,
         kamishibai: {
             medical: makeKamishibaiBlocked(msAgo(29), msAgo(29), 'Transferência CTI bloqueada (seed)'),
@@ -454,35 +457,31 @@ async function seed() {
     // ── 1. Users (idempotente) ───────────────────────────────────────────────
     console.log('👤 [seed:lean] Ensuring auth users...');
     for (const user of SEED_USERS) {
+        const isGlobalAdmin = user.role === 'global-admin';
+        const unitRole = isGlobalAdmin ? 'admin' : user.role;
+
         try {
+            try {
+                const existing = await auth.getUserByEmail(user.email);
+                await auth.deleteUser(existing.uid);
+                console.log(`  🗑️  Deleted existing user: ${user.email}`);
+            } catch (e: unknown) {
+                // If user doesn't exist, proceed
+            }
+
             const rec = await auth.createUser({ email: user.email, password: user.password, displayName: user.name });
-            if (user.role === 'admin') {
+            if (isGlobalAdmin) {
                 await auth.setCustomUserClaims(rec.uid, { admin: true });
             }
             await db.collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: user.role, name: user.name, createdAt: msAgo(0) });
             await db.collection('authorized_users').doc(rec.uid).set({ email: user.email, addedAt: msAgo(0) });
             await db.collection('users').doc(rec.uid).collection('authz').doc('authz').set({
-                units: { 'A': { role: user.role, assignedAt: msAgo(0), assignedBy: 'seed' } },
+                units: { 'A': { role: unitRole, assignedAt: msAgo(0), assignedBy: 'seed' } },
                 updatedAt: msAgo(0)
             });
             console.log(`  ✅ Created: ${user.email} (${user.role})`);
         } catch (e: unknown) {
-            const err = e as { code?: string; message?: string };
-            if (err.code === 'auth/email-already-exists') {
-                const existing = await auth.getUserByEmail(user.email);
-                if (user.role === 'admin') {
-                    await auth.setCustomUserClaims(existing.uid, { admin: true });
-                }
-                await db.collection('users').doc(existing.uid).set({ uid: existing.uid, email: user.email, role: user.role, name: user.name, createdAt: msAgo(0) }, { merge: true });
-                await db.collection('authorized_users').doc(existing.uid).set({ email: user.email, addedAt: msAgo(0) }, { merge: true });
-                await db.collection('users').doc(existing.uid).collection('authz').doc('authz').set({
-                    units: { 'A': { role: user.role, assignedAt: msAgo(0), assignedBy: 'seed' } },
-                    updatedAt: msAgo(0)
-                }, { merge: true });
-                console.log(`  ℹ️  Already exists (updated): ${user.email}`);
-            } else {
-                console.error(`  ❌ Error: ${user.email}`, err.message);
-            }
+            console.error(`  ❌ Failed to seed user ${user.email}:`, e);
         }
     }
 
@@ -492,7 +491,8 @@ async function seed() {
 
     for (const user of SEED_USERS) {
         const rec = await auth.getUserByEmail(user.email);
-        await db.collection('units').doc('A').collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: user.role, name: user.name, addedAt: msAgo(0) });
+        const unitRole = user.role === 'global-admin' ? 'admin' : user.role;
+        await db.collection('units').doc('A').collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: unitRole, name: user.name, addedAt: msAgo(0) });
     }
     console.log(`  ✅ Unit A created (${BEDS.length} beds, users linked)`);
 

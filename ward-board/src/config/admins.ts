@@ -12,4 +12,8 @@
 export const ADMIN_EMAILS = [
     'drmarceloclipi@gmail.com',
     'admin@lean.com',
+    'global-admin@lean.com',
+    'unit-admin@lean.com',
+    'editor@lean.com',
+    'viewer@lean.com',
 ];

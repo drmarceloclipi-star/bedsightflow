@@ -150,3 +150,18 @@ settings/mission_control.escalationMainBlockerHoursCritical = 24
 |---|---|---|---|
 | `HUDDLE_2026-02-27-PM` | `2026-02-27-PM` | 2 open | start+end com delta |
 | `HUDDLE_2026-02-28-AM` | `2026-02-28-AM` | 1 done | start+end com delta calculável |
+
+---
+
+## ⚠️ Diretrizes Críticas de Auth Emulator (Atualização 2026-03-06)
+
+**Regra de Ouro para Seeding de Usuários:** NUNCA utilize métodos ambíguos ou condicionais (ex: `updateUser` que tenta atualizar e faz fallback pro `createUser`) para gerar usuários no emulador local de autenticação (`:9099`).
+O Auth Emulator costuma falhar silenciosamente ao vincular `passwordProviders` em updates de usuários já existentes entre instâncias quentes.
+
+**O Padrão Ouro (Implementado em `seed-lean-tests.ts`):**
+
+1. Teste a existência do usuário via `getUserByEmail(email)`.
+2. Se existir, **DELETE** forçosamente via `admin.auth().deleteUser(user.uid)`.
+3. CRIE novamente do zero usando `admin.auth().createUser({ ...payload_completo, password: 'senhapadrao' })`.
+
+Isso destrói proativamente flakiness do tipo `auth/wrong-password` durante corridas Playwright E2E.

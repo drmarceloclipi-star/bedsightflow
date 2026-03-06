@@ -11,21 +11,15 @@ test.describe('Viewer Role RBAC Restrictions', () => {
         // 1. Log in as Viewer
         await viewerPage.goto('/login');
 
-        await viewerPage.click('button:has-text("Entrar com Google")');
-        await viewerPage.waitForURL(/localhost:9099/);
+        // Fill the local login form inputs
+        const emailInput = viewerPage.locator('input[name="email"]');
+        await emailInput.waitFor({ state: 'visible' });
+        await emailInput.fill('viewer@lean.com');
+        await viewerPage.fill('input[name="password"]', 'password123');
+        await viewerPage.click('button[type="submit"]:has-text("Entrar Localmente")');
 
-        // In the emulator auth UI, click "Add new account"
-        await viewerPage.click('button:has-text("Add new account")');
-
-        // Fill the email and name
-        await viewerPage.fill('input[id="email-input"]', 'viewer@lean.com');
-        await viewerPage.fill('input[id="display-name-input"]', 'Viewer User');
-
-        // Click "Sign In"
-        await viewerPage.click('button:has-text("Sign In")');
-
-        // Wait for navigation to /editor
-        await viewerPage.waitForURL(/\/editor/);
+        // Wait for navigation to /portal
+        await viewerPage.waitForURL(/\/portal/);
 
         // 2. Try to access an Admin route
         await viewerPage.goto('/admin');

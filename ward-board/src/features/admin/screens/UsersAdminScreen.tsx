@@ -5,6 +5,7 @@ import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { UnitUsersRepository } from '../../../repositories/UnitUsersRepository';
 import type { UnitUserRole, UnitRole } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
+import { useAuthStatus } from '../../../hooks/useAuthStatus';
 
 interface Props {
     unitId: string;
@@ -23,7 +24,10 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState('');
-    const [msgType, setMsgType] = useState<'success' | 'error'>('success');
+    const [msgType, setMsgType] = useState<"success" | "error">('success');
+
+    const { isAdmin } = useAuthStatus();
+    const availableRoles = (Object.keys(ROLE_LABELS) as UnitRole[]).filter(role => isAdmin ? true : role !== 'admin');
 
     const [modalConfig, setModalConfig] = useState<{
         title: string;
@@ -134,7 +138,7 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
                         value={newRole}
                         onChange={e => setNewRole(e.target.value as UnitRole)}
                     >
-                        {(Object.keys(ROLE_LABELS) as UnitRole[]).map(role => (
+                        {availableRoles.map(role => (
                             <option key={role} value={role}>{ROLE_LABELS[role]}</option>
                         ))}
                     </select>
@@ -175,10 +179,14 @@ const UsersAdminScreen: React.FC<Props> = ({ unitId }) => {
                                                 className="admin-select py-1 text-sm bg-surface-2"
                                                 value={user.role}
                                                 onChange={e => user.id && handleRoleChange(user.id, user.email, e.target.value as UnitRole)}
+                                                disabled={!isAdmin && user.role === 'admin'}
                                             >
-                                                {(Object.keys(ROLE_LABELS) as UnitRole[]).map(role => (
+                                                {availableRoles.map(role => (
                                                     <option key={role} value={role}>{ROLE_LABELS[role]}</option>
                                                 ))}
+                                                {!isAdmin && user.role === 'admin' && (
+                                                    <option value="admin">Admin</option>
+                                                )}
                                             </select>
                                         </td>
                                         <td className="text-right">

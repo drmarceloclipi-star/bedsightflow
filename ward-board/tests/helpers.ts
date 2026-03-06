@@ -14,10 +14,12 @@ import { expect, type Page, type Dialog } from '@playwright/test';
 export const ADMIN_TAB_LABELS: Record<string, string> = {
     tv: 'TV',
     beds: 'Leitos',
-    users: 'Acesso na Unidade',
-    ops: 'Ops',
+    users: 'Acesso',
+    ops: 'Operações',
     audit: 'Auditoria',
     analytics: 'Analytics',
+    education: 'Educativo',
+    'mission-control': 'M. Control'
 };
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -30,7 +32,7 @@ export const ADMIN_TAB_LABELS: Record<string, string> = {
 export async function signInViaEmulator(
     page: Page,
     email: string,
-    displayName?: string,
+    _displayName?: string,
 ) {
     // Log console errors to terminal
     page.on('console', msg => {
@@ -38,30 +40,26 @@ export async function signInViaEmulator(
     });
 
     await page.goto('/login', { waitUntil: 'networkidle' });
-    const googleBtn = page.locator('button:has-text("Entrar com Google")');
-    await googleBtn.waitFor({ state: 'visible' });
-    await googleBtn.click({ force: true });
 
-    // Wait for the emulator auth popup/redirect
-    await page.waitForURL(/localhost:9099/, { timeout: 10000 });
+    // Fill the local login form
+    const emailInput = page.locator('input[name="email"]');
+    await emailInput.waitFor({ state: 'visible' });
+    await emailInput.fill(email);
 
-    // If the account is already listed, click it; otherwise add a new one
-    const existing = page.locator(`text="${email}"`);
-    if (await existing.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await existing.click();
-    } else {
-        await page.click('button:has-text("Add new account")');
-        await page.fill('input[id="email-input"]', email);
-        await page.fill('input[id="display-name-input"]', displayName ?? '');
-        await page.click('button:has-text("Sign In")');
-    }
+    // Default password as used by seed-lean-tests.ts
+    await page.fill('input[name="password"]', 'password123');
 
-    // Wait until login completes and app redirects us to either admin, editor, or tv
-    await page.waitForURL(/\/admin|\/mobile-admin|\/editor|\/tv/, { timeout: 15000 });
+    await page.click('button[type="submit"]:has-text("Entrar Localmente")');
+
+    // Wait until login completes and app redirects us to either portal, admin, editor, etc.
+    await page.waitForURL(/\/portal|\/admin|\/unit-admin|\/mobile-admin|\/editor|\/tv/, { timeout: 15000 });
 }
 
 export const signInAsAdmin = (page: Page) =>
-    signInViaEmulator(page, 'admin@lean.com', 'Admin User');
+    signInViaEmulator(page, 'global-admin@lean.com', 'Global Admin');
+
+export const signInAsUnitAdmin = (page: Page) =>
+    signInViaEmulator(page, 'unit-admin@lean.com', 'Unit Admin');
 
 export const signInAsEditor = (page: Page) =>
     signInViaEmulator(page, 'editor@lean.com', 'Editor User');
@@ -85,10 +83,15 @@ export async function goToAdminTab(page: Page, tabKey: string, unitId = 'A') {
         }
     }
 
+    // Determine category and switch to it if needed
+    const exploreTabs = ['analytics', 'audit', 'education'];
+    const targetCategory = exploreTabs.includes(tabKey) ? 'Explorar' : 'Controle';
+    await page.click(`button.admin-category-btn:has-text("${targetCategory}")`);
+
     // Wait until the tab bar is rendered
     const tabLabel = ADMIN_TAB_LABELS[tabKey] ?? tabKey;
-    await page.waitForSelector(`button:has-text("${tabLabel}")`, { timeout: 10000 });
-    await page.click(`button:has-text("${tabLabel}")`);
+    await page.waitForSelector(`button[role="tab"]:has-text("${tabLabel}")`, { timeout: 10000 });
+    await page.click(`button[role="tab"]:has-text("${tabLabel}")`);
 }
 
 // ─── Dialog handling ────────────────────────────────────────────────────────

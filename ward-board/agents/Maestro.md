@@ -287,6 +287,13 @@ const CURRENT_SHIFT_KEY = '2026-02-28-PM';
 - **UX Admin (Mobile & Desktop):** Cabeçalho expandido p/ as extremidades, Menu EduCenter simplificado para botões de interrogação (?), Layout do Kanban App dividido entre Mission Control e Analytics List.
 - **Bugfixes:** Erros de CORS/COOP e Permissão Insuficiente ao logar localmente com editores varridos da navegação React.
 
+#### 1.11 — Estabilização Local & E2E Auth Flow (2026-03-06)
+
+- **Login Local Native:** A autenticação local evadiu o bypass problemático do Google Auth Emulator. `LoginScreen.tsx` serve um form de Email/Senha explícito sob sub-condição `isLocalhost`.
+- **E2E Playwright:** O `helpers.ts` (`signInViaEmulator`) foi migrado inteiramente para fill explícito de Credentials, garantindo paralelismo seguro local e limpando o viés do botão do Google. 138/141 testes estão passando isolados.
+- **Seed com Provider Padrão:** O `seed-lean-tests.ts` foi retificado (`admin.auth().createUser()` com force deletion) em vez do `updateUser()` ambíguo, aniquilando falsos positivos de `auth/wrong-password`.
+- **Conflito de Portas de Emuladores:** Identificação e morte de processos orfãos/sujos rodando na :8080 :9099 pertencentes a projetos irmãos (Precepta), limpando falhas graves do tipo `auth/user-not-found` ao errar o target `lean-841e5`.
+
 ## Dívidas Técnicas Restantes
 
 | Item | Impacto | Responsável |

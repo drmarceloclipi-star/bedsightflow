@@ -12,6 +12,7 @@ const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
 const MobileAdminRouter = lazy(() => import('./features/mobile-admin/MobileAdminRouter'));
+const UnitAdminRouter = lazy(() => import('./features/unit-admin/UnitAdminRouter'));
 const PortalScreen = lazy(() => import('./components/PortalScreen'));
 
 const FallbackLoader = () => (
@@ -55,6 +56,12 @@ function App() {
             <Route
               path="/mobile-admin/*"
               element={isAdmin ? <MobileAdminRouter /> : <Navigate to="/login" replace />}
+            />
+
+            {/* Unit Admin Routes */}
+            <Route
+              path="/unit-admin/*"
+              element={user ? <UnitAdminRouter /> : <Navigate to="/login" replace />}
             />
 
             {/* Editor Routes */}

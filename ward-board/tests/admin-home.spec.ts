@@ -87,7 +87,7 @@ test.describe('Admin Home Screen', () => {
 
         // Should redirect to login
         await page.waitForURL(/\/login/);
-        await expect(page.locator('button:has-text("Entrar com Google")')).toBeVisible();
+        await expect(page.locator('button:has-text("Entrar Localmente")')).toBeVisible();
     });
 
     test('can open and cancel the "Nova Unidade" modal', async ({ page }) => {

@@ -194,8 +194,8 @@ test.describe('Cenário 2 — Admin: Pendências Delete + Mission Control', () =
         // Expect navigation to the list screen with filter
         await page.waitForURL(/filter=pendencies_open/, { timeout: 10000 });
 
-        // Should list at least bed 301.2 (seed has open pendencies)
-        await expect(page.locator('text=301.2')).toBeVisible({ timeout: 10000 });
+        // Should list at least bed 301.3 (seed has open pendencies)
+        await expect(page.locator('text=301.3')).toBeVisible({ timeout: 10000 });
 
         // ── Back and drilldown pendencies_overdue ─────────────────────────────
         await page.locator('button.analytics-list-back').click();

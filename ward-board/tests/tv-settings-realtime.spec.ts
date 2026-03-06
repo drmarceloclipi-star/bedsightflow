@@ -43,19 +43,23 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
             .locator('button[role="switch"]');
         await expect(rotationToggle).toBeVisible();
 
+        let changed1 = false;
         // Always force rotation OFF, regardless of current state
         if (await rotationToggle.getAttribute('aria-checked') === 'true') {
             await rotationToggle.click();
             await page.waitForTimeout(300);
+            changed1 = true;
         }
         // Confirm it is now off
         await expect(rotationToggle).toHaveAttribute('aria-checked', 'false');
 
         // Save settings
-        await page.locator('button', { hasText: 'Salvar' }).click();
-        await fillConfirmModal(page, 'Teste desabilitar rotação E2E');
-        await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
-        await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        if (changed1) {
+            await page.locator('button', { hasText: 'Salvar' }).click();
+            await fillConfirmModal(page, 'Teste desabilitar rotação E2E');
+            await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+            await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        }
 
         // Step 2 – Navigate to TV Dashboard and wait for Firestore update to propagate
         await goToTvDashboard(page);
@@ -68,13 +72,17 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
         const rotationToggleClean = page
             .locator('div.toggle-row', { hasText: 'Rotação habilitada' })
             .locator('button[role="switch"]');
+        let changedClean = false;
         if (await rotationToggleClean.getAttribute('aria-checked') === 'false') {
             await rotationToggleClean.click();
             await page.waitForTimeout(300);
+            changedClean = true;
         }
-        await page.locator('button', { hasText: 'Salvar' }).click();
-        await fillConfirmModal(page, 'Restaurando rotação após E2E');
-        await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+        if (changedClean) {
+            await page.locator('button', { hasText: 'Salvar' }).click();
+            await fillConfirmModal(page, 'Restaurando rotação após E2E');
+            await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+        }
     });
 
     test('disabling a screen removes it from the TV rotation', async ({ page }) => {
@@ -84,11 +92,13 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
         const resumoRow = page.locator('div.settings-screen-row').filter({ hasText: 'Resumo da Unidade' });
         const resumoToggle = resumoRow.locator('button[role="switch"]');
 
+        let changed2 = false;
         // Turn Resumo ON so we have a known state
         const resumoIsOff = await resumoToggle.getAttribute('aria-checked') === 'false';
         if (resumoIsOff) {
             await resumoToggle.click();
             await page.waitForTimeout(300);
+            changed2 = true;
         }
 
         // Ensure rotation is ON
@@ -99,12 +109,15 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
         if (rotationIsOff) {
             await rotationToggle.click();
             await page.waitForTimeout(300);
+            changed2 = true;
         }
 
-        await page.locator('button', { hasText: 'Salvar' }).click();
-        await fillConfirmModal(page, 'Ativando Resumo para E2E');
-        await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
-        await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        if (changed2) {
+            await page.locator('button', { hasText: 'Salvar' }).click();
+            await fillConfirmModal(page, 'Ativando Resumo para E2E');
+            await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+            await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        }
 
         // Step 2 – Navigate to TV dashboard and verify rotation is running
         await goToTvDashboard(page);
@@ -119,16 +132,20 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
         await goToAdminTab(page, 'tv');
         const resumoRowFresh = page.locator('div.settings-screen-row').filter({ hasText: 'Resumo da Unidade' });
         const resumoToggleFresh = resumoRowFresh.locator('button[role="switch"]');
+        let changed3 = false;
         const isOn = await resumoToggleFresh.getAttribute('aria-checked') === 'true';
         if (isOn) {
             await resumoToggleFresh.click();
             await page.waitForTimeout(300);
+            changed3 = true;
         }
 
-        await page.locator('button', { hasText: 'Salvar' }).click();
-        await fillConfirmModal(page, 'Desativando Resumo para E2E');
-        await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
-        await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        if (changed3) {
+            await page.locator('button', { hasText: 'Salvar' }).click();
+            await fillConfirmModal(page, 'Desativando Resumo para E2E');
+            await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+            await page.locator('button', { hasText: /^Salvar$/ }).waitFor({ timeout: 5000 });
+        }
 
         // Step 4 – Navigate to TV dashboard and verify 'Resumo' label never appears.
         // Poll for 15 s — if 'Resumo' shows up, the disable didn't work.
@@ -150,14 +167,18 @@ test.describe('TV Settings — Alterações refletidas em tempo real', () => {
         await goToAdminTab(page, 'tv');
         const resumoRowRestore = page.locator('div.settings-screen-row').filter({ hasText: 'Resumo da Unidade' });
         const resumoToggleRestore = resumoRowRestore.locator('button[role="switch"]');
+        let changed4 = false;
         const nowOff = await resumoToggleRestore.getAttribute('aria-checked') === 'false';
         if (nowOff) {
             await resumoToggleRestore.click();
             await page.waitForTimeout(300);
+            changed4 = true;
         }
-        await page.locator('button', { hasText: 'Salvar' }).click();
-        await fillConfirmModal(page, 'Restaurando Resumo após E2E');
-        await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+        if (changed4) {
+            await page.locator('button', { hasText: 'Salvar' }).click();
+            await fillConfirmModal(page, 'Restaurando Resumo após E2E');
+            await expect(page.locator('button', { hasText: '✓ Salvo' })).toBeVisible({ timeout: 5000 });
+        }
     });
 
     test('changing screen duration is persisted and reflected in rotation speed', async ({ page }) => {

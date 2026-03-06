@@ -45,6 +45,12 @@ The TestingAgent ensures that all features are robust, bug-free, and meet the pr
 | `tests/ops-advanced.spec.ts` | Operações avançadas |
 | `tests/admin-home.spec.ts` | Home admin |
 
+### E2E Auth Flow (Atualização 2026-03-06)
+
+- **Login Provider:** Testes rodam estritamente via **Email/Password Provider** em localhost. O bypass de Google via UI Emulator disparava instabilidades. Use *sempre* `signInViaEmulator(page, userType)` exportado do `helpers.ts` para qualquer suíte nova.
+- **Navegação Inicial:** Ao autenticar-se como Unit Admin, Global Admin, Editor ou Viewer, o redirecionamento aponta para `/portal` (Landing dos cards), não atalho direto pro `/editor` ou `/admin`. Os asserts devem aguardar visible do `/portal` antes de `data-testid` subsequentes.
+- **Isolamento Total:** Assegure antes da run de E2E que não existem instâncias prévias (ex: projetos vizinhos) roubando os bindings 8080/9099.
+
 ### ⚠️ Dívida de Testes v1.2 — Pendências (PRIORIDADE ALTA)
 
 Nenhum teste E2E cobre as operações de pendências. Criar `tests/pendencies.spec.ts` com:

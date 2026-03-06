@@ -11,28 +11,18 @@ test.describe('Editor Mobile to TV Kanban Synchronization', () => {
 
         // 1. Log in as Editor
         await editorPage.goto('/login');
-        // For local emulator auth, we can simulate the click on "Entrar com Google"
-        // and then handle the popup or redirect if possible,
-        // OR we can directly inject the auth state if we know how the app handles it.
-        // The easiest way for emulator in Playwright is to interact with the emulator UI if redirected,
-        // but the app is using redirect and the Google auth emulator interceptor.
+        // Fill the local login form inputs
+        const emailInput = editorPage.locator('input[name="email"]');
+        await emailInput.waitFor({ state: 'visible' });
+        await emailInput.fill('editor@lean.com');
+        await editorPage.fill('input[name="password"]', 'password123');
+        await editorPage.click('button[type="submit"]:has-text("Entrar Localmente")');
 
-        await editorPage.click('button:has-text("Entrar com Google")');
-        // Wait for the popup or redirect to Firebase Auth Emulator
-        await editorPage.waitForURL(/localhost:9099/);
+        // 2. Wait for navigation to /portal
+        await editorPage.waitForURL(/\/portal/);
 
-        // In the emulator auth UI, click the account to sign in with, or click "Add new account"
-        // and provide 'editor@lean.com'. We try to click "Add new account"
-        await editorPage.click('button:has-text("Add new account")');
-
-        // Fill the email and name
-        await editorPage.fill('input[id="email-input"]', 'editor@lean.com');
-        await editorPage.fill('input[id="display-name-input"]', 'Editor User');
-
-        // Click "Sign In"
-        await editorPage.click('button:has-text("Sign In")');
-
-        // 2. Wait for navigation to /editor
+        // Click on the unit editor card
+        await editorPage.click('text="Gestão de Leitos"');
         await editorPage.waitForURL(/\/editor/);
 
         // Ensure we are selecting Unit A if required (the URL might just be /editor, but the content should load beds)

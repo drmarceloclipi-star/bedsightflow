@@ -5,12 +5,14 @@ import { CLOUD_FUNCTIONS } from '../../../constants/functionNames';
 import { BedsRepository } from '../../../repositories/BedsRepository';
 import type { Bed } from '../../../domain/types';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
+import { useAuthStatus } from '../../../hooks/useAuthStatus';
 
 interface Props {
     unitId: string;
 }
 
 const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
+    const { isAdmin } = useAuthStatus();
     const [beds, setBeds] = useState<Bed[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionMsg, setActionMsg] = useState('');
@@ -84,12 +86,14 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
                     <h2 className="admin-screen-title">Gestão de Leitos</h2>
                     <p className="admin-screen-subtitle">{beds.length} leitos ativos na unidade</p>
                 </div>
-                <button
-                    onClick={handleApplyCanonical}
-                    className="btn btn-primary"
-                >
-                    🏥 Aplicar 36 leitos padrão
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={handleApplyCanonical}
+                        className="btn btn-primary"
+                    >
+                        🏥 Aplicar 36 leitos padrão
+                    </button>
+                )}
             </header>
 
             {actionMsg && (
@@ -109,9 +113,11 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
                         <div className="text-4xl mb-4">🛏️</div>
                         <h3 className="text-lg font-bold mb-2">Nenhum leito encontrado</h3>
                         <p className="text-muted mb-6">Esta unidade ainda não possui leitos cadastrados.</p>
-                        <button onClick={handleApplyCanonical} className="btn btn-primary">
-                            Criar Estrutura Inicial
-                        </button>
+                        {isAdmin && (
+                            <button onClick={handleApplyCanonical} className="btn btn-primary">
+                                Criar Estrutura Inicial
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="table-responsive">
@@ -122,7 +128,7 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
                                     <th>Paciente</th>
                                     <th>Alta</th>
                                     <th>Bloqueador</th>
-                                    <th className="text-right">Ações de Limpeza</th>
+                                    {isAdmin && <th className="text-right">Ações de Limpeza</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -136,25 +142,27 @@ const BedsAdminScreen: React.FC<Props> = ({ unitId }) => {
                                         <td className="text-sm text-secondary truncate max-w-200">
                                             {bed.mainBlocker || '—'}
                                         </td>
-                                        <td className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleClearBed(bed, 'kanban')}
-                                                    className="btn-pill btn-pill-warning"
-                                                    title="Limpar Kanban"
-                                                >K</button>
-                                                <button
-                                                    onClick={() => handleClearBed(bed, 'kamishibai')}
-                                                    className="btn-pill btn-pill-primary"
-                                                    title="Limpar Kamishibai"
-                                                >S</button>
-                                                <button
-                                                    onClick={() => handleClearBed(bed, 'all')}
-                                                    className="btn-pill btn-pill-danger"
-                                                    title="Limpar Tudo"
-                                                >T</button>
-                                            </div>
-                                        </td>
+                                        {isAdmin && (
+                                            <td className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleClearBed(bed, 'kanban')}
+                                                        className="btn-pill btn-pill-warning"
+                                                        title="Limpar Kanban"
+                                                    >K</button>
+                                                    <button
+                                                        onClick={() => handleClearBed(bed, 'kamishibai')}
+                                                        className="btn-pill btn-pill-primary"
+                                                        title="Limpar Kamishibai"
+                                                    >S</button>
+                                                    <button
+                                                        onClick={() => handleClearBed(bed, 'all')}
+                                                        className="btn-pill btn-pill-danger"
+                                                        title="Limpar Tudo"
+                                                    >T</button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
