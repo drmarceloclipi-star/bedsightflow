@@ -1,4 +1,4 @@
-import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '../infra/firebase/config';
 import type { UnitOpsSettings, KanbanMode, ActorRef } from '../domain/types';
 import { DEFAULT_SHIFT_SCHEDULE, computeShiftKey, type ShiftSchedule } from '../domain/shiftKey';
@@ -177,6 +177,67 @@ export const UnitSettingsRepository = {
             (error) => {
                 console.error('Error listening to mission_control settings:', error);
             }
+        );
+    },
+
+    /**
+     * Persiste thresholds customizados em units/{unitId}/settings/mission_control.
+     * Usa setDoc com merge: false para gravar todos os campos (substituição total).
+     * Valores null nos campos fazem deleteField() — usados ao restaurar defaults.
+     */
+    async saveMissionControlThresholds(
+        unitId: string,
+        thresholds: MissionControlThresholds,
+        actor: { uid: string; email: string; displayName?: string }
+    ): Promise<void> {
+        const ref = doc(db, 'units', unitId, 'settings', 'mission_control');
+        await setDoc(
+            ref,
+            {
+                ...thresholds,
+                updatedAt: serverTimestamp(),
+                updatedBy: actor,
+            },
+            { merge: false }
+        );
+    },
+
+    /**
+     * Remove o documento de thresholds customizados, fazendo fallback total para os defaults.
+     * Equivalente a "Restaurar defaults" do lado do servidor.
+     */
+    async resetMissionControlThresholds(
+        unitId: string,
+        actor: { uid: string; email: string; displayName?: string }
+    ): Promise<void> {
+        const ref = doc(db, 'units', unitId, 'settings', 'mission_control');
+        // Marcamos com um sentinel para auditoria; o documento fica, mas os campos de threshold
+        // são removidos — parseMissionControlThresholds retorna os defaults quando os campos estão ausentes.
+        await setDoc(
+            ref,
+            {
+                _reset: true,
+                updatedAt: serverTimestamp(),
+                updatedBy: actor,
+                // Apagar todos os campos de threshold explicitamente
+                blockedPctWarning: deleteField(),
+                blockedPctCritical: deleteField(),
+                blockedAgingWarningHours: deleteField(),
+                blockedAgingCriticalHours: deleteField(),
+                kamishibaiImpedimentPctWarning: deleteField(),
+                kamishibaiImpedimentPctCritical: deleteField(),
+                freshness12hWarningCount: deleteField(),
+                freshness24hWarningCount: deleteField(),
+                freshness24hCriticalCount: deleteField(),
+                freshness48hCriticalCount: deleteField(),
+                unreviewedShiftWarningCount: deleteField(),
+                unreviewedShiftCriticalCount: deleteField(),
+                escalationOverdueHoursWarning: deleteField(),
+                escalationOverdueHoursCritical: deleteField(),
+                escalationMainBlockerHoursWarning: deleteField(),
+                escalationMainBlockerHoursCritical: deleteField(),
+            },
+            { merge: true }
         );
     },
 };
