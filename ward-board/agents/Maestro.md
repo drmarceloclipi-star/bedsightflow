@@ -293,3 +293,24 @@ const CURRENT_SHIFT_KEY = '2026-02-28-PM';
 | :--- | :--- | :--- |
 | RBAC server-side para `deletePendency` (CF + custom claim) | Médio — segurança | SecAgent + BackendAgent |
 | Integrar `npm run seed:lean` no CI antes de `npm run test:e2e` | Alto — estabilidade | OpsAgent + TestingAgent |
+
+---
+
+## Bugfix: totalBeds Dessincronizado (2026-03-06)
+
+**Sintoma:** `units/{id}` exibia `totalBeds: 0` no Admin e Editor, mesmo com leitos presentes na subcoleção `beds/`.
+
+**Causa raiz:** `applyCanonicalBeds` (Cloud Function) criava/deletava leitos em batch mas nunca atualizava o campo `totalBeds` no documento pai da unidade. O campo era gravado apenas no log de auditoria, não no documento.
+
+**Arquivos corrigidos:**
+
+| Arquivo | Correção |
+| :--- | :--- |
+| `functions/src/callables/applyCanonicalBeds.ts` | `batch.update(unitRef, { totalBeds })` adicionado ao batch de operações |
+| `src/repositories/BedsRepository.ts` | `bulkUpsertBeds` agora atualiza `totalBeds` via batch |
+| `src/components/EditorLayout.tsx` | Removido fallback hardcoded `'A'` para unitId |
+| `src/features/editor/pages/MobileDashboard.tsx` | Redireciona para primeira unidade disponível quando `unitId` ausente |
+
+**Dado de produção corrigido:** Script `fix-total-beds-prod.ts` executado — `bRXkIBXfYnW9KJ7WsemU` (Unidade A): `0 → 36 leitos`.
+
+**Commit:** `6241683` — requer `firebase deploy --only functions` para ativar a correção da Cloud Function em produção.
