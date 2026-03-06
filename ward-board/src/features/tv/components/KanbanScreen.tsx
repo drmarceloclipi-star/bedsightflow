@@ -9,6 +9,13 @@ interface KanbanScreenProps {
     columns?: number;
     /** Referência de tempo para calcular overdue — injetado pelo TvDashboard (state 'now') */
     now?: Date;
+    /**
+     * P1-03: modo kanban da unidade.
+     * PASSIVE      → exibe todos os leitos (gestão à vista completa, incluindo vagos).
+     * ACTIVE_LITE  → exibe apenas leitos com paciente (patientAlias preenchido),
+     *                focando na carga ativa sem ruído de leitos vazios.
+     */
+    kanbanMode?: 'PASSIVE' | 'ACTIVE_LITE';
 }
 
 const getDischargeColorClass = (estimate: string) => {
@@ -50,8 +57,13 @@ const PendencyBadge: React.FC<{ bed: Bed; now: Date }> = React.memo(({ bed, now 
 });
 PendencyBadge.displayName = 'PendencyBadge';
 
-const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1, now = new Date() }) => {
-    const sortedBeds = [...beds].sort((a, b) =>
+const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1, now = new Date(), kanbanMode = 'PASSIVE' }) => {
+    // P1-03: ACTIVE_LITE mostra apenas leitos com paciente; PASSIVE mostra todos
+    const visibleBeds = kanbanMode === 'ACTIVE_LITE'
+        ? beds.filter(b => b.patientAlias && b.patientAlias.trim().length > 0)
+        : beds;
+
+    const sortedBeds = [...visibleBeds].sort((a, b) =>
         a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' })
     );
 
@@ -127,6 +139,12 @@ const KanbanScreen: React.FC<KanbanScreenProps> = ({ beds, columns = 1, now = ne
         <div className="animate-slideIn h-full flex flex-col" style={{ padding: '0.5rem 1.25rem 1rem' }}>
             <h2 className="kanban-title">
                 Quadro Kanban — Fluxo de Alta
+                {/* P1-03: badge de modo apenas no ACTIVE_LITE para sinalizar filtragem */}
+                {kanbanMode === 'ACTIVE_LITE' && (
+                    <span style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', fontWeight: 700, opacity: 0.5, marginLeft: '0.75rem', verticalAlign: 'middle', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        ACTIVE_LITE · {visibleBeds.length} leito{visibleBeds.length !== 1 ? 's' : ''}
+                    </span>
+                )}
             </h2>
 
             <div className="kanban-table-wrapper" style={{ display: 'grid', gridTemplateColumns: showDualColumns ? 'minmax(0, 1fr) minmax(0, 1fr)' : '1fr', gap: '2rem' }}>

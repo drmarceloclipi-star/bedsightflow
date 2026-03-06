@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { HuddleRepository } from '../../../../repositories/HuddleRepository';
 import { currentShiftKey, DEFAULT_SHIFT_SCHEDULE } from '../../../../domain/shiftKey';
 import type { HuddleDoc, HuddleItemStatus, ActionStatus } from '../../../../domain/huddle';
 import type { UnitOpsSettings, ActorRef } from '../../../../domain/types';
+import { computeHuddleCadence } from '../../../../domain/lswCadence';
 
 interface Props {
     unitId: string;
@@ -22,6 +23,12 @@ const HuddleConsole: React.FC<Props> = ({ unitId, opsSettings, user, flash }) =>
     const [newActionOwner, setNewActionOwner] = useState('');
 
     const schedule = opsSettings?.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE;
+
+    // P1-05: cadência LSW para detectar huddle OVERDUE (em andamento mas não encerrado há muito tempo)
+    const cadenceState = useMemo(() => {
+        if (!opsSettings) return null;
+        return computeHuddleCadence(new Date(), opsSettings, schedule);
+    }, [opsSettings, schedule]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -149,12 +156,26 @@ const HuddleConsole: React.FC<Props> = ({ unitId, opsSettings, user, flash }) =>
                     </div>
                 ) : (
                     !isEnded && (
-                        <button className="btn btn-secondary whitespace-nowrap" onClick={handleEndHuddle}>
-                            Encerrar Turno
+                        // P1-05: destaque vermelho quando OVERDUE para urgir encerramento
+                        <button
+                            className={`btn whitespace-nowrap ${cadenceState?.status === 'OVERDUE' ? 'btn-danger' : 'btn-secondary'}`}
+                            onClick={handleEndHuddle}
+                        >
+                            {cadenceState?.status === 'OVERDUE' ? '⚠ Encerrar Turno (em atraso)' : 'Encerrar Turno'}
                         </button>
                     )
                 )}
             </div>
+
+            {/* P1-05: banner de atraso — visível quando huddle está em andamento (não encerrado) e OVERDUE */}
+            {huddle && !isEnded && cadenceState?.status === 'OVERDUE' && (
+                <div className="bg-state-danger-bg border border-state-danger text-state-danger px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-2" role="alert">
+                    <span aria-hidden="true">⚠</span>
+                    <span>
+                        Huddle em andamento há <strong>{cadenceState.minutesSinceShiftStart} min</strong> — encerre o turno para registrar a conclusão e remover o alerta na TV.
+                    </span>
+                </div>
+            )}
 
             {huddle && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
