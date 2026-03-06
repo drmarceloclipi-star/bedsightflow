@@ -7,9 +7,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Super Admin: platform-level (SaaS owner). Separate from institutional hierarchy.
+    function isSuperAdmin() {
+      return isAuthed() && ('superAdmin' in request.auth.token) && request.auth.token.superAdmin == true;
+    }
+
+    // Global Admin: institution-level. Administers the hospital client.
     function isGlobalAdmin() {
       // Claim-only. No email fallback. See docs/RBAC_CONTRACT.md.
       return isAuthed() && ('admin' in request.auth.token) && request.auth.token.admin == true;
+    }
+
+    // Either platform or institution admin
+    function isAnyAdmin() {
+      return isSuperAdmin() || isGlobalAdmin();
     }
 
     // Central authz: /users/{uid}/authz/authz
@@ -25,7 +36,7 @@ service cloud.firestore {
 
     function isUnitMember(unitId) {
       return isAuthed() && (
-        isGlobalAdmin() ||
+        isAnyAdmin() ||
         (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}))
       );
@@ -33,7 +44,7 @@ service cloud.firestore {
 
     function isUnitEditorOrAdmin(unitId) {
       return isAuthed() && (
-        isGlobalAdmin() ||
+        isAnyAdmin() ||
         (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}) &&
          userAuthzDoc().data.units[unitId].role in ['editor', 'admin'])
@@ -42,7 +53,7 @@ service cloud.firestore {
 
     function isUnitAdmin(unitId) {
       return isAuthed() && (
-        isGlobalAdmin() ||
+        isAnyAdmin() ||
         (hasAuthzDoc() &&
          unitId in userAuthzDoc().data.get('units', {}) &&
          userAuthzDoc().data.units[unitId].role == 'admin')
@@ -50,15 +61,20 @@ service cloud.firestore {
     }
 
     // ── authorized_users (global whitelist) ───────────────────
+    // Platform concern — only Super Admin can write.
+    // Global Admin can read (to see who has access).
     match /authorized_users/{userId} {
       allow read: if isAuthed();
-      allow write: if isGlobalAdmin();
+      allow write: if isSuperAdmin();
     }
 
     // ── Units root doc ─────────────────────────────────────────
+    // Creating/deleting institutions is a platform concern (Super Admin).
+    // Global Admin can read all units and update within their institution.
     match /units/{unitId} {
       allow read: if isAuthed();
-      allow write: if isGlobalAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isAnyAdmin();
     }
 
     // ── Beds ──────────────────────────────────────────────────
@@ -74,18 +90,17 @@ service cloud.firestore {
     }
 
     // ── Huddles ───────────────────────────────────────────────
-    // Completion policy (P0): only global admin can set completionState = 'COMPLETED'.
+    // Completion policy (P0): only global admin or super admin can set completionState = 'COMPLETED'.
     // Editors can create and update huddles in any other state.
-    // See docs/RBAC_CONTRACT.md — "Política de Huddles".
     match /units/{unitId}/huddles/{huddleId} {
       allow read: if isUnitMember(unitId);
       allow create: if isUnitEditorOrAdmin(unitId) &&
         request.resource.data.completionState != 'COMPLETED';
       allow update: if isUnitEditorOrAdmin(unitId) && (
         request.resource.data.completionState != 'COMPLETED' ||
-        isGlobalAdmin()
+        isAnyAdmin()
       );
-      allow delete: if isGlobalAdmin();
+      allow delete: if isAnyAdmin();
     }
 
     // ── Audit Logs ────────────────────────────────────────────
@@ -102,8 +117,8 @@ service cloud.firestore {
 
     // ── Central authz ─────────────────────────────────────────
     match /users/{uid}/authz/{doc} {
-      allow read: if isAuthed() && (request.auth.uid == uid || isGlobalAdmin());
-      allow write: if isGlobalAdmin();
+      allow read: if isAuthed() && (request.auth.uid == uid || isAnyAdmin());
+      allow write: if isAnyAdmin();
     }
 
     // ── Default lock ──────────────────────────────────────────

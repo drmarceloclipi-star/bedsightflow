@@ -3,6 +3,10 @@
  * and make management easier.
  */
 export const CLOUD_FUNCTIONS = {
+    // Platform / Admin claim management
+    SET_SUPER_ADMIN_CLAIM: 'setSuperAdminClaim',
+    SET_GLOBAL_ADMIN_CLAIM: 'setGlobalAdminClaim',
+
     // Admin / Command operations
     UPDATE_BOARD_SETTINGS: 'updateBoardSettings',
     APPLY_CANONICAL_BEDS: 'applyCanonicalBeds',

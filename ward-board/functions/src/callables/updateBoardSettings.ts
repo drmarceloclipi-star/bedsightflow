@@ -3,7 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { db } from '../config';
 import { buildAuditDiff } from '../lib/buildAuditDiff';
-import { isGlobalAdmin } from '../lib/authz';
+import { isAnyAdmin } from '../lib/authz';
 
 export const updateBoardSettings = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
@@ -21,7 +21,7 @@ export const updateBoardSettings = functions.region('southamerica-east1').https.
     // P0 governance: only global admins (custom claim admin:true) may update board settings.
     // The legacy /units/{unitId}/users/{uid} role check has been removed.
     // See docs/RBAC_CONTRACT.md — "Política de Board Settings".
-    if (!isGlobalAdmin(context)) {
+    if (!isAnyAdmin(context)) {
         throw new functions.https.HttpsError('permission-denied', 'Only global admins can perform this action.');
     }
 

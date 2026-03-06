@@ -1,16 +1,27 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import { isGlobalAdmin } from '../config/admins';
+import { isGlobalAdmin, isSuperAdminEmail } from '../config/admins';
 
+/**
+ * setGlobalAdminClaim — Sets or revokes the `admin` custom claim (Global Admin).
+ *
+ * Can be called by:
+ *   - An existing Super Admin (superAdmin claim or bootstrap email)
+ *   - An existing Global Admin (admin claim or bootstrap email)
+ *
+ * Global Admin is the institution-level role (hospital administrator).
+ */
 export const setGlobalAdminClaim = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
 
-    // Caller must be an existing global admin, either by email fallback or by existing claim
+    // Caller must be an existing admin (super or global)
     const callerEmail = context.auth.token.email || '';
-    const callerIsAdmin = context.auth.token.admin === true || isGlobalAdmin(callerEmail);
+    const callerIsSuperAdmin = context.auth.token.superAdmin === true || isSuperAdminEmail(callerEmail);
+    const callerIsGlobalAdmin = context.auth.token.admin === true || isGlobalAdmin(callerEmail);
+    const callerIsAdmin = callerIsSuperAdmin || callerIsGlobalAdmin;
 
     if (!callerIsAdmin) {
-        throw new functions.https.HttpsError('permission-denied', 'Only global admins can perform this action.');
+        throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
     }
 
     const { targetEmail, admin: makeAdmin } = data;

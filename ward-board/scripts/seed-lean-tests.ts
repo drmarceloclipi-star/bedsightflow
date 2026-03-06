@@ -56,6 +56,7 @@ console.log('[seed:lean] prevShiftKey:', PREV_SHIFT_KEY);
 const SEED_ACTOR = { id: 'seed', name: 'System Seed' };
 
 const SEED_USERS = [
+    { email: 'super-admin@lean.com', password: 'password123', role: 'super-admin', name: 'Super Admin User' },
     { email: 'global-admin@lean.com', password: 'password123', role: 'global-admin', name: 'Global Admin User' },
     { email: 'unit-admin@lean.com', password: 'password123', role: 'admin', name: 'Unit Admin User' },
     { email: 'editor@lean.com', password: 'password123', role: 'editor', name: 'Editor User' },
@@ -457,8 +458,11 @@ async function seed() {
     // ── 1. Users (idempotente) ───────────────────────────────────────────────
     console.log('👤 [seed:lean] Ensuring auth users...');
     for (const user of SEED_USERS) {
+        const isSuperAdmin = user.role === 'super-admin';
         const isGlobalAdmin = user.role === 'global-admin';
-        const unitRole = isGlobalAdmin ? 'admin' : user.role;
+        // Super Admin gets 'admin' unit role for backwards compat in data layer;
+        // Global Admin also maps to 'admin' unit role.
+        const unitRole = (isSuperAdmin || isGlobalAdmin) ? 'admin' : user.role;
 
         try {
             try {
@@ -470,11 +474,16 @@ async function seed() {
             }
 
             const rec = await auth.createUser({ email: user.email, password: user.password, displayName: user.name });
-            if (isGlobalAdmin) {
+            // Set custom claims based on role
+            if (isSuperAdmin) {
+                await auth.setCustomUserClaims(rec.uid, { superAdmin: true, admin: true });
+            } else if (isGlobalAdmin) {
                 await auth.setCustomUserClaims(rec.uid, { admin: true });
             }
             await db.collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: user.role, name: user.name, createdAt: msAgo(0) });
             await db.collection('authorized_users').doc(rec.uid).set({ email: user.email, addedAt: msAgo(0) });
+            // Super Admin does NOT need unit-level authz (they operate at platform level),
+            // but we still seed it for backwards compat / testing convenience.
             await db.collection('users').doc(rec.uid).collection('authz').doc('authz').set({
                 units: { 'A': { role: unitRole, assignedAt: msAgo(0), assignedBy: 'seed' } },
                 updatedAt: msAgo(0)
@@ -491,7 +500,7 @@ async function seed() {
 
     for (const user of SEED_USERS) {
         const rec = await auth.getUserByEmail(user.email);
-        const unitRole = user.role === 'global-admin' ? 'admin' : user.role;
+        const unitRole = (user.role === 'super-admin' || user.role === 'global-admin') ? 'admin' : user.role;
         await db.collection('units').doc('A').collection('users').doc(rec.uid).set({ uid: rec.uid, email: user.email, role: unitRole, name: user.name, addedAt: msAgo(0) });
     }
     console.log(`  ✅ Unit A created (${BEDS.length} beds, users linked)`);

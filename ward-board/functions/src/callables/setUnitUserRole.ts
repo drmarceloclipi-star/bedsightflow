@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config';
 import { isGlobalAdmin } from '../config/admins';
+import { isAnyAdmin as isAnyAdminClaim } from '../lib/authz';
 
 export const setUnitUserRole = functions.region('southamerica-east1').https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
@@ -22,7 +23,7 @@ export const setUnitUserRole = functions.region('southamerica-east1').https.onCa
     // Check caller is admin of this unit
     const roleDoc = await db.collection('units').doc(unitId).collection('users').doc(adminUid).get();
 
-    if (!isGlobalAdmin(adminEmail) && (!roleDoc.exists || roleDoc.data()?.role !== 'admin')) {
+    if (!isAnyAdminClaim(context) && !isGlobalAdmin(adminEmail) && (!roleDoc.exists || roleDoc.data()?.role !== 'admin')) {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can perform this action.');
     }
 
