@@ -44,9 +44,12 @@ const FS_BASE = `${FS_HOST}/v1/projects/${PROJECT_ID}/databases/(default)/docume
 // ─── Seed users ───────────────────────────────────────────────────────────────
 
 const USERS = {
-    admin: { email: 'admin@lean.com', password: 'password123', name: 'Admin User', isAdmin: true, unitRole: 'admin' },
-    editor: { email: 'editor@lean.com', password: 'password123', name: 'Editor User', isAdmin: false, unitRole: 'editor' },
-    viewer: { email: 'viewer@lean.com', password: 'password123', name: 'Viewer User', isAdmin: false, unitRole: 'viewer' },
+    admin:     { email: 'admin@lean.com',      password: 'password123', name: 'Admin User',      isAdmin: true,  unitRole: 'admin'  },
+    editor:    { email: 'editor@lean.com',     password: 'password123', name: 'Editor User',     isAdmin: false, unitRole: 'editor' },
+    viewer:    { email: 'viewer@lean.com',     password: 'password123', name: 'Viewer User',     isAdmin: false, unitRole: 'viewer' },
+    // Unit Admin: role='admin' no authz doc mas SEM JWT custom claim global.
+    // Deve ter permissões Firestore elevadas (settings, audit_logs) mas ser bloqueado na rota /admin da UI.
+    unitAdmin: { email: 'unit-admin@lean.com', password: 'password123', name: 'Unit Admin User', isAdmin: false, unitRole: 'admin'  },
 } as const;
 
 type UserKey = keyof typeof USERS;
@@ -1573,6 +1576,225 @@ test.describe('§5 — Enforcement real no backend (não só esconder botão)', 
                 passed: hasForm, screenshot: shot,
             });
             expect(hasForm, 'Editor deve abrir leito e ver campos de edição').toBe(true);
+        } finally { await ctx.close(); }
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SEÇÃO 6 — LIMITE DE PRIVILÉGIO: UNIT ADMIN SEM CLAIM GLOBAL
+//
+//  Cenário: usuário com role='admin' no authz doc da unidade A (isUnitAdmin(A)=true)
+//  mas SEM o custom claim JWT `admin: true` (isGlobalAdmin()=false).
+//
+//  Expectativas:
+//    UI/Rota : /admin bloqueada — app verifica claim JWT, não role de unidade
+//    Firestore (elevado sobre editor):
+//      ✅ beds write         (isUnitEditorOrAdmin)
+//      ✅ settings/board rw  (isUnitAdmin via authz doc)
+//      ✅ audit_logs read    (isUnitAdmin via authz doc)
+//      ✅ units/A/users rw   (isUnitAdmin via authz doc)
+//    Firestore (requer global admin):
+//      ❌ authorized_users write  (isGlobalAdmin only)
+//      ❌ huddle set COMPLETED    (isGlobalAdmin only)
+//      ❌ authz de outro usuário  (isGlobalAdmin only)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test.describe('§6 — Limite de privilégio: Unit Admin sem claim global', () => {
+
+    // ── §6.1 Rota /admin bloqueada pela UI ──────────────────────────────────
+
+    test('§6.1a [Unit Admin] /admin redireciona para /login (sem claim JWT)', async ({ browser }) => {
+        const { page, ctx } = await openAs(browser, 'unitAdmin');
+        try {
+            await page.goto('/admin', { waitUntil: 'load' });
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            const url = page.url();
+            const blocked = url.includes('/login');
+
+            const shot = await snap(page, 'E-unit-admin-route-admin');
+            record({
+                area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+                route: '/admin', action: 'GET',
+                expected: 'redirect → /login (app verifica JWT claim, não role)',
+                actual: url,
+                passed: blocked, screenshot: shot,
+            });
+            expect(blocked, `Unit Admin sem claim não deve acessar /admin. URL: ${url}`).toBe(true);
+        } finally { await ctx.close(); }
+    });
+
+    test('§6.1b [Unit Admin] /admin/unit/A redireciona para /login (sem claim JWT)', async ({ browser }) => {
+        const { page, ctx } = await openAs(browser, 'unitAdmin');
+        try {
+            await page.goto('/admin/unit/A', { waitUntil: 'load' });
+            await page.waitForURL(/\/login/, { timeout: 10_000 }).catch(() => {});
+            const url = page.url();
+            const blocked = url.includes('/login');
+
+            const shot = await snap(page, 'E-unit-admin-route-admin-unit');
+            record({
+                area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+                route: '/admin/unit/A', action: 'GET',
+                expected: 'redirect → /login',
+                actual: url,
+                passed: blocked, screenshot: shot,
+            });
+            expect(blocked, `Unit Admin sem claim não deve acessar /admin/unit/A. URL: ${url}`).toBe(true);
+        } finally { await ctx.close(); }
+    });
+
+    // ── §6.2 Firestore: permissões elevadas (isUnitAdmin via authz doc) ──────
+
+    test('§6.2a [Unit Admin] pode escrever settings/board (isUnitAdmin via authz)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const res = await fsWrite(token, 'units/A/settings/board', 'testUnitAdmin', 'ok');
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: 'units/A/settings/board', action: 'write (isUnitAdmin via authz doc)',
+            expected: '200 OK — role admin no authz basta para settings',
+            actual: `HTTP ${res.status}`,
+            passed: res.ok,
+        });
+        expect(res.ok, `Unit Admin deve escrever settings/board. Status: ${res.status}`).toBe(true);
+    });
+
+    test('§6.2b [Unit Admin] pode ler audit_logs (isUnitAdmin via authz)', async () => {
+        const token = idTokens['unitAdmin']!;
+        // audit_logs: allow read: if isUnitAdmin(unitId) — role 'admin' no authz qualifica
+        const res = await fsRead(token, 'units/A/audit_logs');
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: 'units/A/audit_logs', action: 'read (list)',
+            expected: '200 OK — isUnitAdmin via authz doc',
+            actual: `HTTP ${res.status}`,
+            passed: res.ok,
+        });
+        expect(res.ok, `Unit Admin deve ler audit_logs. Status: ${res.status}`).toBe(true);
+    });
+
+    test('§6.2c [Unit Admin] pode escrever beds da unidade (isUnitEditorOrAdmin)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const res = await fsWrite(token, 'units/A/beds/bed_301.1', 'mainBlocker', 'unit-admin-test');
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: 'units/A/beds/bed_301.1', action: 'write',
+            expected: '200 OK — isUnitEditorOrAdmin',
+            actual: `HTTP ${res.status}`,
+            passed: res.ok,
+        });
+        expect(res.ok, `Unit Admin deve escrever beds. Status: ${res.status}`).toBe(true);
+    });
+
+    // ── §6.3 Firestore: operações que requerem isGlobalAdmin ────────────────
+
+    test('§6.3a [Unit Admin] não pode escrever authorized_users (requer isGlobalAdmin)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const uid = uids['unitAdmin']!;
+        const res = await fsWrite(token, `authorized_users/${uid}`, 'testField', 'value');
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: 'authorized_users/{uid}', action: 'write',
+            expected: '403 PERMISSION_DENIED — requer isGlobalAdmin (JWT claim)',
+            actual: `HTTP ${res.status}`,
+            passed: !res.ok && res.status === 403,
+        });
+        expect(res.ok, `Unit Admin NÃO deve escrever authorized_users. Status: ${res.status}`).toBe(false);
+        expect(res.status).toBe(403);
+    });
+
+    test('§6.3b [Unit Admin] não pode marcar huddle como COMPLETED (requer isGlobalAdmin)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const huddleId = `rbac-unit-admin-huddle-${Date.now()}`;
+
+        // Passo 1: criar huddle em IN_PROGRESS (permitido — isUnitEditorOrAdmin)
+        const FS_BASE_LOCAL = `${FS_HOST}/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+        const createRes = await fetch(`${FS_BASE_LOCAL}/units/A/huddles/${huddleId}`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { completionState: { stringValue: 'IN_PROGRESS' } } }),
+        });
+        expect(createRes.ok, `Unit Admin deve criar huddle IN_PROGRESS. Status: ${createRes.status}`).toBe(true);
+
+        // Passo 2: tentar atualizar para COMPLETED (bloqueado — requer isGlobalAdmin)
+        const updateRes = await fetch(
+            `${FS_BASE_LOCAL}/units/A/huddles/${huddleId}?updateMask.fieldPaths=completionState`,
+            {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields: { completionState: { stringValue: 'COMPLETED' } } }),
+            },
+        );
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: `units/A/huddles/${huddleId}`, action: 'update completionState → COMPLETED',
+            expected: '403 PERMISSION_DENIED — apenas isGlobalAdmin pode fechar huddle',
+            actual: `HTTP ${updateRes.status}`,
+            passed: !updateRes.ok && updateRes.status === 403,
+        });
+        expect(updateRes.ok, `Unit Admin NÃO deve setar huddle COMPLETED. Status: ${updateRes.status}`).toBe(false);
+        expect(updateRes.status).toBe(403);
+    });
+
+    test('§6.3c [Unit Admin] não pode ler authz de outro usuário (requer isGlobalAdmin)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const otherUid = uids['editor']!;  // authz de outro usuário
+        const res = await fsRead(token, `users/${otherUid}/authz/authz`);
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: `users/[editor]/authz/authz`, action: 'read (authz de outro usuário)',
+            expected: '403 PERMISSION_DENIED — apenas self ou isGlobalAdmin',
+            actual: `HTTP ${res.status}`,
+            passed: !res.ok && res.status === 403,
+        });
+        expect(res.ok, `Unit Admin NÃO deve ler authz de outro usuário. Status: ${res.status}`).toBe(false);
+        expect(res.status).toBe(403);
+    });
+
+    test('§6.3d [Unit Admin] não pode escrever no root doc da unidade (requer isGlobalAdmin)', async () => {
+        const token = idTokens['unitAdmin']!;
+        const res = await fsWrite(token, 'units/A', 'testField', 'value');
+
+        record({
+            area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+            route: 'units/A', action: 'write root doc',
+            expected: '403 PERMISSION_DENIED — requer isGlobalAdmin',
+            actual: `HTTP ${res.status}`,
+            passed: !res.ok && res.status === 403,
+        });
+        expect(res.ok, `Unit Admin NÃO deve escrever no root doc units/A. Status: ${res.status}`).toBe(false);
+        expect(res.status).toBe(403);
+    });
+
+    // ── §6.4 UI: sem botão de admin no /editor ───────────────────────────────
+
+    test('§6.4 [Unit Admin] sem botão de admin global em /editor (UI respeita JWT claim)', async ({ browser }) => {
+        const { page, ctx } = await openAs(browser, 'unitAdmin');
+        try {
+            await page.goto('/editor', { waitUntil: 'load' });
+            await page.waitForFunction(
+                () => !document.querySelector('.animate-pulse'),
+                { timeout: 10_000 },
+            ).catch(() => {});
+
+            // Botão admin só aparece quando isAdmin=true (JWT claim) — EditorLayout.tsx
+            const adminBtn = page.locator('button[aria-label="Acessar painel de administração"]');
+            const visible = await adminBtn.isVisible().catch(() => false);
+
+            const shot = await snap(page, 'E-unit-admin-no-admin-btn');
+            record({
+                area: '§6 Unit Admin Boundary', profile: 'Unit Admin (sem claim)',
+                route: '/editor', action: 'Botão admin global ausente na UI',
+                expected: 'não visível — isAdmin depende de JWT claim, não de role de unidade',
+                actual: visible ? 'visível (FALHOU)' : 'não visível ✓',
+                passed: !visible, screenshot: shot,
+            });
+            expect(visible, 'Unit Admin sem claim não deve ver botão de admin global').toBe(false);
         } finally { await ctx.close(); }
     });
 });
