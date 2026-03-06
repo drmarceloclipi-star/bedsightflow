@@ -26,60 +26,66 @@ export const getAdminOverviewBQ = functions
             throw new functions.https.HttpsError('invalid-argument', 'O unitId é obrigatório.')
         }
 
-        const db = admin.firestore()
-        const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
+        try {
+            const db = admin.firestore()
+            const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
 
-        const now = Date.now()
-        const ms24h = 24 * 60 * 60 * 1000
+            const now = Date.now()
+            const ms24h = 24 * 60 * 60 * 1000
 
-        let occupiedBeds = 0
-        let vacantBeds = 0
-        let dischargeLt24h = 0
-        let bedsWithBlocker = 0
-        let blockedKamishibai = 0
-        let staleBeds24h = 0
+            let occupiedBeds = 0
+            let vacantBeds = 0
+            let dischargeLt24h = 0
+            let bedsWithBlocker = 0
+            let blockedKamishibai = 0
+            let staleBeds24h = 0
 
-        for (const doc of bedsSnap.docs) {
-            const bed = doc.data()
-            const hasPatient = bed.patientAlias && bed.patientAlias.trim() !== ''
+            for (const doc of bedsSnap.docs) {
+                const bed = doc.data()
+                const hasPatient = bed.patientAlias && bed.patientAlias.trim() !== ''
 
-            if (hasPatient) {
-                occupiedBeds++
-            } else {
-                vacantBeds++
-            }
-
-            if (hasPatient && bed.expectedDischarge === '24h') dischargeLt24h++
-            if (hasPatient && bed.mainBlocker && bed.mainBlocker.trim() !== '') bedsWithBlocker++
-
-            // Kamishibai aggregation across all specialties for this bed
-            if (bed.kamishibai && typeof bed.kamishibai === 'object') {
-                for (const entry of Object.values(bed.kamishibai)) {
-                    const status = (entry as { status: KamishibaiStatus }).status
-                    if (status === 'blocked') blockedKamishibai++
-                }
-            }
-
-            // Stale check: use updatedAt
-            const rawTs = bed.updatedAt
-            if (rawTs) {
-                let updatedMs: number
-                if (typeof rawTs === 'string') {
-                    updatedMs = new Date(rawTs).getTime()
+                if (hasPatient) {
+                    occupiedBeds++
                 } else {
-                    updatedMs = (rawTs as Timestamp).toMillis()
+                    vacantBeds++
                 }
-                if (!isNaN(updatedMs) && now - updatedMs > ms24h) staleBeds24h++
-            }
-        }
 
-        return {
-            activePatients: occupiedBeds,
-            occupiedBeds,
-            vacantBeds,
-            dischargeLt24h,
-            bedsWithBlocker,
-            blockedKamishibai,
-            staleBeds24h,
+                if (hasPatient && bed.expectedDischarge === '24h') dischargeLt24h++
+                if (hasPatient && bed.mainBlocker && bed.mainBlocker.trim() !== '') bedsWithBlocker++
+
+                // Kamishibai aggregation across all specialties for this bed
+                if (bed.kamishibai && typeof bed.kamishibai === 'object') {
+                    for (const entry of Object.values(bed.kamishibai)) {
+                        const status = (entry as { status: KamishibaiStatus }).status
+                        if (status === 'blocked') blockedKamishibai++
+                    }
+                }
+
+                // Stale check: use updatedAt
+                const rawTs = bed.updatedAt
+                if (rawTs) {
+                    let updatedMs: number
+                    if (typeof rawTs === 'string') {
+                        updatedMs = new Date(rawTs).getTime()
+                    } else {
+                        updatedMs = (rawTs as Timestamp).toMillis()
+                    }
+                    if (!isNaN(updatedMs) && now - updatedMs > ms24h) staleBeds24h++
+                }
+            }
+
+            return {
+                activePatients: occupiedBeds,
+                occupiedBeds,
+                vacantBeds,
+                dischargeLt24h,
+                bedsWithBlocker,
+                blockedKamishibai,
+                staleBeds24h,
+            }
+        } catch (error: unknown) {
+            if (error instanceof functions.https.HttpsError) throw error
+            const msg = error instanceof Error ? error.message : 'Erro interno'
+            throw new functions.https.HttpsError('internal', msg)
         }
     })

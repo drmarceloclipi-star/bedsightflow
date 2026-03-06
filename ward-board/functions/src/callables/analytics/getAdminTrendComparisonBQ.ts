@@ -48,34 +48,41 @@ export const getAdminTrendComparisonBQ = functions
             throw new functions.https.HttpsError('invalid-argument', 'O unitId é obrigatório.')
         }
 
-        const db = admin.firestore()
-        const days = getPeriodDuration(periodKey as PeriodKey)
+        try {
+            const db = admin.firestore()
+            const days = getPeriodDuration(periodKey as PeriodKey)
 
-        const currentEnd = new Date()
-        const currentStart = new Date()
-        currentStart.setDate(currentStart.getDate() - days)
-        currentStart.setHours(0, 0, 0, 0)
+            const currentEnd = new Date()
+            const currentStart = new Date()
+            currentStart.setDate(currentStart.getDate() - days)
+            currentStart.setHours(0, 0, 0, 0)
 
-        const previousEnd = new Date(currentStart.getTime() - 1)
-        const previousStart = new Date(previousEnd)
-        previousStart.setDate(previousStart.getDate() - days)
-        previousStart.setHours(0, 0, 0, 0)
+            const previousEnd = new Date(currentStart.getTime() - 1)
+            const previousStart = new Date(previousEnd)
+            previousStart.setDate(previousStart.getDate() - days)
+            previousStart.setHours(0, 0, 0, 0)
 
-        const [currentPeriod, previousPeriod] = await Promise.all([
-            countAuditEventsPerDay(db, unitId, currentStart, currentEnd),
-            countAuditEventsPerDay(db, unitId, previousStart, previousEnd),
-        ])
+            const [currentPeriod, previousPeriod] = await Promise.all([
+                countAuditEventsPerDay(db, unitId, currentStart, currentEnd),
+                countAuditEventsPerDay(db, unitId, previousStart, previousEnd),
+            ])
 
-        // Fallback to current snapshot when no audit history yet
-        if (currentPeriod.length === 0) {
-            const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
-            const occupied = bedsSnap.docs.filter(d => d.data().expectedDischarge).length
-            const today = new Date().toISOString().slice(0, 10)
-            return {
-                currentPeriod: [{ date: today, value: occupied }],
-                previousPeriod: [],
+            // Fallback to current snapshot when no audit history yet
+            if (currentPeriod.length === 0) {
+                const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
+                const occupied = bedsSnap.docs.filter(d => d.data().expectedDischarge).length
+                const today = new Date().toISOString().slice(0, 10)
+                return {
+                    currentPeriod: [{ date: today, value: occupied }],
+                    previousPeriod: [],
+                }
             }
-        }
 
-        return { currentPeriod, previousPeriod }
+            return { currentPeriod, previousPeriod }
+
+        } catch (error: unknown) {
+            if (error instanceof functions.https.HttpsError) throw error
+            const msg = error instanceof Error ? error.message : 'Erro interno'
+            throw new functions.https.HttpsError('internal', msg)
+        }
     })
