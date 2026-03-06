@@ -95,6 +95,13 @@ export const BedsRepository = {
             batch.set(bedRef, data, { merge: true });
         });
 
+        // ✅ Sincroniza totalBeds no documento da unidade — bug raiz fix
+        const unitRef = doc(db, 'units', unitId);
+        batch.update(unitRef, {
+            totalBeds: beds.length,
+            updatedAt: serverTimestamp(),
+        });
+
         await batch.commit();
     },
 

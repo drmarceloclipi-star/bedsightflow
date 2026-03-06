@@ -9,13 +9,25 @@ import { UnitsRepository } from '../../../repositories/UnitsRepository';
 const MobileDashboard: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const unitId = searchParams.get('unit') || 'A';
+    const unitId = searchParams.get('unit') || '';
 
     const [beds, setBeds] = useState<Bed[]>([]);
     const [unit, setUnit] = useState<Unit | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!unitId) {
+            // Sem unitId na URL: redireciona para a primeira unidade disponível
+            const unsubUnits = UnitsRepository.listenToUnits((units) => {
+                if (units.length > 0) {
+                    navigate(`?unit=${units[0].id}`, { replace: true });
+                } else {
+                    setLoading(false);
+                }
+            });
+            return () => unsubUnits();
+        }
+
         const unsubscribe = BedsRepository.listenToBeds(unitId, (data: Bed[]) => {
             setBeds(data);
             setLoading(false);
@@ -24,7 +36,7 @@ const MobileDashboard: React.FC = () => {
         UnitsRepository.getUnit(unitId).then(setUnit).catch(console.error);
 
         return () => unsubscribe();
-    }, [unitId]);
+    }, [unitId, navigate]);
 
     const filterType = searchParams.get('filter') || '';
     const [now] = useState(() => Date.now());
@@ -63,7 +75,7 @@ const MobileDashboard: React.FC = () => {
             let lastReviewedMs: number | null = null;
             if (bed.kamishibai && typeof bed.kamishibai === 'object') {
                 for (const entry of Object.values(bed.kamishibai)) {
-                    const raw = (entry as Record<string, unknown>)?.reviewedAt;
+                    const raw = (entry as unknown as Record<string, unknown>)?.reviewedAt;
                     if (!raw) continue;
                     const ms = parseDate(raw).getTime();
                     if (!isNaN(ms) && (lastReviewedMs === null || ms > lastReviewedMs)) {

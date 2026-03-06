@@ -5,7 +5,7 @@ import { useAuthStatus } from '../hooks/useAuthStatus';
 
 export default function EditorLayout() {
     const [searchParams] = useSearchParams();
-    const unitId = searchParams.get('unit') || 'A';
+    const unitId = searchParams.get('unit') || '';
     const navigate = useNavigate();
     const location = useLocation();
     const { isAdmin } = useAuthStatus();

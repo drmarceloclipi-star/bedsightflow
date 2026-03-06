@@ -81,6 +81,13 @@ export const applyCanonicalBeds = functions.region('southamerica-east1').https.o
         }));
     }
 
+    // ✅ Sincroniza totalBeds no documento da unidade — bug raiz fix
+    const unitRef = db.collection('units').doc(unitId);
+    operations.push((batch) => batch.update(unitRef, {
+        totalBeds: CANONICAL_BED_NUMBERS.length,
+        updatedAt: now,
+    }));
+
     const auditLogRef = db.collection('units').doc(unitId).collection('audit_logs').doc();
     operations.push((batch) => batch.set(auditLogRef, {
         id: auditLogRef.id,
