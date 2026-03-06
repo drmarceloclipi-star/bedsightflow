@@ -19,7 +19,7 @@ import { CheckSquare, Flame } from 'lucide-react';
 
 const TvDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
-    const unitId = searchParams.get('unit') || 'A';
+    const unitId = searchParams.get('unit') || '';
     const forceScreen = searchParams.get('screen') || undefined;
     const navigate = useNavigate();
     const { isAdmin } = useAuthStatus();
@@ -86,6 +86,18 @@ const TvDashboard: React.FC = () => {
 
 
     useEffect(() => {
+        if (!unitId) {
+            // Sem unitId na URL: redireciona para a primeira unidade disponível
+            const unsubUnits = UnitsRepository.listenToUnits((units) => {
+                if (units.length > 0) {
+                    navigate(`?unit=${units[0].id}`, { replace: true });
+                } else {
+                    setLoading(false);
+                }
+            });
+            return () => unsubUnits();
+        }
+
         const handleError = (err: Error) => {
             console.error('TV Dashboard Error:', err);
             setError('Perda de conexão com o banco de dados. Tentando reconectar...');
@@ -119,7 +131,7 @@ const TvDashboard: React.FC = () => {
             unsubscribeOps();
             unsubscribeMC();
         };
-    }, [unitId]);
+    }, [unitId, navigate]);
 
     // Huddles Listener (amarrado ao opSettings e data/hora atual)
     useEffect(() => {
