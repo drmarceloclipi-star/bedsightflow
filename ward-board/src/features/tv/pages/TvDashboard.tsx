@@ -43,14 +43,27 @@ const TvDashboard: React.FC = () => {
     }, []);
 
     // ── v1: Huddle pendente ──────────────────────────────────────────────────
-    // Computa UMA VEZ por ciclo de render. Usa 'now' (state) — nunca Date.now() direto no JSX.
+    // O ciclo LSW só é considerado encerrado quando o huddle tem endedAt definido.
+    // Usar apenas lastHuddleShiftKey (que é setado ao INICIAR o huddle) causava o
+    // badge desaparecer assim que o huddle era aberto — antes de ser concluído (G3).
     const { huddlePending, huddleSubtext } = useMemo(() => {
         if (!opsSettings) return { huddlePending: false, huddleSubtext: '' };
         const schedule = opsSettings.huddleSchedule ?? DEFAULT_SHIFT_SCHEDULE;
         const shiftKey = currentShiftKey(schedule);
-        const pending = !opsSettings.lastHuddleShiftKey || opsSettings.lastHuddleShiftKey !== shiftKey;
-        let subtext = 'Nenhum huddle registrado neste turno';
-        if (opsSettings.lastHuddleAt) {
+
+        // Huddle completo = documento existe E tem endedAt
+        const huddleCompletedThisShift = currentHuddle !== null && currentHuddle.endedAt != null;
+
+        // Pendente se: nenhum huddle foi concluído neste turno
+        const pending = !huddleCompletedThisShift;
+
+        let subtext: string;
+        if (currentHuddle && !currentHuddle.endedAt) {
+            // Huddle iniciado mas não encerrado
+            subtext = 'Huddle em andamento — aguardando encerramento';
+        } else if (!opsSettings.lastHuddleShiftKey || opsSettings.lastHuddleShiftKey !== shiftKey) {
+            subtext = 'Nenhum huddle registrado neste turno';
+        } else if (opsSettings.lastHuddleAt) {
             const raw = opsSettings.lastHuddleAt;
             const lastAt: Date | null =
                 raw instanceof Date ? raw :
@@ -59,10 +72,15 @@ const TvDashboard: React.FC = () => {
             if (lastAt) {
                 const diffH = Math.round((now.getTime() - lastAt.getTime()) / 3600000);
                 subtext = `Último: ${opsSettings.lastHuddleType ?? ''} há ${diffH}h`;
+            } else {
+                subtext = 'Nenhum huddle registrado neste turno';
             }
+        } else {
+            subtext = 'Nenhum huddle registrado neste turno';
         }
+
         return { huddlePending: pending, huddleSubtext: subtext };
-    }, [opsSettings, now]);
+    }, [opsSettings, currentHuddle, now]);
 
 
     useEffect(() => {

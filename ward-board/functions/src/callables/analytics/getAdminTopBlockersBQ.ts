@@ -24,54 +24,61 @@ export const getAdminTopBlockersBQ = functions
             throw new functions.https.HttpsError('invalid-argument', 'O unitId é obrigatório.')
         }
 
-        const db = admin.firestore()
+        try {
+            const db = admin.firestore()
 
-        // ---- Current blockers: from live beds ----
-        const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
-        const currentCounts = new Map<string, number>()
+            // ---- Current blockers: from live beds ----
+            const bedsSnap = await db.collection(`units/${unitId}/beds`).get()
+            const currentCounts = new Map<string, number>()
 
-        for (const doc of bedsSnap.docs) {
-            const bed = doc.data()
-            const hasPatient = bed.patientAlias && bed.patientAlias.trim() !== ''
-            if (!hasPatient) continue
-            const blocker = bed.mainBlocker?.trim()
-            if (!blocker) continue
-            currentCounts.set(blocker, (currentCounts.get(blocker) ?? 0) + 1)
+            for (const doc of bedsSnap.docs) {
+                const bed = doc.data()
+                const hasPatient = bed.patientAlias && bed.patientAlias.trim() !== ''
+                if (!hasPatient) continue
+                const blocker = bed.mainBlocker?.trim()
+                if (!blocker) continue
+                currentCounts.set(blocker, (currentCounts.get(blocker) ?? 0) + 1)
+            }
+
+            // ---- Previous window blockers: from RESET_BED_KANBAN audit logs (7–14 days ago) ----
+            const now = new Date()
+            const prevEnd = new Date(now)
+            prevEnd.setDate(prevEnd.getDate() - 7)
+            const prevStart = new Date(prevEnd)
+            prevStart.setDate(prevStart.getDate() - 7)
+            prevStart.setHours(0, 0, 0, 0)
+
+            const prevSnap = await db.collection(`units/${unitId}/audit_logs`)
+                .where('entityType', '==', 'bed')
+                .where('action', '==', 'RESET_BED_KANBAN')
+                .where('createdAt', '>=', Timestamp.fromDate(prevStart))
+                .where('createdAt', '<=', Timestamp.fromDate(prevEnd))
+                .get()
+
+            const prevCounts = new Map<string, number>()
+            for (const doc of prevSnap.docs) {
+                const blocker = (doc.data().before?.mainBlocker as string | undefined)?.trim()
+                if (!blocker) continue
+                prevCounts.set(blocker, (prevCounts.get(blocker) ?? 0) + 1)
+            }
+
+            // ---- Merge, sort by current count descending ----
+            const allBlockers = new Set([...currentCounts.keys(), ...prevCounts.keys()])
+            const result = Array.from(allBlockers)
+                .map(blocker => {
+                    const count = currentCounts.get(blocker) ?? 0
+                    const previousCount = prevCounts.get(blocker) ?? 0
+                    return { blocker, count, previousCount, delta: count - previousCount }
+                })
+                .filter(b => b.count > 0)   // only show currently active blockers
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10)
+
+            return result
+
+        } catch (error: unknown) {
+            if (error instanceof functions.https.HttpsError) throw error
+            const msg = error instanceof Error ? error.message : 'Erro interno'
+            throw new functions.https.HttpsError('internal', msg)
         }
-
-        // ---- Previous window blockers: from RESET_BED_KANBAN audit logs (7–14 days ago) ----
-        const now = new Date()
-        const prevEnd = new Date(now)
-        prevEnd.setDate(prevEnd.getDate() - 7)
-        const prevStart = new Date(prevEnd)
-        prevStart.setDate(prevStart.getDate() - 7)
-        prevStart.setHours(0, 0, 0, 0)
-
-        const prevSnap = await db.collection(`units/${unitId}/audit_logs`)
-            .where('entityType', '==', 'bed')
-            .where('action', '==', 'RESET_BED_KANBAN')
-            .where('createdAt', '>=', Timestamp.fromDate(prevStart))
-            .where('createdAt', '<=', Timestamp.fromDate(prevEnd))
-            .get()
-
-        const prevCounts = new Map<string, number>()
-        for (const doc of prevSnap.docs) {
-            const blocker = (doc.data().before?.mainBlocker as string | undefined)?.trim()
-            if (!blocker) continue
-            prevCounts.set(blocker, (prevCounts.get(blocker) ?? 0) + 1)
-        }
-
-        // ---- Merge, sort by current count descending ----
-        const allBlockers = new Set([...currentCounts.keys(), ...prevCounts.keys()])
-        const result = Array.from(allBlockers)
-            .map(blocker => {
-                const count = currentCounts.get(blocker) ?? 0
-                const previousCount = prevCounts.get(blocker) ?? 0
-                return { blocker, count, previousCount, delta: count - previousCount }
-            })
-            .filter(b => b.count > 0)   // only show currently active blockers
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10)
-
-        return result
     })

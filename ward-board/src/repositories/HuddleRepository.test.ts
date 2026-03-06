@@ -369,6 +369,15 @@ describe('HuddleRepository', () => {
     // ── setHuddleEnded ───────────────────────────────────────────────────────
 
     describe('setHuddleEnded', () => {
+        // G3 fix: setHuddleEnded now reads the huddle document (getDoc) to extract
+        // huddleType before updating ops settings. Tests must set up mockGetDoc.
+        beforeEach(() => {
+            mockGetDoc.mockResolvedValue({
+                exists: () => true,
+                data: () => ({ id: '2026-03-01-AM', huddleType: 'AM', checklist: [], topActions: [] }),
+            })
+        })
+
         it('writes endedAt and updatedAt timestamps', async () => {
             await repo.setHuddleEnded('unit1', '2026-03-01-AM')
 
@@ -413,6 +422,50 @@ describe('HuddleRepository', () => {
 
             const [_ref, updateData] = mockUpdateDoc.mock.calls[0]
             expect(updateData.endSummary).toBeUndefined()
+        })
+
+        // ── G3 fix: ops settings must be updated on COMPLETION ────────────────
+        // Before this fix, lastHuddleAt/lastHuddleType were never written on
+        // setHuddleEnded, so the TV "HUDDLE PENDENTE" badge relied on
+        // lastHuddleShiftKey (set on START) instead of on actual completion.
+
+        it('updates ops settings with lastHuddleAt, lastHuddleType and lastHuddleShiftKey', async () => {
+            await repo.setHuddleEnded('unit1', '2026-03-01-AM')
+
+            // setDoc must be called for ops settings update
+            expect(mockSetDoc).toHaveBeenCalledWith(
+                'huddleRef', // doc() always returns 'huddleRef' in mock
+                expect.objectContaining({
+                    lastHuddleAt: 'SERVER_TIMESTAMP',
+                    lastHuddleType: 'AM',
+                    lastHuddleShiftKey: '2026-03-01-AM',
+                }),
+                { merge: true }
+            )
+        })
+
+        it('infers huddleType from huddleId suffix when huddle document is missing', async () => {
+            mockGetDoc.mockResolvedValue({ exists: () => false })
+
+            await repo.setHuddleEnded('unit1', '2026-03-01-PM')
+
+            expect(mockSetDoc).toHaveBeenCalledWith(
+                'huddleRef',
+                expect.objectContaining({ lastHuddleType: 'PM' }),
+                { merge: true }
+            )
+        })
+
+        it('uses AM inferred type for AM suffix huddleIds when document missing', async () => {
+            mockGetDoc.mockResolvedValue({ exists: () => false })
+
+            await repo.setHuddleEnded('unit1', '2026-03-01-AM')
+
+            expect(mockSetDoc).toHaveBeenCalledWith(
+                'huddleRef',
+                expect.objectContaining({ lastHuddleType: 'AM' }),
+                { merge: true }
+            )
         })
     })
 })

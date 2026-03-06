@@ -244,7 +244,11 @@ export class HuddleRepository {
     static async setHuddleEnded(unitId: string, huddleId: string) {
         const ref = this.getHuddleRef(unitId, huddleId);
 
-        // Fetch snapshot here
+        // Read the huddle to get huddleType for ops settings update
+        const huddleSnap = await getDoc(ref);
+        const huddleData = huddleSnap.exists() ? (huddleSnap.data() as HuddleDoc) : null;
+
+        // Fetch end snapshot
         const endSummary = await MissionControlRepository.getHuddleSnapshotSummary(unitId, huddleId);
 
         const updateData: Record<string, unknown> = {
@@ -257,5 +261,16 @@ export class HuddleRepository {
         }
 
         await updateDoc(ref, updateData);
+
+        // Sync ops settings so TV badge disappears only after huddle is COMPLETED (G3 fix).
+        // Before this fix, lastHuddleAt/lastHuddleType were never written on completion,
+        // so the TV badge showed stale info even after the huddle was properly closed.
+        const opsSettingsRef = doc(db, 'units', unitId, 'settings', 'ops');
+        const huddleType = huddleData?.huddleType ?? (huddleId.endsWith('-AM') ? 'AM' : 'PM');
+        await setDoc(opsSettingsRef, {
+            lastHuddleAt: serverTimestamp(),
+            lastHuddleType: huddleType,
+            lastHuddleShiftKey: huddleId,
+        }, { merge: true });
     }
 }
