@@ -9,6 +9,7 @@ export { softResetUnit } from './callables/softResetUnit';
 export { auditBedWrites } from './triggers/auditBedWrites';
 export { notifyEscalations } from './triggers/notifyEscalations';
 export { setGlobalAdminClaim } from './callables/setGlobalAdminClaim';
+export { setSuperAdminClaim } from './callables/setSuperAdminClaim';
 export { deletePendency } from './callables/pendencies/deletePendency';
 
 // Analytics callables (query Firestore audit logs — not BigQuery)

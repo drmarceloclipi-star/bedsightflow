@@ -1,49 +1,97 @@
 # RBAC Contract — BedSight Flow
 
 > **Documento canônico de autorização.** Qualquer mudança de política deve começar aqui.
-> Versão P0 — Março 2026.
+> Versão P1 — Março 2026.
 
 ---
 
-## Conceitos
+## Princípio Central
 
-| Conceito | O que faz |
+No BedSight Flow existem **dois domínios completamente diferentes**:
+
+### A. Domínio da Plataforma (SaaS)
+- **Super Admin** — dono da plataforma
+- Atua acima das instituições
+- Visão multi-instituição
+- Painel próprio (`/super-admin`)
+- **NÃO participa da hierarquia operacional do hospital**
+
+### B. Domínio da Instituição (Hospital)
+- **Global Admin** — administrador da instituição
+- **Unit Admin (Líder Admin)** — administrador de uma unidade
+- **Editor** — operador do quadro
+- **Viewer** — visualização apenas
+
+Esses papéis pertencem à operação dentro de uma instituição específica.
+
+---
+
+## Separação Obrigatória
+
+| Regra | Descrição |
 |---|---|
-| **Gate de entrada** | `authorized_users` — lista que controla quem **pode logar** no sistema. |
-| **Papéis (roles)** | Claims JWT + documentos `authz` — controlam **o que o usuário pode fazer** depois de logado. |
-
-Esses dois conceitos são **independentes**: estar na whitelist não dá permissão; ter um papel não garante acesso ao sistema sem estar na whitelist.
+| Super Admin ≠ Global Admin | Super Admin administra a plataforma, NÃO o hospital |
+| Global Admin ≠ Super Admin | Global Admin não herda funções de plataforma |
+| Sem mistura | Gestão de plataforma, gestão de instituição, gestão de unidade, operação e visualização são camadas separadas |
 
 ---
 
 ## Papéis e Escopo
 
-### Platform / Super-admin *(futuro — P1+)*
-- Multi-instituição.
-- Não implementado na UI; gerenciado manualmente.
+### Super Admin (Plataforma)
+- **Claim JWT:** `superAdmin: true` (setado via Cloud Function `setSuperAdminClaim`)
+- **Escopo:** nível SaaS / multi-instituição
+- **UI:** `/super-admin`
+- **Pode:** gerenciar instituições clientes, gerenciar usuários globais, administrar aspectos da plataforma
+- **Não pode:** atuar como usuário operacional do hospital, seguir hierarquia do portal institucional
 
-### Platform Admin — break-glass
-- **Claim JWT:** `admin: true` (setado via Cloud Function `setGlobalAdminClaim`).
-- **Acesso:** tudo. Sem restrição de unidade.
-- **UI:** `/admin`, `/mobile-admin`.
-- **Nunca removido automaticamente.** Pelo menos 1 usuário deve ter essa claim no projeto (break-glass de emergência).
-- Não há lista de e-mails com esse efeito no runtime (ver seção Legado abaixo).
+### Global Admin (Instituição)
+- **Claim JWT:** `admin: true` (setado via Cloud Function `setGlobalAdminClaim`)
+- **Escopo:** uma única instituição, todas as unidades
+- **UI:** `/admin`, `/mobile-admin`
+- **Pode:** gerenciar a instituição, gerenciar unidades, supervisionar operação
+- **Não pode:** gerenciar outras instituições, acessar visão multi-instituição, gerenciar camada SaaS
 
-### Institution Admin *(equivalente ao "admin" P0)*
-- Mesmo que Platform Admin nesta fase (app é single-tenant).
-- Governado pelo mesmo custom claim `admin: true`.
+### Unit Admin / Líder Admin
+- **Role:** `admin` no documento `/users/{uid}/authz/authz.units.{unitId}`
+- **Escopo:** apenas a própria unidade
+- **UI:** `/unit-admin`
+- **Pode:** gerenciar recursos da unidade, supervisionar operação local
+- **Não pode:** administrar a instituição inteira, acessar camada de plataforma
 
-### Unit Admin *(P1 — não implementado)*
-- Role `admin` no documento `/users/{uid}/authz/authz.units.{unitId}`.
-- UI de gerenciamento de unidade (`/unit-admin`) ainda não existe.
+### Editor
+- **Role:** `editor` no documento `/users/{uid}/authz/authz.units.{unitId}`
+- **Escopo:** unidade(s) autorizada(s)
+- **UI:** `/editor`
+- **Pode:** inserir/atualizar dados operacionais, alimentar Kanban/Kamishibai
+- **Não pode:** administrar instituição ou plataforma
 
-### Unit Editor
-- Role `editor` no documento `/users/{uid}/authz/authz.units.{unitId}`.
-- **UI:** `/editor`, `/tv`.
+### Viewer
+- **Role:** `viewer` no documento `/users/{uid}/authz/authz.units.{unitId}`
+- **Escopo:** tela/TV/dashboard em modo leitura
+- **UI:** `/tv`
+- **Pode:** visualizar quadros
+- **Não pode:** editar dados, configurar recursos
 
-### Unit Viewer
-- Role `viewer` no documento `/users/{uid}/authz/authz.units.{unitId}`.
-- **UI:** `/tv` (somente leitura).
+---
+
+## Hierarquia do Portal
+
+### Fora da hierarquia operacional
+- **Super Admin** — vai direto para `/super-admin`
+
+### Hierarquia operacional da instituição
+**Global Admin > Unit Admin > Editor > Viewer**
+
+### Regra mestra do portal
+Dentro da instituição, cada papel vê o seu nível e os níveis abaixo dele.
+
+| Papel | Vê |
+|---|---|
+| Global Admin | Global Admin + Unit Admin + Editor + Viewer |
+| Unit Admin | Unit Admin + Editor + Viewer |
+| Editor | Editor + Viewer |
+| Viewer | Viewer |
 
 ---
 
@@ -51,6 +99,7 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 
 | O que verificar | Onde fica |
 |---|---|
+| É super admin? | `token.claims.superAdmin === true` |
 | É global admin? | `token.claims.admin === true` |
 | Papéis por unidade | `/users/{uid}/authz/authz` (campo `units`) |
 | Pode logar? | `authorized_users` (coleção Firestore) |
@@ -64,32 +113,41 @@ Esses dois conceitos são **independentes**: estar na whitelist não dá permiss
 | Rota | Requisito |
 |---|---|
 | `/login` | Público |
-| `/tv` | Autenticado (viewer/editor/admin) |
-| `/editor` | Autenticado (editor+) |
+| `/super-admin` | `token.claims.superAdmin === true` |
 | `/admin` | `token.claims.admin === true` |
 | `/mobile-admin` | `token.claims.admin === true` |
-
-Pós-login bem-sucedido, o usuário é redirecionado para `/tv` (ponto de entrada neutro, acessível a todos os papéis). O admin pode navegar para `/admin` via botão ou diretamente pela URL.
+| `/unit-admin` | Autenticado (unit admin+) |
+| `/editor` | Autenticado (editor+) |
+| `/tv` | Autenticado (viewer+) |
+| `/portal` | Autenticado (redireciona Super Admin para `/super-admin`) |
 
 ---
 
-## Política de Huddles — Completion (P0)
+## Política de Huddles — Completion
 
 | Ação | Quem pode |
 |---|---|
 | Criar huddle | Editor+ (completionState ≠ COMPLETED) |
 | Atualizar huddle (DRAFT, IN_PROGRESS…) | Editor+ |
-| **Setar COMPLETED** | **Somente global admin** (`token.claims.admin === true`) |
-
-> P0 simplifica: Unit Admin não pode completar huddle ainda. Isso é desbloqueado no P1 quando Unit Admin receber UI e fluxo próprios.
+| **Setar COMPLETED** | **Super Admin ou Global Admin** |
 
 ---
 
-## Política de Board Settings (P0)
+## Política de Board Settings
 
-- Somente global admin pode chamar `updateBoardSettings`.
-- Não depende de `/units/{unitId}/users/{uid}` (legacy).
+- Super Admin ou Global Admin podem chamar `updateBoardSettings`.
 - Auditado em `units/{unitId}/audit_logs`.
+
+---
+
+## Gestão de Plataforma (Super Admin exclusivo)
+
+| Recurso | Quem pode |
+|---|---|
+| Criar/deletar instituições (units) | Super Admin |
+| Gerenciar authorized_users (whitelist global) | Super Admin |
+| Setar claim `superAdmin` | Super Admin |
+| Setar claim `admin` | Super Admin ou Global Admin |
 
 ---
 
@@ -98,19 +156,7 @@ Pós-login bem-sucedido, o usuário é redirecionado para `/tv` (ponto de entrad
 ### ADMIN_EMAILS (`src/config/admins.ts`)
 - Lista existente **apenas para seed/bootstrap** inicial de custom claims.
 - **Não usada** para roteamento, permissão ou autorização em runtime.
-- Remover no P1 após confirmar que todos os admins têm custom claim setada.
+- Remover quando todos os admins têm custom claim setada.
 
 ### `/units/{unitId}/users/{uid}` (legacy data — não é enforcement)
-- **Firestore Rules já não usa este caminho** para verificar papéis de unidade (migrado no P0.1).
-- Cloud Functions (`updateBoardSettings`) também não dependem mais deste caminho.
-- Os dados podem ainda existir no Firestore como legado; a coleção tem regras de leitura/escrita restritas ao global admin para eventuais migrações.
-- Limpeza dos documentos residuais fica para P1.
-
----
-
-## P1 — O que NÃO está implementado ainda
-
-- [ ] Unit Admin UI (`/unit-admin`) e role explícito.
-- [ ] Limpeza de dados legados em `/units/{unitId}/users/*` (rules já migradas no P0.1).
-- [ ] Whitelist `authorized_users` com docId=email (para consistência nas rules).
-- [ ] Papéis Platform/Institution separados.
+- Os dados podem existir como legado; rules de leitura/escrita restritas ao admin.

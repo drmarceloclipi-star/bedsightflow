@@ -52,8 +52,11 @@ export async function signInViaEmulator(
     await page.click('button[type="submit"]:has-text("Entrar Localmente")');
 
     // Wait until login completes and app redirects us to either portal, admin, editor, etc.
-    await page.waitForURL(/\/portal|\/admin|\/unit-admin|\/mobile-admin|\/editor|\/tv/, { timeout: 15000 });
+    await page.waitForURL(/\/portal|\/super-admin|\/admin|\/unit-admin|\/mobile-admin|\/editor|\/tv/, { timeout: 15000 });
 }
+
+export const signInAsSuperAdmin = (page: Page) =>
+    signInViaEmulator(page, 'super-admin@lean.com', 'Super Admin');
 
 export const signInAsAdmin = (page: Page) =>
     signInViaEmulator(page, 'global-admin@lean.com', 'Global Admin');

@@ -333,10 +333,71 @@ export interface SummaryMetrics {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RBAC
+// RBAC — Role Hierarchy
+//
+// Two completely separate domains:
+//   A. Platform domain (SaaS owner): Super Admin
+//   B. Institution domain (hospital): Global Admin > Unit Admin > Editor > Viewer
+//
+// Super Admin is OUTSIDE the institutional hierarchy.
+// Within the institution, each role sees its level and the levels below it.
+//
+// Ref: RBAC_CONTRACT.md
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Platform-level role. Managed via custom claim `superAdmin: true`.
+ * Super Admin administers the platform, NOT the hospital.
+ */
+export type PlatformRole = 'super_admin';
+
+/**
+ * Unit-level roles within an institution.
+ * - admin  → Unit Admin / Líder Admin (manages the unit)
+ * - editor → Operator (feeds Kanban, Kamishibai)
+ * - viewer → Read-only (TV/dashboard)
+ */
 export type UnitRole = 'admin' | 'editor' | 'viewer';
+
+/**
+ * Numeric weight for role hierarchy comparison.
+ * Higher number = higher privilege. Super Admin is excluded (separate domain).
+ *
+ * Global Admin (institution-wide) is determined by custom claim `admin: true`,
+ * not by this weight map. This map is for unit-level roles only.
+ */
+export const ROLE_WEIGHT: Record<UnitRole, number> = {
+    viewer: 1,
+    editor: 2,
+    admin: 3,
+};
+
+/**
+ * The complete institutional hierarchy for portal card visibility.
+ * Each role sees cards at its level and all levels below.
+ *
+ *   Global Admin → sees: global_admin, unit_admin, editor, viewer
+ *   Unit Admin   → sees: unit_admin, editor, viewer
+ *   Editor       → sees: editor, viewer
+ *   Viewer       → sees: viewer
+ */
+export type PortalLevel = 'global_admin' | 'unit_admin' | 'editor' | 'viewer';
+
+export const PORTAL_HIERARCHY: PortalLevel[] = [
+    'global_admin',
+    'unit_admin',
+    'editor',
+    'viewer',
+];
+
+/**
+ * Returns the portal levels visible to a given level (itself + below).
+ */
+export function getVisiblePortalLevels(level: PortalLevel): PortalLevel[] {
+    const idx = PORTAL_HIERARCHY.indexOf(level);
+    if (idx === -1) return [];
+    return PORTAL_HIERARCHY.slice(idx);
+}
 
 export interface UnitUserRole {
     id?: string;

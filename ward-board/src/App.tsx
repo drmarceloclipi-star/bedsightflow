@@ -10,6 +10,7 @@ const MobileDashboard = lazy(() => import('./features/editor/pages/MobileDashboa
 const BedDetails = lazy(() => import('./features/editor/pages/BedDetails'));
 const TvDashboard = lazy(() => import('./features/tv/pages/TvDashboard'));
 const LoginScreen = lazy(() => import('./features/auth/LoginScreen'));
+const SuperAdminRouter = lazy(() => import('./features/super-admin/SuperAdminRouter'));
 const AdminRouter = lazy(() => import('./features/admin/AdminRouter'));
 const MobileAdminRouter = lazy(() => import('./features/mobile-admin/MobileAdminRouter'));
 const UnitAdminRouter = lazy(() => import('./features/unit-admin/UnitAdminRouter'));
@@ -22,7 +23,7 @@ const FallbackLoader = () => (
 );
 
 function App() {
-  const { user, isAdmin, loading } = useAuthStatus();
+  const { user, isSuperAdmin, isAdmin, loading } = useAuthStatus();
 
   if (loading) {
     return (
@@ -39,7 +40,17 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginScreen />} />
 
-            {/* Admin Routes — global with unit selector */}
+            {/* Super Admin Routes — platform-level, separate from institution */}
+            <Route
+              path="/super-admin/*"
+              element={
+                isSuperAdmin
+                  ? <SuperAdminRouter />
+                  : <Navigate to="/login" replace />
+              }
+            />
+
+            {/* Global Admin Routes — institution-level with unit selector */}
             {/* On mobile devices, redirect to the mobile-optimised admin */}
             <Route
               path="/admin/*"
@@ -52,7 +63,7 @@ function App() {
               }
             />
 
-            {/* Mobile Admin Routes — mobile-optimised admin panel */}
+            {/* Mobile Admin Routes — mobile-optimised Global Admin panel */}
             <Route
               path="/mobile-admin/*"
               element={isAdmin ? <MobileAdminRouter /> : <Navigate to="/login" replace />}

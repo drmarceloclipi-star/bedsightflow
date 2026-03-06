@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../infra/firebase/config';
 import { useAuthStatus } from './useAuthStatus';
-import type { UnitRole } from '../domain/types';
+import type { UnitRole, PortalLevel } from '../domain/types';
+import { getVisiblePortalLevels } from '../domain/types';
 
 export const useHighestRole = () => {
-    const { user } = useAuthStatus();
+    const { user, isSuperAdmin, isAdmin } = useAuthStatus();
     const [highestRole, setHighestRole] = useState<UnitRole | null>(null);
     const [loadingRoles, setLoadingRoles] = useState(true);
 
@@ -50,17 +51,40 @@ export const useHighestRole = () => {
         fetchRole();
     }, [user]);
 
-    // Role progression Check: 
-    // Global Admin > Unit Admin ('admin') > Editor ('editor') > Viewer ('viewer')
-    const hasUnitAdminAccess = highestRole === 'admin';
+    // ── Derived access checks ────────────────────────────────────────────────
+    // Super Admin is OUTSIDE the institutional hierarchy — has separate panel.
+    // Global Admin (isAdmin claim) is the top of the institutional hierarchy.
+
+    const hasGlobalAdminAccess = isAdmin;
+    const hasUnitAdminAccess = hasGlobalAdminAccess || highestRole === 'admin';
     const hasEditorAccess = hasUnitAdminAccess || highestRole === 'editor';
     const hasViewerAccess = hasEditorAccess || highestRole === 'viewer';
 
+    // ── Portal level for card visibility ─────────────────────────────────────
+    // Determines which portal level the user belongs to (institutional hierarchy).
+    // Super Admin does NOT get a portal level — they go to their own panel.
+    let portalLevel: PortalLevel | null = null;
+    if (isAdmin) {
+        portalLevel = 'global_admin';
+    } else if (highestRole === 'admin') {
+        portalLevel = 'unit_admin';
+    } else if (highestRole === 'editor') {
+        portalLevel = 'editor';
+    } else if (highestRole === 'viewer') {
+        portalLevel = 'viewer';
+    }
+
+    const visiblePortalLevels = portalLevel ? getVisiblePortalLevels(portalLevel) : [];
+
     return {
         highestRole,
+        isSuperAdmin,
+        hasGlobalAdminAccess,
         hasUnitAdminAccess,
         hasEditorAccess,
         hasViewerAccess,
-        loadingRoles
+        portalLevel,
+        visiblePortalLevels,
+        loadingRoles,
     };
 };

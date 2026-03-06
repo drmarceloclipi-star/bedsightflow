@@ -12,15 +12,33 @@ interface UserAuthz {
     units?: Record<string, UnitAuthz>;
 }
 
-// ── Global admin ──────────────────────────────────────────────────────────────
+// ── Super Admin (platform-level) ─────────────────────────────────────────────
+
+/**
+ * Returns true when the caller has the custom claim `superAdmin: true`.
+ * Super Admin administers the platform, NOT the hospital.
+ * See docs/RBAC_CONTRACT.md.
+ */
+export function isSuperAdmin(context: functions.https.CallableContext): boolean {
+    return context.auth?.token?.superAdmin === true;
+}
+
+// ── Global Admin (institution-level) ─────────────────────────────────────────
 
 /**
  * Returns true when the caller has the custom claim `admin: true`.
- * This is the single source of truth for global admin status in Cloud Functions.
+ * Global Admin administers the institution (hospital client).
  * See docs/RBAC_CONTRACT.md.
  */
 export function isGlobalAdmin(context: functions.https.CallableContext): boolean {
     return context.auth?.token?.admin === true;
+}
+
+/**
+ * Returns true when the caller is either Super Admin or Global Admin.
+ */
+export function isAnyAdmin(context: functions.https.CallableContext): boolean {
+    return isSuperAdmin(context) || isGlobalAdmin(context);
 }
 
 // ── Per-user authz (central model) ───────────────────────────────────────────

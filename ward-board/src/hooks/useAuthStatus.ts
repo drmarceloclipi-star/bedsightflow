@@ -4,6 +4,7 @@ import { auth } from '../infra/firebase/config';
 
 export const useAuthStatus = () => {
     const [user, setUser] = useState<User | null>(null);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -13,14 +14,19 @@ export const useAuthStatus = () => {
             if (currentUser) {
                 try {
                     const token = await currentUser.getIdTokenResult();
-                    // isAdmin is determined solely by the custom claim set via setGlobalAdminClaim.
-                    // ADMIN_EMAILS is not used here — see docs/RBAC_CONTRACT.md.
+                    // Super Admin: platform-level, managed via `superAdmin` custom claim.
+                    // Super Admin is OUTSIDE the institutional hierarchy.
+                    setIsSuperAdmin(token.claims.superAdmin === true);
+                    // Global Admin (isAdmin): institution-level, managed via `admin` custom claim.
+                    // Global Admin administers the institution, not the platform.
                     setIsAdmin(token.claims.admin === true);
                 } catch (error) {
                     console.error("Error fetching token claims", error);
+                    setIsSuperAdmin(false);
                     setIsAdmin(false);
                 }
             } else {
+                setIsSuperAdmin(false);
                 setIsAdmin(false);
             }
             setLoading(false);
@@ -29,5 +35,5 @@ export const useAuthStatus = () => {
         return () => unsubscribe();
     }, []);
 
-    return { user, isAdmin, loading };
+    return { user, isSuperAdmin, isAdmin, loading };
 };

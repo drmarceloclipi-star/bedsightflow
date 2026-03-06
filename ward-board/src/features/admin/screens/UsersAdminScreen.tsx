@@ -12,7 +12,7 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<UnitRole, string> = {
-    admin: 'Admin',
+    admin: 'Líder Admin',
     editor: 'Editor',
     viewer: 'Visualizador',
 };

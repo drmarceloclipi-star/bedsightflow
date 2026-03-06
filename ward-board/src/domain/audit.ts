@@ -1,4 +1,4 @@
-export type AuditActorRole = 'admin' | 'editor'
+export type AuditActorRole = 'super_admin' | 'global_admin' | 'admin' | 'editor'
 
 export type AuditEntityType =
     | 'bed'

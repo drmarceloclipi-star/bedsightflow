@@ -19,10 +19,10 @@ export const removeUnitUser = functions.region('southamerica-east1').https.onCal
         throw new functions.https.HttpsError('invalid-argument', 'You cannot remove yourself from the unit.');
     }
 
-    // Check 1: global admin token claim (super-admin bypasses unit-level check)
-    const isGlobalAdmin = context.auth.token.admin === true;
+    // Check 1: platform or institution admin claim bypasses unit-level check
+    const isAdminClaim = context.auth.token.superAdmin === true || context.auth.token.admin === true;
 
-    if (!isGlobalAdmin) {
+    if (!isAdminClaim) {
         // Check 2: centralized authz document (new RBAC model)
         const authzDoc = await db.collection('users').doc(adminUid).collection('authz').doc('authz').get();
         const unitRole = authzDoc.exists ? authzDoc.data()?.units?.[unitId]?.role : undefined;
