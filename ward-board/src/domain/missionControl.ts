@@ -5,6 +5,7 @@
  * Thresholds vivem em Firestore: units/{unitId}/settings/mission_control
  * Ausentes → defaults abaixo (sem breaking change).
  */
+import escalationDefaults from '../../escalation-defaults.json';
 
 // ── Interface ─────────────────────────────────────────────────────────────────
 
@@ -49,11 +50,11 @@ export const DEFAULT_MISSION_CONTROL_THRESHOLDS: MissionControlThresholds = {
     freshness48hCriticalCount: 1,
     unreviewedShiftWarningCount: 3,
     unreviewedShiftCriticalCount: 6,
-    // Escalonamento v1
-    escalationOverdueHoursWarning: 6,
-    escalationOverdueHoursCritical: 12,
-    escalationMainBlockerHoursWarning: 8,
-    escalationMainBlockerHoursCritical: 24,
+    // Escalonamento v1 — Single Source of Truth: ../../escalation-defaults.json
+    escalationOverdueHoursWarning: escalationDefaults.escalationOverdueHoursWarning,
+    escalationOverdueHoursCritical: escalationDefaults.escalationOverdueHoursCritical,
+    escalationMainBlockerHoursWarning: escalationDefaults.escalationMainBlockerHoursWarning,
+    escalationMainBlockerHoursCritical: escalationDefaults.escalationMainBlockerHoursCritical,
 };
 
 // ── Parser Firestore doc → thresholds (merge seguro com defaults) ─────────────

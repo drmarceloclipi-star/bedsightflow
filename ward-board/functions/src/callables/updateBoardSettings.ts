@@ -67,7 +67,8 @@ export const updateBoardSettings = functions.region('southamerica-east1').https.
 
         await batch.commit();
         return { success: true };
-    } catch (error: any) {
-        throw new functions.https.HttpsError('internal', `Internal error: ${error.message}`);
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        throw new functions.https.HttpsError('internal', `Internal error: ${msg}`);
     }
 });

@@ -1,3 +1,5 @@
+import escalationDefaults from '../../../escalation-defaults.json';
+
 // O threshold no Backend (Cloud Functions)
 export interface EscalationThresholds {
     escalationOverdueHoursWarning: number;
@@ -11,17 +13,14 @@ export interface EscalationThresholds {
 /**
  * Defaults de escalonamento para o backend (Cloud Functions).
  *
- * ATENÇÃO: Estes valores DEVEM ser idênticos aos definidos em:
- *   ward-board/src/domain/missionControl.ts > DEFAULT_MISSION_CONTROL_THRESHOLDS
- *
- * O backend não pode importar do frontend. Se mudar um, mudar o outro.
- * Ref: P3 — Centralize Thresholds (2026-03-01)
+ * Single Source of Truth: ward-board/escalation-defaults.json
+ * O frontend (src/domain/missionControl.ts) importa do mesmo arquivo.
  */
 export const DEFAULT_ESCALATION_THRESHOLDS: EscalationThresholds = {
-    escalationOverdueHoursWarning: 6,        // sync: missionControl.ts
-    escalationOverdueHoursCritical: 12,      // sync: missionControl.ts
-    escalationMainBlockerHoursWarning: 8,    // sync: missionControl.ts
-    escalationMainBlockerHoursCritical: 24,  // sync: missionControl.ts
+    escalationOverdueHoursWarning: escalationDefaults.escalationOverdueHoursWarning,
+    escalationOverdueHoursCritical: escalationDefaults.escalationOverdueHoursCritical,
+    escalationMainBlockerHoursWarning: escalationDefaults.escalationMainBlockerHoursWarning,
+    escalationMainBlockerHoursCritical: escalationDefaults.escalationMainBlockerHoursCritical,
 };
 
 export type EscalationType = 'OVERDUE_CRITICAL' | 'MAIN_BLOCKER_CRITICAL';

@@ -1,0 +1,6 @@
+{
+  "escalationOverdueHoursWarning": 6,
+  "escalationOverdueHoursCritical": 12,
+  "escalationMainBlockerHoursWarning": 8,
+  "escalationMainBlockerHoursCritical": 24
+}
